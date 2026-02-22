@@ -15,10 +15,15 @@ import {
     Clock,
     Plus,
     Hammer,
-    ArrowUpRight
+    ArrowUpRight,
+    Shield,
+    FolderPlus
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
+import UserList from '../components/dashboard/UserList';
+import DocumentLibrary from '../components/dashboard/DocumentLibrary';
+import VoiceAssistant from '../components/VoiceAssistant';
 
 const Dashboard = () => {
     const { user, logout } = useAuthStore();
@@ -31,6 +36,10 @@ const Dashboard = () => {
         { name: 'Invoices', icon: FileText },
         { name: 'Marketplace', icon: ShoppingBag },
         { name: 'Network', icon: Users },
+        // Conditional Navigation based on Role could be here, but for now we add for all and let components handle permissions or show placeholders
+        // Ideally filter this list based on user.role
+        ...(user?.role === 'Admin' ? [{ name: 'User Mgmt', icon: Shield }] : []),
+        { name: 'Documents', icon: FolderPlus },
         { name: 'Preferences', icon: Settings },
     ];
 
@@ -141,89 +150,97 @@ const Dashboard = () => {
 
                 {/* Content Scroller */}
                 <section className="flex-1 overflow-y-auto p-12 custom-scrollbar">
-                    {/* Welcome Banner */}
-                    <div className="mb-12 bg-white border-8 border-brand-teal p-12 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-64 h-full bg-brand-orange transform translate-x-12 -skew-x-12 opacity-10 group-hover:translate-x-4 transition-transform duration-700"></div>
-                        <div className="relative z-10">
-                            <h3 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
-                                Welcome back,<br />
-                                <span className="text-brand-orange">Operator {user?.name}</span>
-                            </h3>
-                            <p className="max-w-xl font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
-                                Your current workspace is optimized for the <span className="text-brand-teal">{user?.role}</span> module.
-                                All industrial systems are operational and ready for deployment.
-                            </p>
-                            <button className="btn-primary flex items-center gap-3">
-                                Initialize New Site <Plus size={20} />
-                            </button>
-                        </div>
-                        <div className="absolute bottom-8 right-8 text-brand-teal opacity-10">
-                            <Hammer size={120} />
-                        </div>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal mb-12">
-                        {stats.map((stat, i) => (
-                            <div key={i} className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group">
-                                <div className="flex justify-between items-start mb-4">
-                                    <p className="label leading-none">{stat.label}</p>
-                                    <span className={`px-2 py-1 bg-${stat.color} text-white text-[8px] font-black uppercase tracking-widest`}>
-                                        {stat.trend}
-                                    </span>
+                    {activeTab === 'Overview' && (
+                        <>
+                            {/* Welcome Banner */}
+                            <div className="mb-12 bg-white border-8 border-brand-teal p-12 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-64 h-full bg-brand-orange transform translate-x-12 -skew-x-12 opacity-10 group-hover:translate-x-4 transition-transform duration-700"></div>
+                                <div className="relative z-10">
+                                    <h3 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
+                                        Welcome back,<br />
+                                        <span className="text-brand-orange">Operator {user?.name}</span>
+                                    </h3>
+                                    <p className="max-w-xl font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
+                                        Your current workspace is optimized for the <span className="text-brand-teal">{user?.role}</span> module.
+                                        All industrial systems are operational and ready for deployment.
+                                    </p>
+                                    <button className="btn-primary flex items-center gap-3">
+                                        Initialize New Site <Plus size={20} />
+                                    </button>
                                 </div>
-                                <div className="flex items-end justify-between">
-                                    <p className="text-4xl font-black text-brand-teal">{stat.value}</p>
-                                    <ArrowUpRight className="text-brand-teal opacity-10 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" size={32} />
+                                <div className="absolute bottom-8 right-8 text-brand-teal opacity-10">
+                                    <Hammer size={120} />
                                 </div>
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Secondary Grid */}
-                    <div className="grid lg:grid-cols-2 gap-12">
-                        {/* Activity Ledger */}
-                        <div className="card h-full min-h-[400px]">
-                            <div className="flex justify-between items-center mb-10">
-                                <h4 className="text-xl font-black uppercase tracking-tight text-brand-teal">System Ledger</h4>
-                                <button className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">View Logs</button>
-                            </div>
-                            <div className="space-y-6">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer">
-                                        <div className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
-                                            <Clock size={20} />
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal mb-12">
+                                {stats.map((stat, i) => (
+                                    <div key={i} className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <p className="label leading-none">{stat.label}</p>
+                                            <span className={`px-2 py-1 bg-${stat.color} text-white text-[8px] font-black uppercase tracking-widest`}>
+                                                {stat.trend}
+                                            </span>
                                         </div>
-                                        <div>
-                                            <p className="font-black uppercase text-xs text-brand-teal mb-1">Project Sync Completed</p>
-                                            <p className="text-[10px] font-bold text-brand-slate opacity-40 leading-tight">Site-Alpha deployment verified by controller.</p>
-                                        </div>
-                                        <div className="ml-auto text-[8px] font-black text-brand-teal/20 uppercase group-hover:text-brand-teal transition-colors pt-1">
-                                            2h / ago
+                                        <div className="flex items-end justify-between">
+                                            <p className="text-4xl font-black text-brand-teal">{stat.value}</p>
+                                            <ArrowUpRight className="text-brand-teal opacity-10 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" size={32} />
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
 
-                        {/* Creative Box */}
-                        <div className="bg-brand-teal p-12 text-white relative flex flex-col justify-between overflow-hidden">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-brand-orange"></div>
-                            <div className="relative z-10 text-6xl font-black uppercase tracking-tighter opacity-10 leading-none mb-12">
-                                Industrial<br />Standard.
+                            {/* Secondary Grid */}
+                            <div className="grid lg:grid-cols-2 gap-12">
+                                {/* Activity Ledger */}
+                                <div className="card h-full min-h-[400px]">
+                                    <div className="flex justify-between items-center mb-10">
+                                        <h4 className="text-xl font-black uppercase tracking-tight text-brand-teal">System Ledger</h4>
+                                        <button className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">View Logs</button>
+                                    </div>
+                                    <div className="space-y-6">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer">
+                                                <div className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
+                                                    <Clock size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black uppercase text-xs text-brand-teal mb-1">Project Sync Completed</p>
+                                                    <p className="text-[10px] font-bold text-brand-slate opacity-40 leading-tight">Site-Alpha deployment verified by controller.</p>
+                                                </div>
+                                                <div className="ml-auto text-[8px] font-black text-brand-teal/20 uppercase group-hover:text-brand-teal transition-colors pt-1">
+                                                    2h / ago
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Creative Box */}
+                                <div className="bg-brand-teal p-12 text-white relative flex flex-col justify-between overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1 bg-brand-orange"></div>
+                                    <div className="relative z-10 text-6xl font-black uppercase tracking-tighter opacity-10 leading-none mb-12">
+                                        Industrial<br />Standard.
+                                    </div>
+                                    <div className="relative z-10">
+                                        <h4 className="text-2xl font-black uppercase tracking-tight mb-4">Network Protocols</h4>
+                                        <p className="font-bold text-sm text-white/50 leading-relaxed max-w-xs mb-8">
+                                            Expand your operational reach by connecting with verified experts and manufacturers.
+                                        </p>
+                                        <button className="btn-outline-white w-full flex items-center justify-center gap-3">
+                                            Explore Ecosystem <ArrowRight size={20} />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="relative z-10">
-                                <h4 className="text-2xl font-black uppercase tracking-tight mb-4">Network Protocols</h4>
-                                <p className="font-bold text-sm text-white/50 leading-relaxed max-w-xs mb-8">
-                                    Expand your operational reach by connecting with verified experts and manufacturers.
-                                </p>
-                                <button className="btn-outline-white w-full flex items-center justify-center gap-3">
-                                    Explore Ecosystem <ArrowRight size={20} />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                        </>
+                    )}
+
+                    {activeTab === 'User Mgmt' && <UserList />}
+                    {activeTab === 'Documents' && <DocumentLibrary />}
                 </section>
+                <VoiceAssistant />
             </main>
         </div>
     );

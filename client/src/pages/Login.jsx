@@ -126,6 +126,18 @@ const Login = () => {
                                 )}
                             </button>
                         </div>
+
+                        <div className="relative text-center">
+                            <div className="absolute inset-x-0 top-3 border-t border-brand-teal/20"></div>
+                            <span className="relative bg-brand-cream px-2 text-[8px] font-black uppercase tracking-widest text-brand-teal/40">Or</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="w-full py-4 text-xs font-black uppercase tracking-widest border-2 border-brand-teal/20 text-brand-teal/60 hover:bg-brand-teal hover:text-white hover:border-brand-teal transition-all flex justify-center items-center gap-2"
+                        >
+                            <Sparkles size={16} /> Login with Face ID
+                        </button>
                     </form>
 
                     <div className="mt-12 pt-12 border-t-4 border-brand-teal/10">
@@ -141,8 +153,8 @@ const Login = () => {
                 {/* Corner Decoration */}
                 <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange"></div>
                 <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal"></div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

@@ -29,6 +29,14 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Profile',
     },
+    permissions: [{
+        type: String,
+        enum: ['read:products', 'write:products', 'manage:users', 'manage:documents'],
+    }],
+    faceDescriptor: {
+        type: String, // Stringified Float32Array from face-api.js
+        select: false,
+    },
     isActive: {
         type: Boolean,
         default: true,

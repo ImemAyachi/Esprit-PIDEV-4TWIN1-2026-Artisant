@@ -32,7 +32,21 @@ const profileSchema = new mongoose.Schema({
         website: String,
         linkedin: String,
         github: String,
-    }
+    },
+    favoriteDocuments: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document'
+    }],
+    documentHistory: [{
+        document: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Document'
+        },
+        viewedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true,
 });

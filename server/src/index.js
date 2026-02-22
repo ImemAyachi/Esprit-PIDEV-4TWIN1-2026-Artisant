@@ -16,6 +16,8 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/documents', require('./routes/documentRoutes'));
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to Artisant API' });
@@ -23,7 +25,7 @@ app.get('/', (req, res) => {
 
 // Database connection
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/artisant';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
     .connect(MONGODB_URI)
