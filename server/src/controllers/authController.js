@@ -95,3 +95,43 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+// @desc    Update current user's profile
+// @route   PUT /api/auth/me/profile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+    try {
+        const { name, bio, phone, address, companyName, specialty, experienceYears, skills, socialLinks } = req.body;
+
+        // Update user name if provided
+        if (name) {
+            await User.findByIdAndUpdate(req.user.id, { name }, { runValidators: true });
+        }
+
+        // Find or create profile
+        let profile = await Profile.findOne({ user: req.user.id });
+        if (!profile) {
+            profile = await Profile.create({ user: req.user.id });
+        }
+
+        // Update profile fields
+        const profileFields = { bio, phone, address, companyName, specialty, experienceYears, skills, socialLinks };
+        Object.keys(profileFields).forEach(key => {
+            if (profileFields[key] !== undefined) {
+                profile[key] = profileFields[key];
+            }
+        });
+        await profile.save();
+
+        // Return updated user with populated profile
+        const user = await User.findById(req.user.id).populate('profile');
+        res.status(200).json({
+            status: 'success',
+            data: {
+                user,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

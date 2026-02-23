@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard,
     Briefcase,
@@ -17,7 +18,8 @@ import {
     Hammer,
     ArrowUpRight,
     Shield,
-    FolderPlus
+    FolderPlus,
+    ChevronRight
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
@@ -27,6 +29,7 @@ import VoiceAssistant from '../components/VoiceAssistant';
 
 const Dashboard = () => {
     const { user, logout } = useAuthStore();
+    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
 
@@ -88,18 +91,27 @@ const Dashboard = () => {
                 {/* User Context */}
                 <div className="p-6 border-t-4 border-white/10 bg-black/10">
                     {sidebarOpen ? (
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="w-12 h-12 bg-brand-orange text-white flex items-center justify-center font-black animate-in">
+                        <div
+                            onClick={() => navigate('/profile')}
+                            className="flex items-center gap-4 mb-6 cursor-pointer group/user hover:opacity-80 transition-all"
+                            title="View Profile"
+                        >
+                            <div className="w-12 h-12 bg-brand-orange text-white flex items-center justify-center font-black animate-in group-hover/user:scale-105 transition-transform">
                                 {user?.name?.charAt(0)}
                             </div>
-                            <div className="animate-in">
+                            <div className="animate-in flex-1 min-w-0">
                                 <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1">{user?.name}</p>
                                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none">{user?.role}</p>
                             </div>
+                            <ChevronRight size={14} className="text-white/20 group-hover/user:text-white/60 group-hover/user:translate-x-0.5 transition-all" />
                         </div>
                     ) : (
-                        <div className="flex justify-center mb-6">
-                            <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black">
+                        <div
+                            onClick={() => navigate('/profile')}
+                            className="flex justify-center mb-6 cursor-pointer hover:opacity-80 transition-all"
+                            title="View Profile"
+                        >
+                            <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black hover:scale-105 transition-transform">
                                 {user?.name?.charAt(0)}
                             </div>
                         </div>
