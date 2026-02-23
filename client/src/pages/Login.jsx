@@ -21,9 +21,16 @@ const Login = () => {
         e.preventDefault();
         const success = await login(email, password);
         if (success) {
-            navigate('/dashboard');
+            // Check role from store state (since user is updated in the store)
+            const role = useAuthStore.getState().user?.role;
+            if (role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         }
     };
+
 
     return (
         <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">

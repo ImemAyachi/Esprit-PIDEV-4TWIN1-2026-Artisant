@@ -13,12 +13,12 @@ const router = express.Router();
 
 router.route('/')
     .get(getAllDocuments)
-    .post(protect, authorize('Expert', 'Admin'), createDocument);
+    .post(protect, authorize('expert', 'admin'), createDocument);
 
 router.route('/:id')
     .get(getDocument)
-    .put(protect, authorize('Expert', 'Admin'), updateDocument)
-    .delete(protect, authorize('Expert', 'Admin'), deleteDocument);
+    .put(protect, authorize('expert', 'admin'), updateDocument)
+    .delete(protect, authorize('expert', 'admin'), deleteDocument);
 
 router.route('/:id/favorite')
     .put(protect, favoriteDocument);

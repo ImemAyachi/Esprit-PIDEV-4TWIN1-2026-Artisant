@@ -41,7 +41,7 @@ const Dashboard = () => {
         { name: 'Network', icon: Users },
         // Conditional Navigation based on Role could be here, but for now we add for all and let components handle permissions or show placeholders
         // Ideally filter this list based on user.role
-        ...(user?.role === 'Admin' ? [{ name: 'User Mgmt', icon: Shield }] : []),
+        ...(user?.role === 'admin' ? [{ name: 'User Mgmt', icon: Shield }] : []),
         { name: 'Documents', icon: FolderPlus },
         { name: 'Preferences', icon: Settings },
     ];
@@ -117,6 +117,7 @@ const Dashboard = () => {
                         </div>
                     )}
 
+
                     <button
                         onClick={logout}
                         className={`w-full flex items-center justify-center gap-2 p-3 bg-white/5 border-2 border-white/20 text-white hover:bg-white hover:text-brand-teal transition-all font-black uppercase text-[10px] tracking-widest ${!sidebarOpen && 'px-0'}`}
@@ -170,12 +171,13 @@ const Dashboard = () => {
                                 <div className="relative z-10">
                                     <h3 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
                                         Welcome back,<br />
-                                        <span className="text-brand-orange">Operator {user?.name}</span>
+                                        <span className="text-brand-orange">Operator {user?.companyName}</span>
                                     </h3>
                                     <p className="max-w-xl font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
                                         Your current workspace is optimized for the <span className="text-brand-teal">{user?.role}</span> module.
                                         All industrial systems are operational and ready for deployment.
                                     </p>
+
                                     <button className="btn-primary flex items-center gap-3">
                                         Initialize New Site <Plus size={20} />
                                     </button>
