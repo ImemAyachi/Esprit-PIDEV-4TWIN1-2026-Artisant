@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
         }
 
         const user = await User.create({
-            name,
+            companyName,
             email,
             password,
         });
