@@ -26,6 +26,11 @@ exports.protect = async (req, res, next) => {
             return res.status(401).json({ message: 'The user belonging to this token no longer exists' });
         }
 
+        // Block deactivated accounts from using protected routes
+        if (!req.user.isActive) {
+            return res.status(403).json({ message: 'Your account has been deactivated. Please contact an administrator.' });
+        }
+
         next();
     } catch (err) {
         return res.status(401).json({ message: 'Not authorized to access this route' });

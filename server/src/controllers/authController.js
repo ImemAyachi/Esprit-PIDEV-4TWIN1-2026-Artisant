@@ -73,6 +73,11 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        // Check if account is active
+        if (!user.isActive) {
+            return res.status(403).json({ message: 'Your account has been deactivated. Please contact an administrator.' });
+        }
+
         sendTokenResponse(user, 200, res);
     } catch (err) {
         res.status(500).json({ message: err.message });

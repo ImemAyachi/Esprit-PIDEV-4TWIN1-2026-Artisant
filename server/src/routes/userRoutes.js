@@ -4,6 +4,7 @@ const {
     getUser,
     updateUser,
     deleteUser,
+    toggleAccountStatus,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -19,5 +20,7 @@ router.route('/:id')
     .get(getUser)
     .put(updateUser)
     .delete(deleteUser);
+
+router.patch('/:id/toggle-status', toggleAccountStatus);
 
 module.exports = router;
