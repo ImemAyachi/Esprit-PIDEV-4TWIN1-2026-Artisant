@@ -71,8 +71,8 @@ const UserList = () => {
                                 </td>
                                 <td className="p-4">
                                     <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest ${user.role === 'Admin' ? 'bg-brand-orange text-white' :
-                                            user.role === 'Expert' ? 'bg-brand-teal text-white' :
-                                                'bg-brand-slate/10 text-brand-slate'
+                                        user.role === 'Expert' ? 'bg-brand-teal text-white' :
+                                            'bg-brand-slate/10 text-brand-slate'
                                         }`}>
                                         {user.role}
                                     </span>
@@ -80,17 +80,22 @@ const UserList = () => {
                                 <td className="p-4">
                                     <button
                                         onClick={() => toggleStatus(user._id, user.isActive)}
-                                        className={`w-3 h-3 rounded-full ${user.isActive ? 'bg-brand-green' : 'bg-red-500'} ring-2 ring-offset-2 ring-transparent group-hover:ring-brand-teal/20 transition-all`}
+                                        className={`w-4 h-4 rounded-full ${user.isActive ? 'bg-brand-green' : 'bg-red-500'} ring-2 ring-offset-2 ring-transparent hover:ring-brand-teal/20 transition-all focus:z-10`}
+                                        aria-label={`Toggle status for ${user.name}. Currently ${user.isActive ? 'Active' : 'Inactive'}.`}
                                         title={user.isActive ? 'Active' : 'Inactive'}
                                     />
                                 </td>
                                 <td className="p-4 flex gap-3">
-                                    <button className="text-brand-teal hover:text-brand-orange transition-colors">
+                                    <button
+                                        className="text-brand-teal hover:text-brand-orange transition-colors focus:z-10"
+                                        aria-label={`Edit user ${user.name}`}
+                                    >
                                         <Edit2 size={16} />
                                     </button>
                                     <button
                                         onClick={() => deleteUser(user._id)}
-                                        className="text-brand-slate/40 hover:text-red-500 transition-colors"
+                                        className="text-brand-slate/40 hover:text-red-500 transition-colors focus:z-10"
+                                        aria-label={`Delete user ${user.name}`}
                                     >
                                         <Trash2 size={16} />
                                     </button>

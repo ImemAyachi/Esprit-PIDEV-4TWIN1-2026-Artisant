@@ -65,17 +65,18 @@ const Dashboard = () => {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto no-scrollbar pt-8">
+                <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto no-scrollbar pt-8" aria-label="Main Navigation">
                     {navigation.map((item) => (
                         <button
                             key={item.name}
                             onClick={() => setActiveTab(item.name)}
+                            aria-label={`Go to ${item.name}`}
                             className={`flex items-center gap-4 p-4 border-2 transition-all group ${activeTab === item.name
                                 ? 'bg-white text-brand-teal border-white'
                                 : 'bg-transparent text-white/60 border-transparent hover:border-white/20 hover:text-white'
                                 }`}
                         >
-                            <item.icon size={24} className={activeTab === item.name ? 'text-brand-orange' : ''} />
+                            <item.icon size={24} className={activeTab === item.name ? 'text-brand-orange' : ''} aria-hidden="true" />
                             {sidebarOpen && (
                                 <span className="font-black uppercase tracking-widest text-xs animate-in">
                                     {item.name}
@@ -122,7 +123,8 @@ const Dashboard = () => {
                     <div className="flex items-center gap-6">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"
+                            aria-label={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+                            className="p-2 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
                             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
                         </button>
@@ -137,11 +139,15 @@ const Dashboard = () => {
                             <Search size={16} className="text-brand-teal/40" />
                             <input
                                 type="text"
+                                aria-label="Search Workspace"
                                 placeholder="EXECUTE SEARCH..."
                                 className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest w-48 placeholder:text-brand-teal/20"
                             />
                         </div>
-                        <button className="relative w-12 h-12 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all">
+                        <button
+                            aria-label="View Notifications"
+                            className="relative w-12 h-12 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
+                        >
                             <Bell size={20} />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-brand-orange"></span>
                         </button>
@@ -176,7 +182,12 @@ const Dashboard = () => {
                             {/* Stats Grid */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal mb-12">
                                 {stats.map((stat, i) => (
-                                    <div key={i} className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group">
+                                    <div
+                                        key={i}
+                                        tabIndex="0"
+                                        aria-label={`${stat.label}: ${stat.value}, trend is ${stat.trend}`}
+                                        className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group cursor-pointer focus:z-10"
+                                    >
                                         <div className="flex justify-between items-start mb-4">
                                             <p className="label leading-none">{stat.label}</p>
                                             <span className={`px-2 py-1 bg-${stat.color} text-white text-[8px] font-black uppercase tracking-widest`}>
@@ -201,7 +212,12 @@ const Dashboard = () => {
                                     </div>
                                     <div className="space-y-6">
                                         {[1, 2, 3, 4].map((i) => (
-                                            <div key={i} className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer">
+                                            <div
+                                                key={i}
+                                                tabIndex="0"
+                                                aria-label="System Ledger entry: Project Sync Completed. Site-Alpha deployment verified by controller."
+                                                className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer focus:border-brand-teal/20 focus:bg-brand-cream"
+                                            >
                                                 <div className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
                                                     <Clock size={20} />
                                                 </div>

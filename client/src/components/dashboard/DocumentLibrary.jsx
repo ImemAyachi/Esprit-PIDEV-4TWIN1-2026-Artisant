@@ -95,9 +95,10 @@ const DocumentLibrary = () => {
                     <button
                         key={cat}
                         onClick={() => setFilter(cat)}
-                        className={`px-4 py-2 font-black uppercase tracking-widest text-[10px] border-2 transition-all ${filter === cat
-                                ? 'bg-brand-teal text-white border-brand-teal'
-                                : 'bg-transparent text-brand-teal/40 border-transparent hover:border-brand-teal/20'
+                        aria-pressed={filter === cat}
+                        className={`px-4 py-2 font-black uppercase tracking-widest text-[10px] border-2 transition-all focus:z-10 ${filter === cat
+                            ? 'bg-brand-teal text-white border-brand-teal'
+                            : 'bg-transparent text-brand-teal/40 border-transparent hover:border-brand-teal/20'
                             }`}
                     >
                         {cat}
@@ -110,21 +111,30 @@ const DocumentLibrary = () => {
                 {filteredDocs.map((doc) => {
                     const isFav = favorites.includes(doc._id);
                     return (
-                        <div key={doc._id} className="group relative border-2 border-brand-teal/10 bg-brand-cream hover:bg-white hover:border-brand-teal transition-all p-6 flex flex-col justify-between h-64">
+                        <div
+                            key={doc._id}
+                            tabIndex="0"
+                            aria-label={`Document: ${doc.title}. Category: ${doc.category}. Description: ${doc.description}`}
+                            className="group relative border-2 border-brand-teal/10 bg-brand-cream hover:bg-white hover:border-brand-teal transition-all p-6 flex flex-col justify-between h-64 focus:z-20 cursor-pointer"
+                        >
 
                             {/* Top: Category & Actions */}
                             <div className="flex justify-between items-start mb-4">
                                 <span className="bg-brand-teal/10 text-brand-teal px-2 py-1 text-[8px] font-black uppercase tracking-widest">
                                     {doc.category}
                                 </span>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
                                     <button
-                                        onClick={() => toggleFavorite(doc._id)}
-                                        className={`p-2 rounded-full transition-colors ${isFav ? 'bg-brand-orange text-white' : 'text-brand-slate/40 hover:bg-brand-orange hover:text-white'}`}
+                                        onClick={(e) => { e.stopPropagation(); toggleFavorite(doc._id); }}
+                                        aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+                                        className={`p-2 rounded-full transition-colors focus:z-10 ${isFav ? 'bg-brand-orange text-white' : 'text-brand-slate/40 hover:bg-brand-orange hover:text-white'}`}
                                     >
                                         <Heart size={16} fill={isFav ? "currentColor" : "none"} />
                                     </button>
-                                    <button className="p-2 hover:bg-brand-teal hover:text-white rounded-full transition-colors text-brand-slate/40">
+                                    <button
+                                        aria-label="Download Document"
+                                        className="p-2 hover:bg-brand-teal hover:text-white rounded-full transition-colors text-brand-slate/40 focus:z-10"
+                                    >
                                         <Download size={16} />
                                     </button>
                                 </div>
