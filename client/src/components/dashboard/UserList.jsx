@@ -70,8 +70,8 @@ const UserList = () => {
                                     <div className="text-xs text-brand-slate opacity-60">{user.email}</div>
                                 </td>
                                 <td className="p-4">
-                                    <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest ${user.role === 'Admin' ? 'bg-brand-orange text-white' :
-                                        user.role === 'Expert' ? 'bg-brand-teal text-white' :
+                                    <span className={`px-2 py-1 text-[10px] font-black uppercase tracking-widest ${user.role === 'admin' ? 'bg-brand-orange text-white' :
+                                        user.role === 'expert' ? 'bg-brand-teal text-white' :
                                             'bg-brand-slate/10 text-brand-slate'
                                         }`}>
                                         {user.role}

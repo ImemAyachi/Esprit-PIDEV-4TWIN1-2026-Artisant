@@ -23,12 +23,15 @@ import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
 import UserList from '../components/dashboard/UserList';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
+import ProjectList from '../components/dashboard/ProjectList';
+import ProjectCreation from '../components/dashboard/ProjectCreation';
 import VoiceAssistant from '../components/VoiceAssistant';
 
 const Dashboard = () => {
     const { user, logout } = useAuthStore();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
+    const [projectAction, setProjectAction] = useState('list'); // 'list' or 'create'
 
     const navigation = [
         { name: 'Overview', icon: LayoutDashboard },
@@ -69,7 +72,10 @@ const Dashboard = () => {
                     {navigation.map((item) => (
                         <button
                             key={item.name}
-                            onClick={() => setActiveTab(item.name)}
+                            onClick={() => {
+                                setActiveTab(item.name);
+                                if (item.name === 'Projects') setProjectAction('list');
+                            }}
                             aria-label={`Go to ${item.name}`}
                             className={`flex items-center gap-4 p-4 border-2 transition-all group ${activeTab === item.name
                                 ? 'bg-white text-brand-teal border-white'
@@ -172,7 +178,13 @@ const Dashboard = () => {
                                         All industrial systems are operational and ready for deployment.
                                     </p>
 
-                                    <button className="btn-primary flex items-center gap-3">
+                                    <button
+                                        onClick={() => {
+                                            setActiveTab('Projects');
+                                            setProjectAction('create');
+                                        }}
+                                        className="btn-primary flex items-center gap-3"
+                                    >
                                         Initialize New Site <Plus size={20} />
                                     </button>
                                 </div>
@@ -253,6 +265,24 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         </>
+                    )}
+
+                    {activeTab === 'Projects' && (
+                        <div className="animate-in">
+                            {projectAction === 'list' ? (
+                                <ProjectList onAddNew={() => setProjectAction('create')} />
+                            ) : (
+                                <div className="space-y-6">
+                                    <button
+                                        onClick={() => setProjectAction('list')}
+                                        className="text-brand-teal font-black uppercase text-xs hover:text-brand-orange transition-colors flex items-center gap-2"
+                                    >
+                                        ← Retour à la liste
+                                    </button>
+                                    <ProjectCreation onProjectCreated={() => setProjectAction('list')} />
+                                </div>
+                            )}
+                        </div>
                     )}
 
                     {activeTab === 'User Mgmt' && <UserList />}
