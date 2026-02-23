@@ -1,80 +1,32 @@
 const User = require('../models/User');
-const Profile = require('../models/Profile');
-const jwt = require('jsonwebtoken');
 
-const signToken = (user) => {
-    return jwt.sign(
-        {
-            id: user._id,
-            role: user.role,
-        },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: '30d',
-        }
-    );
-};
-
-const sendTokenResponse = (user, statusCode, res) => {
-    const token = signToken(user);
-
-    user.password = undefined;
-
-    res.status(statusCode).json({
-        status: 'success',
-        token,
-        data: {
-            user,
-        },
-    });
-};
-
-exports.register = async (req, res) => {
+exports.getAllUsers = async (req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const users = await User.find().select('-password -facialFingerprint');
 
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ message: 'User already exists' });
-        }
-
-        const user = await User.create({
-            companyName,
-            email,
-            password,
+        res.status(200).json({
+            status: 'success',
+            results: users.length,
+            data: {
+                users,
+            },
         });
-
-        await Profile.create({ user: user._id });
-
-        sendTokenResponse(user, 201, res);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
     }
 };
 
-exports.login = async (req, res) => {
+exports.getUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const user = await User.findById(req.params.id).select('-password -facialFingerprint');
 
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Please provide email and password' });
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
         }
-
-        const user = await User.findOne({ email }).select('+password');
-
-        if (!user || !(await user.comparePassword(password, user.password))) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-
-        sendTokenResponse(user, 200, res);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-exports.getMe = async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id).populate('profile');
 
         res.status(200).json({
             status: 'success',
@@ -82,7 +34,100 @@ exports.getMe = async (req, res) => {
                 user,
             },
         });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
+exports.updateUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).select('-password -facialFingerprint');
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                user,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
+exports.deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            message: 'User deleted successfully',
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
+    }
+};
+
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { role } = req.body;
+
+        const allowedRoles = ['artisan', 'manufacturer', 'expert', 'admin'];
+
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({
+                message: 'Invalid role',
+            });
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.params.id,
+            { role },
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).select('-password -facialFingerprint');
+
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
+        }
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                user,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+        });
     }
 };
