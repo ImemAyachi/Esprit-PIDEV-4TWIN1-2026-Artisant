@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const Profile = require('../models/Profile');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT Token
@@ -102,30 +101,19 @@ exports.getMe = async (req, res) => {
 // @access  Private
 exports.updateProfile = async (req, res) => {
     try {
-        const { name, bio, phone, address, companyName, specialty, experienceYears, skills, socialLinks } = req.body;
+        const { companyName, phone, avatarUrl } = req.body;
 
-        // Update user name if provided
-        if (name) {
-            await User.findByIdAndUpdate(req.user.id, { name }, { runValidators: true });
-        }
+        // Build update object with only provided fields
+        const updateFields = {};
+        if (companyName !== undefined) updateFields.companyName = companyName;
+        if (phone !== undefined) updateFields.phone = phone;
+        if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
 
-        // Find or create profile
-        let profile = await Profile.findOne({ user: req.user.id });
-        if (!profile) {
-            profile = await Profile.create({ user: req.user.id });
-        }
-
-        // Update profile fields
-        const profileFields = { bio, phone, address, companyName, specialty, experienceYears, skills, socialLinks };
-        Object.keys(profileFields).forEach(key => {
-            if (profileFields[key] !== undefined) {
-                profile[key] = profileFields[key];
-            }
+        const user = await User.findByIdAndUpdate(req.user.id, updateFields, {
+            new: true,
+            runValidators: true,
         });
-        await profile.save();
 
-        // Return updated user with populated profile
-        const user = await User.findById(req.user.id).populate('profile');
         res.status(200).json({
             status: 'success',
             data: {
