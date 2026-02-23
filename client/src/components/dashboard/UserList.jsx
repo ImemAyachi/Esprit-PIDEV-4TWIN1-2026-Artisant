@@ -66,7 +66,7 @@ const UserList = () => {
                         {users.map((user) => (
                             <tr key={user._id} className="hover:bg-brand-cream transition-colors group">
                                 <td className="p-4">
-                                    <div className="font-bold text-brand-teal">{user.name}</div>
+                                    <div className="font-bold text-brand-teal">{user.companyName}</div>
                                     <div className="text-xs text-brand-slate opacity-60">{user.email}</div>
                                 </td>
                                 <td className="p-4">
@@ -85,6 +85,7 @@ const UserList = () => {
                                         title={user.isActive ? 'Active' : 'Inactive'}
                                     />
                                 </td>
+
                                 <td className="p-4 flex gap-3">
                                     <button
                                         className="text-brand-teal hover:text-brand-orange transition-colors focus:z-10"

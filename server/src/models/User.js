@@ -2,11 +2,6 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: [true, 'Please provide your name'],
-        trim: true,
-    },
     email: {
         type: String,
         required: [true, 'Please provide your email'],
@@ -22,29 +17,29 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['Expert', 'Artisan', 'Manufacturer', 'Admin'],
-        default: 'Artisan',
+        enum: ['artisan', 'manufacturer', 'expert', 'admin'],
+        default: 'artisan',
     },
-    profile: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Profile',
-    },
-    permissions: [{
+    companyName: {
         type: String,
-        enum: ['read:products', 'write:products', 'manage:users', 'manage:documents'],
-    }],
-    faceDescriptor: {
-        type: String, // Stringified Float32Array from face-api.js
+        required: [true, 'Please provide company name'],
+        trim: true,
+    },
+    phone: {
+        type: String,
+        required: [true, 'Please provide phone number'],
+    },
+    avatarUrl: {
+        type: String,
+    },
+    facialFingerprint: {
+        type: Buffer, // Storing BYTEA as Buffer in Mongoose
         select: false,
     },
     isActive: {
         type: Boolean,
         default: true,
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-    }
 }, {
     timestamps: true,
 });
@@ -62,3 +57,4 @@ userSchema.methods.comparePassword = async function (candidatePassword, userPass
 
 const User = mongoose.model('User', userSchema);
 module.exports = User;
+

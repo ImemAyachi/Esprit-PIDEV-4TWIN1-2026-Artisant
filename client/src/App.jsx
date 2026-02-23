@@ -7,26 +7,34 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 
 // Accessibility
 import ScreenReaderFocus from './components/ScreenReaderFocus';
 
 // Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuthStore();
+const ProtectedRoute = ({ children, requireAdmin = false }) => {
+  const { isAuthenticated, user, loading } = useAuthStore();
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-teal"></div>
     </div>
   );
 
   if (!isAuthenticated) return <Navigate to="/login" />;
 
+  if (requireAdmin && user?.role !== 'admin') {
+    return <Navigate to="/dashboard" />;
+  }
+
+  // Redirect admin away from normal dashboard to admin dashboard
+  if (!requireAdmin && user?.role === 'admin' && window.location.pathname === '/dashboard') {
+    return <Navigate to="/admin" />;
+  }
+
   return children;
 };
-
-
 
 function App() {
   const { getMe } = useAuthStore();
@@ -50,9 +58,20 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAdmin={true}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* Catch all redirect */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
 }
+
 
 export default App;

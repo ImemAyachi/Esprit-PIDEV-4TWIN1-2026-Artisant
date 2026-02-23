@@ -38,7 +38,7 @@ const Dashboard = () => {
         { name: 'Network', icon: Users },
         // Conditional Navigation based on Role could be here, but for now we add for all and let components handle permissions or show placeholders
         // Ideally filter this list based on user.role
-        ...(user?.role === 'Admin' ? [{ name: 'User Mgmt', icon: Shield }] : []),
+        ...(user?.role === 'admin' ? [{ name: 'User Mgmt', icon: Shield }] : []),
         { name: 'Documents', icon: FolderPlus },
         { name: 'Preferences', icon: Settings },
     ];
@@ -91,20 +91,21 @@ const Dashboard = () => {
                     {sidebarOpen ? (
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 bg-brand-orange text-white flex items-center justify-center font-black animate-in">
-                                {user?.name?.charAt(0)}
+                                {user?.companyName?.charAt(0)}
                             </div>
                             <div className="animate-in">
-                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1">{user?.name}</p>
+                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1">{user?.companyName}</p>
                                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none">{user?.role}</p>
                             </div>
                         </div>
                     ) : (
                         <div className="flex justify-center mb-6">
                             <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black">
-                                {user?.name?.charAt(0)}
+                                {user?.companyName?.charAt(0)}
                             </div>
                         </div>
                     )}
+
 
                     <button
                         onClick={logout}
@@ -164,12 +165,13 @@ const Dashboard = () => {
                                 <div className="relative z-10">
                                     <h3 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
                                         Welcome back,<br />
-                                        <span className="text-brand-orange">Operator {user?.name}</span>
+                                        <span className="text-brand-orange">Operator {user?.companyName}</span>
                                     </h3>
                                     <p className="max-w-xl font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
                                         Your current workspace is optimized for the <span className="text-brand-teal">{user?.role}</span> module.
                                         All industrial systems are operational and ready for deployment.
                                     </p>
+
                                     <button className="btn-primary flex items-center gap-3">
                                         Initialize New Site <Plus size={20} />
                                     </button>
