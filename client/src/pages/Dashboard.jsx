@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     LayoutDashboard, Briefcase, FileText, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X, Clock,
@@ -430,6 +431,7 @@ const SettingsPanel = ({ user }) => (
 ───────────────────────────────────────────── */
 const Dashboard = () => {
     const { user, logout } = useAuthStore();
+    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
 
@@ -503,6 +505,7 @@ const Dashboard = () => {
                                 <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1">{user?.companyName}</p>
                                 <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{user?.role}</p>
                             </div>
+                            <ChevronRight size={14} className="text-white/20 group-hover/user:text-white/60 group-hover/user:translate-x-0.5 transition-all" />
                         </div>
                     ) : (
                         <div className="flex justify-center mb-4">
