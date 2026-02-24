@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Check, Loader2, Hammer, Wrench, Leaf, MoveRight } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Check, Loader2, Hammer, Wrench, Leaf, MoveRight, Shield } from 'lucide-react';
+
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
 
 const roles = [
-    { id: 'Artisan', label: 'Artisan', icon: Hammer, desc: 'Project site management and labor orchestration.' },
-    { id: 'Manufacturer', label: 'Manufacturer', icon: Wrench, desc: 'Industrial supply chain and catalog publication.' },
-    { id: 'Expert', label: 'Expert', icon: Leaf, desc: 'Technical consulting and professional oversight.' },
+    { id: 'artisan', label: 'Artisan', icon: Hammer, desc: 'Project site management and labor orchestration.' },
+    { id: 'manufacturer', label: 'Manufacturer', icon: Wrench, desc: 'Industrial supply chain and catalog publication.' },
+    { id: 'expert', label: 'Expert', icon: Leaf, desc: 'Technical consulting and professional oversight.' },
+    { id: 'admin', label: 'Admin', icon: Shield, desc: 'System orchestration and protocol management.' },
 ];
 
 const Register = () => {
     const [formData, setFormData] = useState({
-        name: '',
+        companyName: '',
         email: '',
         password: '',
-        role: 'Artisan',
+        phone: '',
+        role: 'artisan',
     });
     const { register, loading, error } = useAuthStore();
     const navigate = useNavigate();
@@ -31,9 +34,15 @@ const Register = () => {
         e.preventDefault();
         const success = await register(formData);
         if (success) {
-            navigate('/dashboard');
+            const role = useAuthStore.getState().user?.role;
+            if (role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         }
     };
+
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -97,27 +106,27 @@ const Register = () => {
                         {/* Role Selection */}
                         <div className="space-y-4">
                             <label className="label">Operational Sector</label>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border-4 border-brand-teal">
                                 {roles.map((role) => (
                                     <button
                                         key={role.id}
                                         type="button"
                                         onClick={() => handleRoleSelect(role.id)}
-                                        className={`p-6 text-left border border-brand-teal/10 transition-all group relative ${formData.role === role.id
+                                        className={`p-4 text-left border border-brand-teal/10 transition-all group relative ${formData.role === role.id
                                             ? 'bg-brand-teal text-white'
                                             : 'bg-white hover:bg-slate-50'
                                             }`}
                                     >
-                                        <div className={`mb-4 ${formData.role === role.id ? 'text-brand-orange' : 'text-brand-teal'}`}>
-                                            <role.icon size={24} />
+                                        <div className={`mb-3 ${formData.role === role.id ? 'text-brand-orange' : 'text-brand-teal'}`}>
+                                            <role.icon size={20} />
                                         </div>
-                                        <p className="text-sm font-black uppercase tracking-widest mb-2">{role.label}</p>
-                                        <p className="text-[9px] font-bold opacity-60 leading-tight group-hover:opacity-100 transition-opacity">
+                                        <p className="text-[10px] font-black uppercase tracking-widest mb-1">{role.label}</p>
+                                        <p className="text-[8px] font-bold opacity-60 leading-tight group-hover:opacity-100 transition-opacity">
                                             {role.desc}
                                         </p>
                                         {formData.role === role.id && (
-                                            <div className="absolute top-4 right-4 text-brand-orange">
-                                                <Check size={16} strokeWidth={4} />
+                                            <div className="absolute top-2 right-2 text-brand-orange">
+                                                <Check size={14} strokeWidth={4} />
                                             </div>
                                         )}
                                     </button>
@@ -128,15 +137,29 @@ const Register = () => {
                         {/* Input Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-2">
-                                <label htmlFor="name" className="label">Full Legal Identity</label>
+                                <label htmlFor="companyName" className="label">Company Designation</label>
                                 <input
-                                    id="name"
-                                    name="name"
+                                    id="companyName"
+                                    name="companyName"
                                     type="text"
                                     required
                                     className="input-field border-4 border-brand-teal"
-                                    placeholder="Enter full name"
-                                    value={formData.name}
+                                    placeholder="Enter company name"
+                                    value={formData.companyName}
+                                    onChange={handleChange}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label htmlFor="phone" className="label">Contact Vector (Phone)</label>
+                                <input
+                                    id="phone"
+                                    name="phone"
+                                    type="tel"
+                                    required
+                                    className="input-field border-4 border-brand-teal"
+                                    placeholder="+216 -- --- ---"
+                                    value={formData.phone}
                                     onChange={handleChange}
                                 />
                             </div>
@@ -155,7 +178,7 @@ const Register = () => {
                                 />
                             </div>
 
-                            <div className="space-y-2 md:col-span-2">
+                            <div className="space-y-2">
                                 <label htmlFor="password" className="label">Security Access Key</label>
                                 <input
                                     id="password"
@@ -163,7 +186,7 @@ const Register = () => {
                                     type="password"
                                     required
                                     className="input-field border-4 border-brand-teal"
-                                    placeholder="Min. 8 characters professional grade"
+                                    placeholder="Min. 8 characters"
                                     value={formData.password}
                                     onChange={handleChange}
                                 />
@@ -216,5 +239,6 @@ const Register = () => {
         </div>
     );
 };
+
 
 export default Register;

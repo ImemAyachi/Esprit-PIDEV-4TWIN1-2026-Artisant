@@ -8,10 +8,10 @@ import {
 
 const FILTERS = ['All', 'Active', 'Inactive'];
 const ROLE_COLORS = {
-    Admin: { bg: '#FF6B35', text: '#fff' },
-    Expert: { bg: '#1B4D4D', text: '#fff' },
-    Artisan: { bg: '#e8f5f5', text: '#1B4D4D' },
-    Manufacturer: { bg: '#fef3ec', text: '#FF6B35' },
+    admin: { bg: '#FF6B35', text: '#fff' },
+    expert: { bg: '#1B4D4D', text: '#fff' },
+    artisan: { bg: '#e8f5f5', text: '#1B4D4D' },
+    manufacturer: { bg: '#fef3ec', text: '#FF6B35' },
 };
 
 /* ─── Toast Notification ─────────────────────────────────────── */
@@ -188,7 +188,7 @@ const UserList = () => {
                 u._id === user._id ? { ...u, isActive: !u.isActive } : u
             ));
             addToast(
-                `"${user.name}" has been ${user.isActive ? 'deactivated' : 'activated'} successfully.`,
+                `"${user.companyName || user.email}" has been ${user.isActive ? 'deactivated' : 'activated'} successfully.`,
                 'success'
             );
         } catch (err) {
@@ -200,18 +200,19 @@ const UserList = () => {
     };
 
     const handleDelete = async (user) => {
-        if (!window.confirm(`Delete ${user.name}'s account? This action is irreversible.`)) return;
+        if (!window.confirm(`Delete ${user.companyName || user.email}'s account? This action is irreversible.`)) return;
         try {
             await api.delete(`/users/${user._id}`);
             setUsers(prev => prev.filter(u => u._id !== user._id));
-            addToast(`"${user.name}" has been deleted.`, 'success');
+            addToast(`"${user.companyName || user.email}" has been deleted.`, 'success');
         } catch {
             addToast('Failed to delete account.', 'error');
         }
     };
 
     const filtered = users.filter(u => {
-        const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) ||
+        const displayName = (u.companyName || u.email || '').toLowerCase();
+        const matchSearch = displayName.includes(search.toLowerCase()) ||
             u.email.toLowerCase().includes(search.toLowerCase());
         const matchFilter = filter === 'All' || (filter === 'Active' ? u.isActive : !u.isActive);
         return matchSearch && matchFilter;
@@ -391,10 +392,10 @@ const UserList = () => {
                                                     fontWeight: 900, fontSize: 14,
                                                     transition: 'background 0.3s',
                                                 }}>
-                                                    {user.name.charAt(0).toUpperCase()}
+                                                    {(user.companyName || user.email || '?').charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: '#1B4D4D' }}>{user.name}</p>
+                                                    <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: '#1B4D4D' }}>{user.companyName || '—'}</p>
                                                     <p style={{ margin: '2px 0 0', fontSize: 11, color: '#999' }}>{user.email}</p>
                                                 </div>
                                             </div>

@@ -21,9 +21,16 @@ const Login = () => {
         e.preventDefault();
         const success = await login(email, password);
         if (success) {
-            navigate('/dashboard');
+            // Check role from store state (since user is updated in the store)
+            const role = useAuthStore.getState().user?.role;
+            if (role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         }
     };
+
 
     return (
         <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">
@@ -70,11 +77,51 @@ const Login = () => {
                     </div>
 
                     <form className="space-y-8" onSubmit={handleSubmit}>
-                        {error && (
-                            <div className="bg-brand-orange text-white p-4 font-bold text-xs uppercase tracking-widest border-4 border-brand-teal">
-                                {error}
-                            </div>
-                        )}
+                        {error && (() => {
+                            const isDeactivated = error.toLowerCase().includes('deactivat') ||
+                                error.toLowerCase().includes('désactivé');
+                            return (
+                                <div style={{
+                                    padding: '16px 20px',
+                                    border: `4px solid ${isDeactivated ? '#c0392b' : '#1B4D4D'}`,
+                                    background: isDeactivated ? '#fdecea' : '#FF6B35',
+                                    color: isDeactivated ? '#c0392b' : '#fff',
+                                    animation: 'shake 0.4s ease',
+                                }}>
+                                    {isDeactivated ? (
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                            {/* Lock icon */}
+                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" strokeWidth="2.5"
+                                                strokeLinecap="square" style={{ flexShrink: 0, marginTop: 1 }}>
+                                                <rect x="3" y="11" width="18" height="11" rx="0" ry="0" />
+                                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                                            </svg>
+                                            <div>
+                                                <p style={{
+                                                    fontWeight: 900, fontSize: 12,
+                                                    textTransform: 'uppercase', letterSpacing: '0.1em',
+                                                    marginBottom: 4
+                                                }}>
+                                                    Compte désactivé
+                                                </p>
+                                                <p style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, lineHeight: 1.5 }}>
+                                                    Votre compte a été désactivé par un administrateur.
+                                                    Veuillez contacter le support pour plus d'informations.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p style={{
+                                            fontWeight: 700, fontSize: 11,
+                                            textTransform: 'uppercase', letterSpacing: '0.1em'
+                                        }}>
+                                            {error}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })()}
 
                         <div className="space-y-6">
                             <div className="relative group">
