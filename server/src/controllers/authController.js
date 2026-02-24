@@ -1,5 +1,4 @@
 const User = require('../models/User');
-const Profile = require('../models/Profile');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT Token
@@ -97,3 +96,31 @@ exports.getMe = async (req, res) => {
     }
 };
 
+// @desc    Update current user's profile
+// @route   PUT /api/auth/me/profile
+// @access  Private
+exports.updateProfile = async (req, res) => {
+    try {
+        const { companyName, phone, avatarUrl } = req.body;
+
+        // Build update object with only provided fields
+        const updateFields = {};
+        if (companyName !== undefined) updateFields.companyName = companyName;
+        if (phone !== undefined) updateFields.phone = phone;
+        if (avatarUrl !== undefined) updateFields.avatarUrl = avatarUrl;
+
+        const user = await User.findByIdAndUpdate(req.user.id, updateFields, {
+            new: true,
+            runValidators: true,
+        });
+
+        res.status(200).json({
+            status: 'success',
+            data: {
+                user,
+            },
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

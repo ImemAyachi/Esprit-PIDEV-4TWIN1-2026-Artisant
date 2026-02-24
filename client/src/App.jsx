@@ -7,7 +7,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import Profile from './pages/Profile';
 
 // Accessibility
 import ScreenReaderFocus from './components/ScreenReaderFocus';
@@ -59,15 +59,13 @@ function App() {
           }
         />
         <Route
-          path="/admin"
+          path="/profile"
           element={
-            <ProtectedRoute requireAdmin={true}>
-              <AdminDashboard />
+            <ProtectedRoute>
+              <Profile />
             </ProtectedRoute>
           }
         />
-        {/* Catch all redirect */}
-        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
