@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard, Briefcase, FileText, ShoppingBag,
+    LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X, Clock,
     Plus, Hammer, ArrowUpRight, Package, Wrench,
-    Leaf, FolderOpen, BookOpen, ClipboardList,
+    Leaf, FolderOpen, ClipboardList,
     Receipt, BarChart2, Eye, Download, CheckCircle2,
-    AlertCircle, ChevronRight, Tag, ShieldCheck
+    AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import VoiceAssistant from '../components/VoiceAssistant';
+import EditProjectModal from '../components/dashboard/EditProjectModal';
 
 
 const NAV_BY_ROLE = {
@@ -42,9 +42,42 @@ const NAV_BY_ROLE = {
 
 
 const PROJECTS = [
-    { id: 1, name: 'Site Alpha – Renovation', status: 'en_cours', date: '2026-01-15', client: 'ACME Corp' },
-    { id: 2, name: 'Site Beta – Foundation', status: 'planifié', date: '2026-02-01', client: 'BuildX' },
-    { id: 3, name: 'Site Gamma – Finishing', status: 'terminé', date: '2026-01-05', client: 'UrbanPlan' },
+    {
+        id: 1,
+        name: 'Site Alpha – Renovation',
+        status: 'In Progress',
+        client: 'ACME Corp',
+        description: 'Rénovation complète du bâtiment A incluant la plomberie, l\'électricité et la finition des murs intérieurs.',
+        address: '12 Rue de la République',
+        city: 'Tunis',
+        startDate: '2026-01-15',
+        endDate: '2026-04-30',
+        budget: 45000,
+    },
+    {
+        id: 2,
+        name: 'Site Beta – Foundation',
+        status: 'Planned',
+        client: 'BuildX',
+        description: 'Travaux de fondation et de terrassement pour le nouveau complexe résidentiel de 6 étages.',
+        address: '8 Avenue Habib Bourguiba',
+        city: 'Sfax',
+        startDate: '2026-02-01',
+        endDate: '2026-05-15',
+        budget: 28500,
+    },
+    {
+        id: 3,
+        name: 'Site Gamma – Finishing',
+        status: 'Completed',
+        client: 'UrbanPlan',
+        description: 'Finitions intérieures : carrelage, peinture, menuiserie et installation sanitaire.',
+        address: '45 Rue Ibn Khaldoun',
+        city: 'Sousse',
+        startDate: '2025-11-01',
+        endDate: '2026-01-05',
+        budget: 12000,
+    },
 ];
 
 const QUOTES = [
@@ -83,6 +116,7 @@ const ACCESS_LOGS = [
 ───────────────────────────────────────────── */
 const StatusBadge = ({ status }) => {
     const map = {
+        // French statuses
         en_cours: 'bg-blue-100 text-blue-700',
         planifié: 'bg-yellow-100 text-yellow-700',
         terminé: 'bg-green-100 text-green-700',
@@ -97,6 +131,11 @@ const StatusBadge = ({ status }) => {
         échec: 'bg-red-100 text-red-700',
         disponible: 'bg-green-100 text-green-700',
         rupture: 'bg-red-100 text-red-700',
+        // English statuses (from Project model)
+        'In Progress': 'bg-blue-100 text-blue-700',
+        'Planned': 'bg-yellow-100 text-yellow-700',
+        'Completed': 'bg-green-100 text-green-700',
+        'Archived': 'bg-gray-100 text-gray-500',
     };
     return (
         <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-sm ${map[status] || 'bg-gray-100 text-gray-600'}`}>
@@ -189,36 +228,63 @@ const OverviewPanel = ({ user }) => {
 };
 
 /* PROJECTS – artisan only */
-const ProjectsPanel = () => (
-    <div>
-        <div className="flex justify-between items-center mb-8">
-            <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
-                <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Créés et gérés par vous</p>
+const ProjectsPanel = () => {
+    const [editProject, setEditProject] = useState(null);
+
+    const handleSave = (updated) => {
+        // TODO: call your API here to persist changes
+        console.log('Project updated:', updated);
+    };
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
+                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Créés et gérés par vous</p>
+                </div>
+                <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Nouveau Projet</button>
             </div>
-            <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Nouveau Projet</button>
-        </div>
-        <div className="space-y-0 border-4 border-brand-teal">
-            <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
-                {['Nom du Projet', 'Client', 'Date', 'Statut', 'Actions'].map(h => (
-                    <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+            <div className="space-y-0 border-4 border-brand-teal">
+                <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
+                    {['Nom du Projet', 'Client', 'Date', 'Statut', 'Actions'].map(h => (
+                        <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+                    ))}
+                </div>
+                {PROJECTS.map((p, i) => (
+                    <div key={p.id} className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
+                        <p className="font-black text-xs text-brand-teal">{p.name}</p>
+                        <p className="text-xs font-bold text-brand-slate/60">{p.client}</p>
+                        <p className="text-xs font-bold text-brand-slate/60">{p.startDate}</p>
+                        <StatusBadge status={p.status} />
+                        <div className="flex gap-2">
+                            <button
+                                title="Voir"
+                                className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all">
+                                <Eye size={12} />
+                            </button>
+                            <button
+                                title="Modifier"
+                                onClick={() => setEditProject(p)}
+                                className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all">
+                                <Pencil size={12} />
+                            </button>
+                        </div>
+                    </div>
                 ))}
             </div>
-            {PROJECTS.map((p, i) => (
-                <div key={p.id} className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                    <p className="font-black text-xs text-brand-teal">{p.name}</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{p.client}</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{p.date}</p>
-                    <StatusBadge status={p.status} />
-                    <div className="flex gap-2">
-                        <button className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"><Eye size={12} /></button>
-                        <button className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all"><ClipboardList size={12} /></button>
-                    </div>
-                </div>
-            ))}
+
+            {/* Edit slide-in panel */}
+            {editProject && (
+                <EditProjectModal
+                    project={editProject}
+                    onClose={() => setEditProject(null)}
+                    onSave={handleSave}
+                />
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 /* QUOTES – artisan + expert */
 const QuotesPanel = ({ role }) => (
@@ -431,7 +497,6 @@ const SettingsPanel = ({ user }) => (
 ───────────────────────────────────────────── */
 const Dashboard = () => {
     const { user, logout } = useAuthStore();
-    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
 
@@ -482,8 +547,8 @@ const Dashboard = () => {
                             key={item.name}
                             onClick={() => setActiveTab(item.name)}
                             className={`flex items-center gap-3 p-3 border-2 transition-all group w-full text-left ${activeTab === item.name
-                                    ? 'bg-white text-brand-teal border-white'
-                                    : 'bg-transparent text-white/60 border-transparent hover:border-white/20 hover:text-white'
+                                ? 'bg-white text-brand-teal border-white'
+                                : 'bg-transparent text-white/60 border-transparent hover:border-white/20 hover:text-white'
                                 }`}
                         >
                             <item.icon size={20} className={activeTab === item.name ? 'text-brand-orange shrink-0' : 'shrink-0'} />
