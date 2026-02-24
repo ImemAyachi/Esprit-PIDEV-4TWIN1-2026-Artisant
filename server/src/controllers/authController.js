@@ -42,7 +42,7 @@ exports.register = async (req, res) => {
             companyName,
             email,
             password,
-            role: role.toLowerCase(),
+            role: (role || 'artisan').toLowerCase(),
             phone,
             avatarUrl,
             facialFingerprint

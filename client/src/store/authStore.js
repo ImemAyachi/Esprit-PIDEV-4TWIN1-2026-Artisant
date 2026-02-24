@@ -23,6 +23,7 @@ const useAuthStore = create((set) => ({
             });
             return true;
         } catch (error) {
+            console.error('Login Error:', error);
             set({
                 error: error.response?.data?.message || 'Login failed',
                 loading: false
@@ -46,6 +47,7 @@ const useAuthStore = create((set) => ({
             });
             return true;
         } catch (error) {
+            console.error('Registration Error:', error);
             set({
                 error: error.response?.data?.message || 'Registration failed',
                 loading: false
