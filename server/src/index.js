@@ -20,6 +20,15 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(err.status || 500).json({
+        success: false,
+        message: err.message || 'Internal Server Error'
+    });
+});
+
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to Artisant API' });
 });
