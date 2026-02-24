@@ -16,16 +16,14 @@ const projectSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['Planned', 'In Progress', 'Completed', 'Archived'],
-        default: 'Planned',
+        enum: ['planned', 'in_progress', 'completed', 'archived'],
+        default: 'planned',
     },
     startDate: Date,
     endDate: Date,
-    location: {
-        address: String,
-        city: String,
+    address: {
+        type: String,
     },
-    budget: Number,
 }, {
     timestamps: true,
 });

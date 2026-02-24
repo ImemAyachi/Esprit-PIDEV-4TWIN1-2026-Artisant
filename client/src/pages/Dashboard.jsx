@@ -10,6 +10,8 @@ import {
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
+import ProjectList from '../components/dashboard/ProjectList';
+import ProjectCreation from '../components/dashboard/ProjectCreation';
 import VoiceAssistant from '../components/VoiceAssistant';
 import EditProjectModal from '../components/dashboard/EditProjectModal';
 
@@ -228,13 +230,28 @@ const OverviewPanel = ({ user }) => {
 };
 
 /* PROJECTS – artisan only */
-const ProjectsPanel = () => {
+const ProjectsPanel = ({ projectAction, setProjectAction }) => {
     const [editProject, setEditProject] = useState(null);
 
     const handleSave = (updated) => {
         // TODO: call your API here to persist changes
         console.log('Project updated:', updated);
     };
+
+    // If in create mode, show ProjectCreation form
+    if (projectAction === 'create') {
+        return (
+            <div className="space-y-6">
+                <button
+                    onClick={() => setProjectAction('list')}
+                    className="text-brand-teal font-black uppercase text-xs hover:text-brand-orange transition-colors flex items-center gap-2"
+                >
+                    ← Retour à la liste
+                </button>
+                <ProjectCreation onProjectCreated={() => setProjectAction('list')} />
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -243,7 +260,12 @@ const ProjectsPanel = () => {
                     <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
                     <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Créés et gérés par vous</p>
                 </div>
-                <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Nouveau Projet</button>
+                <button
+                    onClick={() => setProjectAction?.('create')}
+                    className="btn-primary flex items-center gap-2 text-sm"
+                >
+                    <Plus size={16} /> Nouveau Projet
+                </button>
             </div>
             <div className="space-y-0 border-4 border-brand-teal">
                 <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
@@ -499,6 +521,7 @@ const Dashboard = () => {
     const { user, logout } = useAuthStore();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
+    const [projectAction, setProjectAction] = useState('list'); // 'list' or 'create'
 
     const role = user?.role || 'artisan';
     const navigation = NAV_BY_ROLE[role] || NAV_BY_ROLE.artisan;
@@ -506,7 +529,12 @@ const Dashboard = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'Overview': return <OverviewPanel user={user} />;
-            case 'Projects': return <ProjectsPanel />;
+            case 'Projects': return (
+                <ProjectsPanel
+                    projectAction={projectAction}
+                    setProjectAction={setProjectAction}
+                />
+            );
             case 'Quotes': return <QuotesPanel role={role} />;
             case 'Orders': return <OrdersPanel role={role} />;
             case 'Invoices': return <InvoicesPanel />;
@@ -541,17 +569,21 @@ const Dashboard = () => {
                 )}
 
                 {/* Nav */}
-                <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto no-scrollbar pt-4">
+                <nav className="flex-1 p-3 flex flex-col gap-1 overflow-y-auto no-scrollbar pt-4" aria-label="Main Navigation">
                     {navigation.map((item) => (
                         <button
                             key={item.name}
-                            onClick={() => setActiveTab(item.name)}
+                            onClick={() => {
+                                setActiveTab(item.name);
+                                if (item.name === 'Projects') setProjectAction('list');
+                            }}
+                            aria-label={`Go to ${item.name}`}
                             className={`flex items-center gap-3 p-3 border-2 transition-all group w-full text-left ${activeTab === item.name
                                 ? 'bg-white text-brand-teal border-white'
                                 : 'bg-transparent text-white/60 border-transparent hover:border-white/20 hover:text-white'
                                 }`}
                         >
-                            <item.icon size={20} className={activeTab === item.name ? 'text-brand-orange shrink-0' : 'shrink-0'} />
+                            <item.icon size={20} aria-hidden="true" className={activeTab === item.name ? 'text-brand-orange shrink-0' : 'shrink-0'} />
                             {sidebarOpen && (
                                 <span className="font-black uppercase tracking-widest text-[10px] animate-in">{item.name}</span>
                             )}
@@ -597,7 +629,8 @@ const Dashboard = () => {
                     <div className="flex items-center gap-5">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="p-2 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"
+                            aria-label={sidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
+                            className="p-2 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
                             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
                         </button>
@@ -612,11 +645,15 @@ const Dashboard = () => {
                             <Search size={14} className="text-brand-teal/40" />
                             <input
                                 type="text"
+                                aria-label="Search Workspace"
                                 placeholder="Rechercher..."
                                 className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest w-36 placeholder:text-brand-teal/20"
                             />
                         </div>
-                        <button className="relative w-10 h-10 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all">
+                        <button
+                            aria-label="View Notifications"
+                            className="relative w-10 h-10 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
+                        >
                             <Bell size={16} />
                             <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-brand-orange" />
                         </button>
@@ -633,5 +670,11 @@ const Dashboard = () => {
         </div>
     );
 };
+
+const ArrowRight = ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+);
 
 export default Dashboard;

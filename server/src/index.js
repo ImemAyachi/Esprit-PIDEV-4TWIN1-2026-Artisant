@@ -18,6 +18,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/documents', require('./routes/documentRoutes'));
+app.use('/api/projects', require('./routes/projectRoutes'));
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to Artisant API' });

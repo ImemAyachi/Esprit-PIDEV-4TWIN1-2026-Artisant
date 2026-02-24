@@ -94,7 +94,12 @@ const Landing = () => {
                             { title: 'Fast Execution', icon: Zap, desc: 'Streamlined workflows designed for rapid scale and delivery.' },
                             { title: 'Sustainability', icon: Leaf, desc: 'Eco-conscious orchestration focused on long-term resource efficiency.' }
                         ].map((feature, i) => (
-                            <div key={i} className="p-10 border border-brand-teal/20 hover:bg-brand-teal hover:text-white transition-all group flex flex-col items-start gap-6">
+                            <div
+                                key={i}
+                                tabIndex="0"
+                                aria-label={`${feature.title}: ${feature.desc}`}
+                                className="p-10 border border-brand-teal/20 hover:bg-brand-teal hover:text-white transition-all group flex flex-col items-start gap-6 cursor-pointer focus:z-10"
+                            >
                                 <div className="p-3 bg-brand-teal text-white group-hover:bg-white group-hover:text-brand-teal transition-colors">
                                     <feature.icon size={28} />
                                 </div>

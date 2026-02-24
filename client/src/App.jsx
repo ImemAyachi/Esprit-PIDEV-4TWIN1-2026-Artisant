@@ -9,6 +9,9 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 
+// Accessibility
+import ScreenReaderFocus from './components/ScreenReaderFocus';
+
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, loading } = useAuthStore();
 
@@ -40,6 +43,7 @@ function App() {
 
   return (
     <Router>
+      <ScreenReaderFocus />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
