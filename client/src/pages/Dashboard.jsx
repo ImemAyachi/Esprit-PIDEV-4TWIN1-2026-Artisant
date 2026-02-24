@@ -12,9 +12,7 @@ import logo from '../assets/logo.png';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import VoiceAssistant from '../components/VoiceAssistant';
 
-/* ─────────────────────────────────────────────
-   Role-based navigation config
-───────────────────────────────────────────── */
+
 const NAV_BY_ROLE = {
     artisan: [
         { name: 'Overview', icon: LayoutDashboard },
@@ -41,9 +39,7 @@ const NAV_BY_ROLE = {
     ],
 };
 
-/* ─────────────────────────────────────────────
-   Mock data helpers
-───────────────────────────────────────────── */
+
 const PROJECTS = [
     { id: 1, name: 'Site Alpha – Renovation', status: 'en_cours', date: '2026-01-15', client: 'ACME Corp' },
     { id: 2, name: 'Site Beta – Foundation', status: 'planifié', date: '2026-02-01', client: 'BuildX' },
