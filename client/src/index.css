@@ -103,3 +103,8 @@
 .clip-path-diag {
   clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
 }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #2D5A5A40; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2D5A5A; }
