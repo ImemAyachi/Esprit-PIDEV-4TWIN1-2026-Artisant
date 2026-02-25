@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X, Clock,
@@ -12,7 +11,6 @@ import {
 import useAuthStore from '../store/authStore';
 import useProjectStore from '../store/projectStore';
 import logo from '../assets/logo.png';
-import api from '../api/axios';
 import UserList from '../components/dashboard/UserList';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
@@ -206,27 +204,18 @@ const OverviewPanel = ({ user }) => {
 const ProjectsPanel = ({ projectAction, setProjectAction }) => {
     const { projects, loading, error, fetchMyProjects, updateProject } = useProjectStore();
     const [editProject, setEditProject] = useState(null);
-    const [projects, setProjects] = useState([]);
-    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchProjects();
-    }, []);
+        fetchMyProjects();
+    }, [fetchMyProjects]);
 
-    const fetchProjects = async () => {
-        try {
-            const response = await api.get('/projects/my');
-            setProjects(response.data.data);
-        } catch (err) {
-            console.error('Failed to fetch projects', err);
-        } finally {
-            setLoading(false);
+    const handleSave = async (updated) => {
+        const res = await updateProject(updated._id || updated.id, updated);
+        if (res.success) {
+            setEditProject(null);
+        } else {
+            alert(res.message || 'Erreur lors de la mise à jour');
         }
-    };
-
-    const handleSave = (updated) => {
-        // TODO: call your API here to persist changes
-        console.log('Project updated:', updated);
     };
 
     // If in create mode, show ProjectCreation form
@@ -241,7 +230,7 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
                 </button>
                 <ProjectCreation onProjectCreated={() => {
                     setProjectAction('list');
-                    fetchProjects();
+                    fetchMyProjects();
                 }} />
             </div>
         );
