@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     X, Save, Briefcase, MapPin, Calendar,
-    AlignLeft, DollarSign, AlertCircle, CheckCircle2,
+    AlignLeft, AlertCircle, CheckCircle2,
     Loader2, ChevronRight
 } from 'lucide-react';
 
@@ -41,10 +41,8 @@ const EditProjectModal = ({ project, onClose, onSave }) => {
         title: '',
         description: '',
         address: '',
-        city: '',
         startDate: '',
         endDate: '',
-        budget: '',
         status: 'Planned',
     });
     const [errors, setErrors] = useState({});
@@ -54,18 +52,18 @@ const EditProjectModal = ({ project, onClose, onSave }) => {
     /* populate form when project prop changes */
     useEffect(() => {
         if (project) {
+            const addr = [project.location?.address || project.address, project.location?.city || project.city]
+                .filter(Boolean).join(', ');
             setForm({
                 title: project.name || project.title || '',
                 description: project.description || '',
-                address: project.location?.address || project.address || '',
-                city: project.location?.city || project.city || '',
+                address: addr,
                 startDate: project.startDate
                     ? new Date(project.startDate).toISOString().slice(0, 10)
                     : project.date || '',
                 endDate: project.endDate
                     ? new Date(project.endDate).toISOString().slice(0, 10)
                     : '',
-                budget: project.budget || '',
                 status: project.status || 'Planned',
             });
             setErrors({});
@@ -89,24 +87,27 @@ const EditProjectModal = ({ project, onClose, onSave }) => {
     const validate = () => {
         const errs = {};
         if (!form.title.trim()) errs.title = 'Le titre est obligatoire';
-        if (form.budget && isNaN(Number(form.budget))) errs.budget = 'Budget invalide';
         if (form.startDate && form.endDate && form.endDate < form.startDate)
             errs.endDate = 'La date de fin doit être après la date de début';
         return errs;
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e?.preventDefault();
         const errs = validate();
         if (Object.keys(errs).length) { setErrors(errs); return; }
 
         setLoading(true);
-        /* simulate API call – replace with real API call */
-        await new Promise(r => setTimeout(r, 900));
-        setLoading(false);
-        setSaved(true);
-        onSave?.({ ...project, ...form });
-        setTimeout(() => onClose(), 1200);
+        setSaved(false);
+        try {
+            await onSave?.({ ...project, ...form, _id: project._id });
+            setSaved(true);
+            setTimeout(() => onClose(), 1200);
+        } catch (err) {
+            setErrors({ _global: err?.message || 'Erreur lors de la sauvegarde' });
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!project) return null;
@@ -138,7 +139,9 @@ const EditProjectModal = ({ project, onClose, onSave }) => {
                         <div className="flex items-center gap-1.5 mt-2 text-white/40">
                             <ChevronRight size={10} />
                             <span className="text-[9px] font-black uppercase tracking-widest">
-                                ID #{project.id}
+                                {project._id
+                                    ? `ID ${String(project._id).slice(-6).toUpperCase()}`
+                                    : project.id ? `ID #${project.id}` : 'Nouveau'}
                             </span>
                         </div>
                     </div>
@@ -239,27 +242,16 @@ const EditProjectModal = ({ project, onClose, onSave }) => {
                         </div>
                     </div>
 
-                    {/* Address + City */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <InputField
-                            id="address"
-                            name="address"
-                            label="Adresse"
-                            icon={MapPin}
-                            placeholder="Rue, N°..."
-                            value={form.address}
-                            onChange={handleChange}
-                        />
-                        <InputField
-                            id="city"
-                            name="city"
-                            label="Ville"
-                            icon={MapPin}
-                            placeholder="Ex: Tunis"
-                            value={form.city}
-                            onChange={handleChange}
-                        />
-                    </div>
+                    {/* Address */}
+                    <InputField
+                        id="address"
+                        name="address"
+                        label="Adresse"
+                        icon={MapPin}
+                        placeholder="Ex: 12 Rue de la République, Tunis"
+                        value={form.address}
+                        onChange={handleChange}
+                    />
 
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-4">
@@ -284,51 +276,15 @@ const EditProjectModal = ({ project, onClose, onSave }) => {
                         />
                     </div>
 
-                    {/* Divider */}
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t-2 border-brand-teal/10" />
-                        </div>
-                        <div className="relative flex justify-start">
-                            <span className="bg-brand-cream pr-3 text-[8px] font-black uppercase tracking-[0.3em] text-brand-teal/30">
-                                Budget
-                            </span>
-                        </div>
-                    </div>
 
-                    {/* Budget */}
-                    <div className="space-y-1.5">
-                        <label htmlFor="budget" className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.2em] text-brand-teal">
-                            <DollarSign size={11} className="text-brand-teal/50" />
-                            Budget estimé (DT)
-                        </label>
-                        <div className="relative">
-                            <input
-                                id="budget"
-                                name="budget"
-                                type="number"
-                                min="0"
-                                step="100"
-                                placeholder="Ex: 25000"
-                                value={form.budget}
-                                onChange={handleChange}
-                                className={`
-                                    block w-full pl-12 pr-4 py-3 bg-brand-cream border-2 text-sm font-bold
-                                    text-brand-slate outline-none transition-all rounded-none
-                                    placeholder:text-brand-teal/20 focus:bg-white focus:border-brand-teal
-                                    ${errors.budget ? 'border-red-400' : 'border-brand-teal/30'}
-                                `}
-                            />
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-brand-teal/30">
-                                DT
-                            </span>
+
+                    {/* Global error */}
+                    {errors._global && (
+                        <div className="border-2 border-red-400 bg-red-50 px-4 py-3 flex items-center gap-2">
+                            <AlertCircle size={14} className="text-red-500 shrink-0" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-red-600">{errors._global}</p>
                         </div>
-                        {errors.budget && (
-                            <p className="text-[9px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1">
-                                <AlertCircle size={10} /> {errors.budget}
-                            </p>
-                        )}
-                    </div>
+                    )}
                 </form>
 
                 {/* ── Footer actions ── */}

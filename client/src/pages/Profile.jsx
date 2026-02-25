@@ -174,7 +174,7 @@ const Profile = () => {
                     <div className="absolute bottom-0 left-0 w-full h-1 bg-brand-orange"></div>
 
                     <div className="p-12 relative z-10 flex flex-col md:flex-row items-start gap-10">
-                        {/* Avatar */}
+                        {/* avatar */}
                         <div className="relative shrink-0">
                             {user.avatarUrl ? (
                                 <img
