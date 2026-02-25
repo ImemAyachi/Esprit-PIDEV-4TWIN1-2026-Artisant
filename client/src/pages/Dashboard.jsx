@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X, Clock,
@@ -9,6 +10,7 @@ import {
     FileText, Users, Shield, FolderPlus, ArrowRight
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import useProjectStore from '../store/projectStore';
 import logo from '../assets/logo.png';
 import api from '../api/axios';
 import UserList from '../components/dashboard/UserList';
@@ -46,44 +48,7 @@ const NAV_BY_ROLE = {
 };
 
 
-const PROJECTS = [
-    {
-        id: 1,
-        name: 'Site Alpha – Renovation',
-        status: 'In Progress',
-        client: 'ACME Corp',
-        description: 'Rénovation complète du bâtiment A incluant la plomberie, l\'électricité et la finition des murs intérieurs.',
-        address: '12 Rue de la République',
-        city: 'Tunis',
-        startDate: '2026-01-15',
-        endDate: '2026-04-30',
-        budget: 45000,
-    },
-    {
-        id: 2,
-        name: 'Site Beta – Foundation',
-        status: 'Planned',
-        client: 'BuildX',
-        description: 'Travaux de fondation et de terrassement pour le nouveau complexe résidentiel de 6 étages.',
-        address: '8 Avenue Habib Bourguiba',
-        city: 'Sfax',
-        startDate: '2026-02-01',
-        endDate: '2026-05-15',
-        budget: 28500,
-    },
-    {
-        id: 3,
-        name: 'Site Gamma – Finishing',
-        status: 'Completed',
-        client: 'UrbanPlan',
-        description: 'Finitions intérieures : carrelage, peinture, menuiserie et installation sanitaire.',
-        address: '45 Rue Ibn Khaldoun',
-        city: 'Sousse',
-        startDate: '2025-11-01',
-        endDate: '2026-01-05',
-        budget: 12000,
-    },
-];
+
 
 const QUOTES = [
     { id: 1, ref: 'DEV-0041', project: 'Site Alpha', client: 'ACME Corp', total: 14200, status: 'accepté', date: '2026-01-10' },
@@ -239,6 +204,7 @@ const OverviewPanel = ({ user }) => {
 
 /* PROJECTS – artisan only */
 const ProjectsPanel = ({ projectAction, setProjectAction }) => {
+    const { projects, loading, error, fetchMyProjects, updateProject } = useProjectStore();
     const [editProject, setEditProject] = useState(null);
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -294,7 +260,9 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
-                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Créés et gérés par vous</p>
+                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
+                        {loading ? 'Chargement...' : `${projects.length} projet(s)`}
+                    </p>
                 </div>
                 <button
                     onClick={() => setProjectAction?.('create')}
@@ -341,7 +309,17 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
             {/* Edit slide-in panel */}
             {editProject && (
                 <EditProjectModal
-                    project={editProject}
+                    project={{
+                        ...editProject,
+                        // normalise fields so the modal pre-populates correctly
+                        name: editProject.title,
+                        address: editProject.location?.address || '',
+                        city: editProject.location?.city || '',
+                        startDate: editProject.startDate
+                            ? new Date(editProject.startDate).toISOString().slice(0, 10) : '',
+                        endDate: editProject.endDate
+                            ? new Date(editProject.endDate).toISOString().slice(0, 10) : '',
+                    }}
                     onClose={() => setEditProject(null)}
                     onSave={handleSave}
                 />
