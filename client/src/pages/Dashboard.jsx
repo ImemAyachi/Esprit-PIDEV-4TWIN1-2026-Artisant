@@ -232,13 +232,28 @@ const OverviewPanel = ({ user }) => {
 };
 
 /* PROJECTS – artisan only */
-const ProjectsPanel = () => {
+const ProjectsPanel = ({ projectAction, setProjectAction }) => {
     const [editProject, setEditProject] = useState(null);
 
     const handleSave = (updated) => {
         // TODO: call your API here to persist changes
         console.log('Project updated:', updated);
     };
+
+    // If in create mode, show ProjectCreation form
+    if (projectAction === 'create') {
+        return (
+            <div className="space-y-6">
+                <button
+                    onClick={() => setProjectAction('list')}
+                    className="text-brand-teal font-black uppercase text-xs hover:text-brand-orange transition-colors flex items-center gap-2"
+                >
+                    ← Retour à la liste
+                </button>
+                <ProjectCreation onProjectCreated={() => setProjectAction('list')} />
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -247,7 +262,12 @@ const ProjectsPanel = () => {
                     <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
                     <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Créés et gérés par vous</p>
                 </div>
-                <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Nouveau Projet</button>
+                <button
+                    onClick={() => setProjectAction?.('create')}
+                    className="btn-primary flex items-center gap-2 text-sm"
+                >
+                    <Plus size={16} /> Nouveau Projet
+                </button>
             </div>
             <div className="space-y-0 border-4 border-brand-teal">
                 <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
@@ -597,7 +617,7 @@ const Dashboard = () => {
                     <div className="flex items-center gap-5">
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            aria-label={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+                            aria-label={sidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
                             className="p-2 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
                             {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
@@ -620,7 +640,7 @@ const Dashboard = () => {
                         </div>
                         <button
                             aria-label="View Notifications"
-                            className="relative w-12 h-12 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
+                            className="relative w-10 h-10 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
                             <Bell size={20} />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-brand-orange"></span>
@@ -761,5 +781,11 @@ const Dashboard = () => {
         </div>
     );
 };
+
+const ArrowRight = ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+    </svg>
+);
 
 export default Dashboard;
