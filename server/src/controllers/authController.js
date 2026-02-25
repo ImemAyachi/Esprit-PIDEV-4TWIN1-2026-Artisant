@@ -49,7 +49,6 @@ exports.register = async (req, res) => {
             password,
             role: (role || 'artisan').toLowerCase(),
             phone,
-            role,
         });
 
         sendTokenResponse(user, 201, res);

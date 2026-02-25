@@ -7,6 +7,7 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 
 // Accessibility
@@ -54,6 +55,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert']}>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+              <Profile />
             </ProtectedRoute>
           }
         />

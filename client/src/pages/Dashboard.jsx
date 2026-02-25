@@ -5,10 +5,12 @@ import {
     Plus, Hammer, ArrowUpRight, Package, Wrench,
     Leaf, FolderOpen, ClipboardList,
     Receipt, BarChart2, Eye, Download, CheckCircle2,
-    AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil
+    AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil,
+    FileText, Users, Shield, FolderPlus, ArrowRight
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
+import UserList from '../components/dashboard/UserList';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
 import ProjectCreation from '../components/dashboard/ProjectCreation';
