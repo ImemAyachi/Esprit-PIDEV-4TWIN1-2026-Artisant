@@ -207,10 +207,8 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
             title: updated.title,
             description: updated.description,
             address: updated.address,
-            city: updated.city,
             startDate: updated.startDate,
             endDate: updated.endDate,
-            budget: updated.budget,
             status: updated.status,
         });
         if (result.success) setEditProject(null);
