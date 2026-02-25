@@ -756,24 +756,19 @@ const Dashboard = () => {
 
                     {activeTab === 'Projects' && (
                         <div className="animate-in">
-                            {projectAction === 'list' ? (
-                                <ProjectList onAddNew={() => setProjectAction('create')} />
-                            ) : (
-                                <div className="space-y-6">
-                                    <button
-                                        onClick={() => setProjectAction('list')}
-                                        className="text-brand-teal font-black uppercase text-xs hover:text-brand-orange transition-colors flex items-center gap-2"
-                                    >
-                                        ← Retour à la liste
-                                    </button>
-                                    <ProjectCreation onProjectCreated={() => setProjectAction('list')} />
-                                </div>
-                            )}
+                            <ProjectsPanel projectAction={projectAction} setProjectAction={setProjectAction} />
                         </div>
                     )}
 
                     {activeTab === 'User Mgmt' && <UserList />}
                     {activeTab === 'Documents' && <DocumentLibrary />}
+                    {activeTab === 'Quotes' && <QuotesPanel role={user?.role} />}
+                    {activeTab === 'Orders' && <OrdersPanel role={user?.role} />}
+                    {activeTab === 'Invoices' && <InvoicesPanel />}
+                    {activeTab === 'Products' && <ProductsPanel />}
+                    {activeTab === 'Access Logs' && <AccessLogsPanel />}
+                    {activeTab === 'Settings' && <SettingsPanel user={user} />}
+                    {activeTab === 'Preferences' && <SettingsPanel user={user} />}
                 </section>
 
                 <VoiceAssistant />
@@ -782,10 +777,5 @@ const Dashboard = () => {
     );
 };
 
-const ArrowRight = ({ size }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" strokeLinejoin="miter">
-        <path d="M5 12h14M12 5l7 7-7 7" />
-    </svg>
-);
 
 export default Dashboard;
