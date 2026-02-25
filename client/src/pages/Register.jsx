@@ -9,7 +9,6 @@ const roles = [
     { id: 'artisan', label: 'Artisan', icon: Hammer, desc: 'Project site management and labor orchestration.' },
     { id: 'manufacturer', label: 'Manufacturer', icon: Wrench, desc: 'Industrial supply chain and catalog publication.' },
     { id: 'expert', label: 'Expert', icon: Leaf, desc: 'Technical consulting and professional oversight.' },
-    { id: 'admin', label: 'Admin', icon: Shield, desc: 'System orchestration and protocol management.' },
 ];
 
 const Register = () => {
@@ -20,6 +19,7 @@ const Register = () => {
         phone: '',
         role: 'artisan',
     });
+    const [isAdmin, setIsAdmin] = useState(false);
     const { register, loading, error } = useAuthStore();
     const navigate = useNavigate();
 
@@ -32,7 +32,10 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const success = await register(formData);
+        const success = await register({
+            ...formData,
+            role: isAdmin ? 'admin' : formData.role
+        });
         if (success) {
             const role = useAuthStore.getState().user?.role;
             if (role === 'admin') {
@@ -103,34 +106,49 @@ const Register = () => {
                             </div>
                         )}
 
-                        {/* Role Selection */}
                         <div className="space-y-4">
                             <label className="label">Operational Sector</label>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border-4 border-brand-teal">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal">
                                 {roles.map((role) => (
                                     <button
                                         key={role.id}
                                         type="button"
                                         onClick={() => handleRoleSelect(role.id)}
-                                        className={`p-4 text-left border border-brand-teal/10 transition-all group relative ${formData.role === role.id
+                                        className={`p-4 text-left border border-brand-teal/10 transition-all group relative ${formData.role === role.id && !isAdmin
                                             ? 'bg-brand-teal text-white'
                                             : 'bg-white hover:bg-slate-50'
-                                            }`}
+                                            } ${isAdmin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        disabled={isAdmin}
                                     >
-                                        <div className={`mb-3 ${formData.role === role.id ? 'text-brand-orange' : 'text-brand-teal'}`}>
+                                        <div className={`mb-3 ${formData.role === role.id && !isAdmin ? 'text-brand-orange' : 'text-brand-teal'}`}>
                                             <role.icon size={20} />
                                         </div>
                                         <p className="text-[10px] font-black uppercase tracking-widest mb-1">{role.label}</p>
                                         <p className="text-[8px] font-bold opacity-60 leading-tight group-hover:opacity-100 transition-opacity">
                                             {role.desc}
                                         </p>
-                                        {formData.role === role.id && (
+                                        {formData.role === role.id && !isAdmin && (
                                             <div className="absolute top-2 right-2 text-brand-orange">
                                                 <Check size={14} strokeWidth={4} />
                                             </div>
                                         )}
                                     </button>
                                 ))}
+                            </div>
+
+                            {/* Admin Toggle */}
+                            <div className="flex items-center gap-3 pt-2">
+                                <input
+                                    id="isAdmin"
+                                    type="checkbox"
+                                    checked={isAdmin}
+                                    onChange={(e) => setIsAdmin(e.target.checked)}
+                                    className="w-5 h-5 bg-white border-4 border-brand-teal rounded-none appearance-none checked:bg-brand-orange transition-all cursor-pointer relative after:content-['✓'] after:absolute after:inset-0 after:flex after:items-center after:justify-center after:text-white after:font-bold after:opacity-0 checked:after:opacity-100"
+                                />
+                                <label htmlFor="isAdmin" className="text-[10px] font-black text-brand-teal uppercase tracking-widest cursor-pointer flex items-center gap-2">
+                                    <Shield size={14} className={isAdmin ? 'text-brand-orange' : ''} />
+                                    Initialize as System Administrator
+                                </label>
                             </div>
                         </div>
 
