@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X, Clock,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
+import api from '../api/axios';
 import UserList from '../components/dashboard/UserList';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
@@ -140,6 +141,11 @@ const StatusBadge = ({ status }) => {
         'Planned': 'bg-yellow-100 text-yellow-700',
         'Completed': 'bg-green-100 text-green-700',
         'Archived': 'bg-gray-100 text-gray-500',
+        // Database Enums
+        in_progress: 'bg-blue-100 text-blue-700',
+        planned: 'bg-yellow-100 text-yellow-700',
+        completed: 'bg-green-100 text-green-700',
+        archived: 'bg-gray-100 text-gray-500',
     };
     return (
         <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-sm ${map[status] || 'bg-gray-100 text-gray-600'}`}>
@@ -234,6 +240,23 @@ const OverviewPanel = ({ user }) => {
 /* PROJECTS – artisan only */
 const ProjectsPanel = ({ projectAction, setProjectAction }) => {
     const [editProject, setEditProject] = useState(null);
+    const [projects, setProjects] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchProjects();
+    }, []);
+
+    const fetchProjects = async () => {
+        try {
+            const response = await api.get('/projects/my');
+            setProjects(response.data.data);
+        } catch (err) {
+            console.error('Failed to fetch projects', err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSave = (updated) => {
         // TODO: call your API here to persist changes
@@ -250,7 +273,18 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
                 >
                     ← Retour à la liste
                 </button>
-                <ProjectCreation onProjectCreated={() => setProjectAction('list')} />
+                <ProjectCreation onProjectCreated={() => {
+                    setProjectAction('list');
+                    fetchProjects();
+                }} />
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="p-12 text-center text-brand-teal animate-pulse font-black uppercase tracking-widest">
+                Connecting to industrial ledger...
             </div>
         );
     }
@@ -271,31 +305,37 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
             </div>
             <div className="space-y-0 border-4 border-brand-teal">
                 <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
-                    {['Nom du Projet', 'Client', 'Date', 'Statut', 'Actions'].map(h => (
+                    {['Nom du Projet', 'Client / Lieu', 'Date', 'Statut', 'Actions'].map(h => (
                         <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
                     ))}
                 </div>
-                {PROJECTS.map((p, i) => (
-                    <div key={p.id} className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                        <p className="font-black text-xs text-brand-teal">{p.name}</p>
-                        <p className="text-xs font-bold text-brand-slate/60">{p.client}</p>
-                        <p className="text-xs font-bold text-brand-slate/60">{p.startDate}</p>
-                        <StatusBadge status={p.status} />
-                        <div className="flex gap-2">
-                            <button
-                                title="Voir"
-                                className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all">
-                                <Eye size={12} />
-                            </button>
-                            <button
-                                title="Modifier"
-                                onClick={() => setEditProject(p)}
-                                className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all">
-                                <Pencil size={12} />
-                            </button>
-                        </div>
+                {projects.length === 0 ? (
+                    <div className="p-20 text-center bg-white">
+                        <p className="text-brand-teal/30 font-black uppercase tracking-widest text-xs">Aucun projet actif détecté</p>
                     </div>
-                ))}
+                ) : (
+                    projects.map((p, i) => (
+                        <div key={p._id || p.id} className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
+                            <p className="font-black text-xs text-brand-teal">{p.title || p.name}</p>
+                            <p className="text-xs font-bold text-brand-slate/60">{p.client || p.address || 'Standard'}</p>
+                            <p className="text-xs font-bold text-brand-slate/60">{p.startDate ? new Date(p.startDate).toLocaleDateString() : 'Non définie'}</p>
+                            <StatusBadge status={p.status} />
+                            <div className="flex gap-2">
+                                <button
+                                    title="Voir"
+                                    className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10">
+                                    <Eye size={12} />
+                                </button>
+                                <button
+                                    title="Modifier"
+                                    onClick={() => setEditProject(p)}
+                                    className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all focus:z-10">
+                                    <Pencil size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Edit slide-in panel */}
