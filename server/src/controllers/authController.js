@@ -47,12 +47,8 @@ exports.register = async (req, res) => {
             companyName,
             email,
             password,
-<<<<<<< HEAD
-=======
-            role: (role || 'artisan').toLowerCase(),
->>>>>>> origin/ala
             phone,
-            role,
+            role: (role || 'artisan').toLowerCase(),
         });
 
         sendTokenResponse(user, 201, res);

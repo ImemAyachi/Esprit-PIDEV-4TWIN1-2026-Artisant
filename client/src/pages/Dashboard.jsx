@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X, Clock,
@@ -8,6 +8,7 @@ import {
     AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
+import useProjectStore from '../store/projectStore';
 import logo from '../assets/logo.png';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
@@ -43,44 +44,7 @@ const NAV_BY_ROLE = {
 };
 
 
-const PROJECTS = [
-    {
-        id: 1,
-        name: 'Site Alpha – Renovation',
-        status: 'In Progress',
-        client: 'ACME Corp',
-        description: 'Rénovation complète du bâtiment A incluant la plomberie, l\'électricité et la finition des murs intérieurs.',
-        address: '12 Rue de la République',
-        city: 'Tunis',
-        startDate: '2026-01-15',
-        endDate: '2026-04-30',
-        budget: 45000,
-    },
-    {
-        id: 2,
-        name: 'Site Beta – Foundation',
-        status: 'Planned',
-        client: 'BuildX',
-        description: 'Travaux de fondation et de terrassement pour le nouveau complexe résidentiel de 6 étages.',
-        address: '8 Avenue Habib Bourguiba',
-        city: 'Sfax',
-        startDate: '2026-02-01',
-        endDate: '2026-05-15',
-        budget: 28500,
-    },
-    {
-        id: 3,
-        name: 'Site Gamma – Finishing',
-        status: 'Completed',
-        client: 'UrbanPlan',
-        description: 'Finitions intérieures : carrelage, peinture, menuiserie et installation sanitaire.',
-        address: '45 Rue Ibn Khaldoun',
-        city: 'Sousse',
-        startDate: '2025-11-01',
-        endDate: '2026-01-05',
-        budget: 12000,
-    },
-];
+
 
 const QUOTES = [
     { id: 1, ref: 'DEV-0041', project: 'Site Alpha', client: 'ACME Corp', total: 14200, status: 'accepté', date: '2026-01-10' },
@@ -231,14 +195,28 @@ const OverviewPanel = ({ user }) => {
 
 /* PROJECTS – artisan only */
 const ProjectsPanel = ({ projectAction, setProjectAction }) => {
+    const { projects, loading, error, fetchMyProjects, updateProject } = useProjectStore();
     const [editProject, setEditProject] = useState(null);
 
-    const handleSave = (updated) => {
-        // TODO: call your API here to persist changes
-        console.log('Project updated:', updated);
+    useEffect(() => {
+        fetchMyProjects();
+    }, []);
+
+    const handleSave = async (updated) => {
+        const result = await updateProject(updated._id, {
+            title: updated.title,
+            description: updated.description,
+            address: updated.address,
+            city: updated.city,
+            startDate: updated.startDate,
+            endDate: updated.endDate,
+            budget: updated.budget,
+            status: updated.status,
+        });
+        if (result.success) setEditProject(null);
     };
 
-    // If in create mode, show ProjectCreation form
+    // Create mode: show ProjectCreation form
     if (projectAction === 'create') {
         return (
             <div className="space-y-6">
@@ -248,7 +226,7 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
                 >
                     ← Retour à la liste
                 </button>
-                <ProjectCreation onProjectCreated={() => setProjectAction('list')} />
+                <ProjectCreation onProjectCreated={() => { fetchMyProjects(); setProjectAction('list'); }} />
             </div>
         );
     }
@@ -258,7 +236,9 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
-                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Créés et gérés par vous</p>
+                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
+                        {loading ? 'Chargement...' : `${projects.length} projet(s)`}
+                    </p>
                 </div>
                 <button
                     onClick={() => setProjectAction?.('create')}
@@ -267,39 +247,98 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
                     <Plus size={16} /> Nouveau Projet
                 </button>
             </div>
-            <div className="space-y-0 border-4 border-brand-teal">
-                <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
-                    {['Nom du Projet', 'Client', 'Date', 'Statut', 'Actions'].map(h => (
-                        <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+
+            {/* Error state */}
+            {error && (
+                <div className="border-4 border-red-400 bg-red-50 p-6 mb-6 flex items-center gap-3">
+                    <AlertCircle size={20} className="text-red-500 shrink-0" />
+                    <p className="text-sm font-bold text-red-600">{error}</p>
+                </div>
+            )}
+
+            {/* Loading skeleton */}
+            {loading && (
+                <div className="border-4 border-brand-teal">
+                    <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
+                        {['Nom du Projet', 'Adresse', 'Date début', 'Statut', 'Actions'].map(h => (
+                            <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+                        ))}
+                    </div>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="grid grid-cols-5 p-4 border-b border-brand-teal/10 bg-white animate-pulse">
+                            {[...Array(5)].map((_, j) => (
+                                <div key={j} className="h-3 bg-brand-teal/10 rounded w-3/4" />
+                            ))}
+                        </div>
                     ))}
                 </div>
-                {PROJECTS.map((p, i) => (
-                    <div key={p.id} className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                        <p className="font-black text-xs text-brand-teal">{p.name}</p>
-                        <p className="text-xs font-bold text-brand-slate/60">{p.client}</p>
-                        <p className="text-xs font-bold text-brand-slate/60">{p.startDate}</p>
-                        <StatusBadge status={p.status} />
-                        <div className="flex gap-2">
-                            <button
-                                title="Voir"
-                                className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all">
-                                <Eye size={12} />
-                            </button>
-                            <button
-                                title="Modifier"
-                                onClick={() => setEditProject(p)}
-                                className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all">
-                                <Pencil size={12} />
-                            </button>
-                        </div>
+            )}
+
+            {/* Empty state */}
+            {!loading && projects.length === 0 && !error && (
+                <div className="border-4 border-brand-teal/20 border-dashed p-16 flex flex-col items-center justify-center gap-4 text-center">
+                    <Briefcase size={48} className="text-brand-teal/20" />
+                    <p className="text-sm font-black uppercase tracking-widest text-brand-teal/40">Aucun projet pour le moment</p>
+                    <button onClick={() => setProjectAction?.('create')} className="btn-primary text-sm flex items-center gap-2">
+                        <Plus size={14} /> Créer mon premier projet
+                    </button>
+                </div>
+            )}
+
+            {/* Projects table */}
+            {!loading && projects.length > 0 && (
+                <div className="space-y-0 border-4 border-brand-teal">
+                    <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
+                        {['Nom du Projet', 'Adresse', 'Date début', 'Statut', 'Actions'].map(h => (
+                            <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+                        ))}
                     </div>
-                ))}
-            </div>
+                    {projects.map((p, i) => (
+                        <div
+                            key={p._id}
+                            className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'
+                                }`}
+                        >
+                            <p className="font-black text-xs text-brand-teal">{p.title}</p>
+                            <p className="text-xs font-bold text-brand-slate/60">
+                                {p.location?.city || p.location?.address || '—'}
+                            </p>
+                            <p className="text-xs font-bold text-brand-slate/60">
+                                {p.startDate ? new Date(p.startDate).toLocaleDateString('fr-TN') : '—'}
+                            </p>
+                            <StatusBadge status={p.status} />
+                            <div className="flex gap-2">
+                                <button
+                                    title="Voir"
+                                    className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all">
+                                    <Eye size={12} />
+                                </button>
+                                <button
+                                    title="Modifier"
+                                    onClick={() => setEditProject(p)}
+                                    className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all">
+                                    <Pencil size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Edit slide-in panel */}
             {editProject && (
                 <EditProjectModal
-                    project={editProject}
+                    project={{
+                        ...editProject,
+                        // normalise fields so the modal pre-populates correctly
+                        name: editProject.title,
+                        address: editProject.location?.address || '',
+                        city: editProject.location?.city || '',
+                        startDate: editProject.startDate
+                            ? new Date(editProject.startDate).toISOString().slice(0, 10) : '',
+                        endDate: editProject.endDate
+                            ? new Date(editProject.endDate).toISOString().slice(0, 10) : '',
+                    }}
                     onClose={() => setEditProject(null)}
                     onSave={handleSave}
                 />
