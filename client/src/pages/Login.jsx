@@ -3,11 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, Key, Loader2, Sparkles, MoveRight, Hammer } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
+import FacialRecognitionCapture from '../components/FacialRecognitionCapture';
 
 const Login = () => {
+    const [loginMode, setLoginMode] = useState('password'); // 'password' or 'face'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loading, error } = useAuthStore();
+    const { login, loginWithFace, loading, error } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -31,7 +33,22 @@ const Login = () => {
         }
     };
 
-
+    const handleFaceCaptured = async (descriptor) => {
+        if (!email) {
+            alert('Please enter your primary identifier (email) first to locate your facial profile.');
+            setLoginMode('password');
+            return;
+        }
+        const success = await loginWithFace(email, Array.from(descriptor));
+        if (success) {
+            const role = useAuthStore.getState().user?.role;
+            if (role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
+        }
+    };
     return (
         <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">
             {/* Visual Side */}
@@ -97,53 +114,70 @@ const Login = () => {
                                 />
                             </div>
 
-                            <div className="relative group">
-                                <div className="flex justify-between items-center mb-2">
-                                    <label htmlFor="password" className="label mb-0">Security Key</label>
-                                    <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">Recover Access</a>
+                            {loginMode === 'password' ? (
+                                <>
+                                    <div className="relative group">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label htmlFor="password" className="label mb-0">Security Key</label>
+                                            <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">Recover Access</a>
+                                        </div>
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            required
+                                            className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                            placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
+                                        <div className="absolute right-4 top-[42px] text-brand-teal/20 pointer-events-none group-focus-within:text-white/20 transition-colors">
+                                            <Key size={18} />
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4">
+                                        <button
+                                            type="submit"
+                                            disabled={loading}
+                                            className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
+                                        >
+                                            {loading ? (
+                                                <Loader2 className="w-6 h-6 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    Authenticate Session
+                                                    <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="aspect-video bg-slate-900 border-8 border-brand-teal relative overflow-hidden group">
+                                    <FacialRecognitionCapture onCapture={handleFaceCaptured} />
                                 </div>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    required
-                                    className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                                <div className="absolute right-4 top-[42px] text-brand-teal/20 pointer-events-none group-focus-within:text-white/20 transition-colors">
-                                    <Key size={18} />
-                                </div>
-                            </div>
+                            )}
                         </div>
 
-                        <div className="pt-4">
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
-                            >
-                                {loading ? (
-                                    <Loader2 className="w-6 h-6 animate-spin" />
-                                ) : (
-                                    <>
-                                        Authenticate Session
-                                        <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
-                                    </>
-                                )}
-                            </button>
-                        </div>
-
-                        <div className="relative text-center">
+                        <div className="relative text-center mt-6">
                             <div className="absolute inset-x-0 top-3 border-t border-brand-teal/20"></div>
                             <span className="relative bg-brand-cream px-2 text-[8px] font-black uppercase tracking-widest text-brand-teal/40">Or</span>
                         </div>
 
                         <button
                             type="button"
+                            onClick={() => setLoginMode(loginMode === 'password' ? 'face' : 'password')}
                             className="w-full py-4 text-xs font-black uppercase tracking-widest border-2 border-brand-teal/20 text-brand-teal/60 hover:bg-brand-teal hover:text-white hover:border-brand-teal transition-all flex justify-center items-center gap-2"
                         >
-                            <Sparkles size={16} /> Login with Face ID
+                            {loginMode === 'password' ? (
+                                <>
+                                    <Sparkles size={16} /> Login with Face ID
+                                </>
+                            ) : (
+                                <>
+                                    <Key size={16} /> Login with Password
+                                </>
+                            )}
                         </button>
                     </form>
 
