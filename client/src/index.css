@@ -31,6 +31,13 @@
     @apply m-0 p-0 antialiased bg-brand-cream text-brand-slate;
     font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
   }
+
+  /* Custom Focus Ring for Accessibility */
+  *:focus-visible {
+    outline: 4px solid #A66E4E !important; /* brand-orange */
+    outline-offset: 4px;
+    box-shadow: 0 0 0 8px rgba(166, 110, 78, 0.2);
+  }
 }
 
 @layer components {
@@ -96,3 +103,8 @@
 .clip-path-diag {
   clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
 }
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #2D5A5A40; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2D5A5A; }

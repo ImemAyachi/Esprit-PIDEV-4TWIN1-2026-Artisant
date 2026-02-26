@@ -4,13 +4,10 @@ import { LogIn, Key, Loader2, Sparkles, MoveRight, Hammer } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
 
-import FacialRecognitionCapture from '../components/FacialRecognitionCapture';
-
 const Login = () => {
-    const [loginMode, setLoginMode] = useState('password'); // 'password' or 'face'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loginWithFace, loading, error } = useAuthStore();
+    const { login, loading, error } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -21,23 +18,19 @@ const Login = () => {
     }, []);
 
     const handleSubmit = async (e) => {
-        if (e) e.preventDefault();
+        e.preventDefault();
         const success = await login(email, password);
         if (success) {
-            navigate('/dashboard');
+            // Check role from store state (since user is updated in the store)
+            const role = useAuthStore.getState().user?.role;
+            if (role === 'admin') {
+                navigate('/admin');
+            } else {
+                navigate('/dashboard');
+            }
         }
     };
 
-    const handleFaceCaptured = async (descriptor) => {
-        if (!email) {
-            alert('Please enter your email first to verify identity.');
-            return;
-        }
-        const success = await loginWithFace(email, descriptor);
-        if (success) {
-            navigate('/dashboard');
-        }
-    };
 
     return (
         <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">
@@ -67,9 +60,9 @@ const Login = () => {
             </div>
 
             {/* Form Side */}
-            <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative overflow-hidden overflow-y-auto no-scrollbar">
+            <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative overflow-hidden">
                 <div className="max-w-md w-full animate-in">
-                    <div className="mb-8">
+                    <div className="mb-12">
                         <Link to="/" className="inline-flex items-center gap-2 mb-8 group overflow-hidden">
                             <img src={logo} alt="" className="w-8 h-8 object-contain" />
                             <span className="text-xs font-black uppercase tracking-widest text-brand-teal group-hover:pl-2 transition-all">Back to overview</span>
@@ -79,95 +72,80 @@ const Login = () => {
                             Secure Access
                         </h2>
                         <p className="font-bold text-brand-teal opacity-60 uppercase text-[10px] tracking-[0.2em]">
-                            Identify yourself to the industrial grid
+                            Enter your operational credentials
                         </p>
                     </div>
 
-                    {/* Mode Toggle */}
-                    <div className="flex mb-10 border-4 border-brand-teal">
-                        <button
-                            onClick={() => setLoginMode('password')}
-                            className={`flex-1 py-3 font-black uppercase tracking-widest text-[10px] transition-all ${loginMode === 'password' ? 'bg-brand-teal text-white' : 'bg-white text-brand-teal'}`}
-                        >
-                            Security Key
-                        </button>
-                        <button
-                            onClick={() => setLoginMode('face')}
-                            className={`flex-1 py-3 font-black uppercase tracking-widest text-[10px] transition-all ${loginMode === 'face' ? 'bg-brand-teal text-white' : 'bg-white text-brand-teal'}`}
-                        >
-                            Biometric ID
-                        </button>
-                    </div>
-
-                    {error && (
-                        <div className="bg-brand-orange text-white p-4 font-bold text-xs uppercase tracking-widest border-4 border-brand-teal mb-8">
-                            {error}
-                        </div>
-                    )}
-
-                    <div className="space-y-6">
-                        <div className="relative group">
-                            <label htmlFor="email" className="label">Access Identifier (Email)</label>
-                            <input
-                                id="email"
-                                type="email"
-                                required
-                                className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
-                                placeholder="name@industry.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                        </div>
-
-                        {loginMode === 'password' ? (
-                            <form className="space-y-8" onSubmit={handleSubmit}>
-                                <div className="relative group">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label htmlFor="password" className="label mb-0">Security Key</label>
-                                        <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">Recover Access</a>
-                                    </div>
-                                    <input
-                                        id="password"
-                                        type="password"
-                                        required
-                                        className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                    />
-                                    <div className="absolute right-4 top-[42px] text-brand-teal/20 pointer-events-none group-focus-within:text-white/20 transition-colors">
-                                        <Key size={18} />
-                                    </div>
-                                </div>
-
-                                <div className="pt-4">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
-                                    >
-                                        {loading ? (
-                                            <Loader2 className="w-6 h-6 animate-spin" />
-                                        ) : (
-                                            <>
-                                                Authenticate Session
-                                                <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div className="space-y-6">
-                                <div className="aspect-video bg-slate-900 border-8 border-brand-teal overflow-hidden relative">
-                                    <FacialRecognitionCapture onCapture={handleFaceCaptured} />
-                                </div>
-                                <p className="text-[9px] font-bold text-center text-brand-teal opacity-50 uppercase tracking-widest">
-                                    Align your face with the sensor for biometric verification
-                                </p>
+                    <form className="space-y-8" onSubmit={handleSubmit}>
+                        {error && (
+                            <div className="bg-brand-orange text-white p-4 font-bold text-xs uppercase tracking-widest border-4 border-brand-teal">
+                                {error}
                             </div>
                         )}
-                    </div>
+
+                        <div className="space-y-6">
+                            <div className="relative group">
+                                <label htmlFor="email" className="label">Primary Identifier</label>
+                                <input
+                                    id="email"
+                                    type="email"
+                                    required
+                                    className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                    placeholder="name@industry.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="relative group">
+                                <div className="flex justify-between items-center mb-2">
+                                    <label htmlFor="password" className="label mb-0">Security Key</label>
+                                    <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">Recover Access</a>
+                                </div>
+                                <input
+                                    id="password"
+                                    type="password"
+                                    required
+                                    className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                                <div className="absolute right-4 top-[42px] text-brand-teal/20 pointer-events-none group-focus-within:text-white/20 transition-colors">
+                                    <Key size={18} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="pt-4">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
+                            >
+                                {loading ? (
+                                    <Loader2 className="w-6 h-6 animate-spin" />
+                                ) : (
+                                    <>
+                                        Authenticate Session
+                                        <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <div className="relative text-center">
+                            <div className="absolute inset-x-0 top-3 border-t border-brand-teal/20"></div>
+                            <span className="relative bg-brand-cream px-2 text-[8px] font-black uppercase tracking-widest text-brand-teal/40">Or</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            className="w-full py-4 text-xs font-black uppercase tracking-widest border-2 border-brand-teal/20 text-brand-teal/60 hover:bg-brand-teal hover:text-white hover:border-brand-teal transition-all flex justify-center items-center gap-2"
+                        >
+                            <Sparkles size={16} /> Login with Face ID
+                        </button>
+                    </form>
 
                     <div className="mt-12 pt-12 border-t-4 border-brand-teal/10">
                         <p className="text-xs font-bold text-brand-teal opacity-60 uppercase tracking-widest leading-loose">
@@ -180,10 +158,10 @@ const Login = () => {
                 </div>
 
                 {/* Corner Decoration */}
-                <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange -z-10"></div>
-                <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal -z-10"></div>
-            </div>
-        </div>
+                <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange"></div>
+                <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal"></div>
+            </div >
+        </div >
     );
 };
 

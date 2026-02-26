@@ -16,6 +16,18 @@ app.use(morgan('dev'));
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/documents', require('./routes/documentRoutes'));
+app.use('/api/projects', require('./routes/projectRoutes'));
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('SERVER ERROR:', err);
+    res.status(err.status || 500).json({
+        success: false,
+        message: err.message || 'Internal Server Error'
+    });
+});
 
 app.get('/', (req, res) => {
     res.json({ message: 'Welcome to Artisant API' });
@@ -23,7 +35,7 @@ app.get('/', (req, res) => {
 
 // Database connection
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/artisant';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 mongoose
     .connect(MONGODB_URI)
