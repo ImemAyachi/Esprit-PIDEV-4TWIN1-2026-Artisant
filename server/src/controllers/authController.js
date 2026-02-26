@@ -28,7 +28,7 @@ const sendTokenResponse = (user, statusCode, res) => {
 
 exports.register = async (req, res) => {
     try {
-        const { companyName, email, password, phone, role } = req.body;
+        const { companyName, email, password, phone, role, facialFingerprint } = req.body;
 
         if (!companyName || !email || !password || !phone) {
             return res.status(400).json({
@@ -43,12 +43,19 @@ exports.register = async (req, res) => {
             });
         }
 
+        let facialDataBuffer = undefined;
+        if (facialFingerprint && Array.isArray(facialFingerprint)) {
+            // Convert Array of Floats to Buffer for PostgreSQL BYTEA / Mongo Buffer storage
+            facialDataBuffer = Buffer.from(new Float32Array(facialFingerprint).buffer);
+        }
+
         const user = await User.create({
             companyName,
             email,
             password,
             phone,
             role: (role || 'artisan').toLowerCase(),
+            facialFingerprint: facialDataBuffer
         });
 
         sendTokenResponse(user, 201, res);
