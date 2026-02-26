@@ -81,17 +81,17 @@ const Dashboard = () => {
                     {sidebarOpen ? (
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 bg-brand-orange text-white flex items-center justify-center font-black animate-in">
-                                {user?.name?.charAt(0)}
+                                {(user?.companyName || user?.email)?.charAt(0).toUpperCase()}
                             </div>
                             <div className="animate-in">
-                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1">{user?.name}</p>
+                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1 truncate max-w-[150px]">{user?.companyName || 'Operator'}</p>
                                 <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest leading-none">{user?.role}</p>
                             </div>
                         </div>
                     ) : (
                         <div className="flex justify-center mb-6">
                             <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black">
-                                {user?.name?.charAt(0)}
+                                {(user?.companyName || user?.email)?.charAt(0).toUpperCase()}
                             </div>
                         </div>
                     )}
@@ -147,7 +147,7 @@ const Dashboard = () => {
                         <div className="relative z-10">
                             <h3 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
                                 Welcome back,<br />
-                                <span className="text-brand-orange">Operator {user?.name}</span>
+                                <span className="text-brand-orange">Operator {user?.companyName || user?.email?.split('@')[0]}</span>
                             </h3>
                             <p className="max-w-xl font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
                                 Your current workspace is optimized for the <span className="text-brand-teal">{user?.role}</span> module.
@@ -160,7 +160,7 @@ const Dashboard = () => {
                         <div className="absolute bottom-8 right-8 text-brand-teal opacity-10">
                             <Hammer size={120} />
                         </div>
-                    </div>
+                    </div>,
 
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal mb-12">

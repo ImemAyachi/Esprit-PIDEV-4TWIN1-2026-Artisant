@@ -31,6 +31,29 @@ const useAuthStore = create((set) => ({
         }
     },
 
+    loginWithFace: async (email, facialFingerprint) => {
+        set({ loading: true, error: null });
+        try {
+            const response = await api.post('/auth/login-face', { email, facialFingerprint });
+            const { token, data } = response.data;
+
+            localStorage.setItem('token', token);
+            set({
+                user: data.user,
+                token,
+                isAuthenticated: true,
+                loading: false
+            });
+            return true;
+        } catch (error) {
+            set({
+                error: error.response?.data?.message || 'Face recognition login failed',
+                loading: false
+            });
+            return false;
+        }
+    },
+
     register: async (userData) => {
         set({ loading: true, error: null });
         try {

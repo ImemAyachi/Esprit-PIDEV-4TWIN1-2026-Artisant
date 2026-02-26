@@ -2,9 +2,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    name: {
+    companyName: {
         type: String,
-        required: [true, 'Please provide your name'],
+        trim: true,
+    },
+    phoneNumber: {
+        type: String,
         trim: true,
     },
     email: {
@@ -12,7 +15,7 @@ const userSchema = new mongoose.Schema({
         required: [true, 'Please provide your email'],
         unique: true,
         lowercase: true,
-        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email'],
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,})+$/, 'Please provide a valid email'],
     },
     password: {
         type: String,
@@ -20,22 +23,22 @@ const userSchema = new mongoose.Schema({
         minlength: 8,
         select: false,
     },
+    avatarUrl: {
+        type: String,
+        default: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+    },
     role: {
         type: String,
-        enum: ['Expert', 'Artisan', 'Manufacturer', 'Admin'],
-        default: 'Artisan',
+        enum: ['artisan', 'manufacturer', 'expert', 'admin'],
+        default: 'artisan',
     },
-    profile: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Profile',
+    facialFingerprint: {
+        type: [Number], // Storing face descriptors as an array of numbers
+        select: false,
     },
     isActive: {
         type: Boolean,
         default: true,
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now,
     }
 }, {
     timestamps: true,
