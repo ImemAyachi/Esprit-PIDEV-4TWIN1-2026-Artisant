@@ -4,19 +4,24 @@ import {
     Settings, LogOut, Search, Bell, Menu, X, Clock,
     Plus, Hammer, ArrowUpRight, Package, Wrench,
     Leaf, FolderOpen, ClipboardList,
-    Receipt, BarChart2, Eye, Download, CheckCircle2,
+    Receipt, BarChart2, Eye, Download, CheckCircle2, Loader2,
     AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil,
-    FileText, Users, Shield, FolderPlus, ArrowRight
+    FileText, Users, Shield, FolderPlus, ArrowRight,
+    Archive, Trash2
 } from 'lucide-react';
 import useAuthStore from '../store/authStore';
 import useProjectStore from '../store/projectStore';
+import useQuoteStore from '../store/quoteStore';
+import useInvoiceStore from '../store/invoiceStore';
 import logo from '../assets/logo.png';
 import UserList from '../components/dashboard/UserList';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
-import ProjectCreation from '../components/dashboard/ProjectCreation';
+import ProjectModal from '../components/dashboard/ProjectModal';
+import QuoteModal from '../components/dashboard/QuoteModal';
+import DetailModal from '../components/dashboard/DetailModal';
 import VoiceAssistant from '../components/VoiceAssistant';
-import EditProjectModal from '../components/dashboard/EditProjectModal';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
 
 
 const NAV_BY_ROLE = {
@@ -26,6 +31,7 @@ const NAV_BY_ROLE = {
         { name: 'Quotes', icon: ClipboardList },
         { name: 'Orders', icon: ShoppingBag },
         { name: 'Invoices', icon: Receipt },
+        { name: 'Documents', icon: FolderOpen },
         { name: 'Settings', icon: Settings },
     ],
     manufacturer: [
@@ -43,6 +49,12 @@ const NAV_BY_ROLE = {
         { name: 'Access Logs', icon: BarChart2 },
         { name: 'Settings', icon: Settings },
     ],
+    admin: [
+        { name: 'Overview', icon: LayoutDashboard },
+        { name: 'User Mgmt', icon: Shield },
+        { name: 'Projects', icon: Briefcase },
+        { name: 'Settings', icon: Settings },
+    ]
 };
 
 
@@ -201,40 +213,17 @@ const OverviewPanel = ({ user }) => {
 };
 
 /* PROJECTS – artisan only */
-const ProjectsPanel = ({ projectAction, setProjectAction }) => {
-    const { projects, loading, error, fetchMyProjects, updateProject } = useProjectStore();
-    const [editProject, setEditProject] = useState(null);
+const ProjectsPanel = ({ editProject, setEditProject, onView }) => {
+    const { projects, loading, fetchMyProjects, archiveProject, deleteProject } = useProjectStore();
+    const [confirmDelete, setConfirmDelete] = useState(null);
 
     useEffect(() => {
         fetchMyProjects();
     }, [fetchMyProjects]);
 
-    const handleSave = async (updated) => {
-        const res = await updateProject(updated._id || updated.id, updated);
-        if (res.success) {
-            setEditProject(null);
-        } else {
-            alert(res.message || 'Erreur lors de la mise à jour');
-        }
-    };
 
-    // If in create mode, show ProjectCreation form
-    if (projectAction === 'create') {
-        return (
-            <div className="space-y-6">
-                <button
-                    onClick={() => setProjectAction('list')}
-                    className="text-brand-teal font-black uppercase text-xs hover:text-brand-orange transition-colors flex items-center gap-2"
-                >
-                    ← Retour à la liste
-                </button>
-                <ProjectCreation onProjectCreated={() => {
-                    setProjectAction('list');
-                    fetchMyProjects();
-                }} />
-            </div>
-        );
-    }
+    // Simplified logic: ProjectModal is now used for both create and edit
+    // Instead of inline ProjectCreation, we now use the modal triggered from buttons below
 
     if (loading) {
         return (
@@ -254,7 +243,7 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
                     </p>
                 </div>
                 <button
-                    onClick={() => setProjectAction?.('create')}
+                    onClick={() => setEditProject('new')}
                     className="btn-primary flex items-center gap-2 text-sm"
                 >
                     <Plus size={16} /> Nouveau Projet
@@ -272,45 +261,72 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
                     </div>
                 ) : (
                     projects.map((p, i) => (
-                        <div key={p._id || p.id} className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                            <p className="font-black text-xs text-brand-teal">{p.title || p.name}</p>
-                            <p className="text-xs font-bold text-brand-slate/60">{p.client || p.address || 'Standard'}</p>
-                            <p className="text-xs font-bold text-brand-slate/60">{p.startDate ? new Date(p.startDate).toLocaleDateString() : 'Non définie'}</p>
-                            <StatusBadge status={p.status} />
-                            <div className="flex gap-2">
-                                <button
-                                    title="Voir"
-                                    className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10">
-                                    <Eye size={12} />
-                                </button>
-                                <button
-                                    title="Modifier"
-                                    onClick={() => setEditProject(p)}
-                                    className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all focus:z-10">
-                                    <Pencil size={12} />
-                                </button>
+                        <React.Fragment key={p._id || p.id}>
+                            <div className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
+                                <p className="font-black text-xs text-brand-teal">{p.title || p.name}</p>
+                                <p className="text-xs font-bold text-brand-slate/60">{p.client || p.address || 'Standard'}</p>
+                                <p className="text-xs font-bold text-brand-slate/60">{p.startDate ? new Date(p.startDate).toLocaleDateString() : 'Non définie'}</p>
+                                <StatusBadge status={p.status} />
+                                <div className="flex gap-2">
+                                    <button
+                                        title="Voir"
+                                        onClick={() => onView(p)}
+                                        className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10">
+                                        <Eye size={12} />
+                                    </button>
+                                    <button
+                                        title="Modifier"
+                                        onClick={() => setEditProject(p)}
+                                        className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all focus:z-10">
+                                        <Pencil size={12} />
+                                    </button>
+                                    <button
+                                        title={p.status === 'archived' ? "Désarchiver" : "Archiver"}
+                                        onClick={() => archiveProject(p._id || p.id)}
+                                        className={`p-1.5 border-2 transition-all focus:z-10 ${p.status === 'archived'
+                                            ? 'border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white'
+                                            : 'border-brand-slate text-brand-slate hover:bg-brand-slate hover:text-white'}`}>
+                                        <Archive size={12} />
+                                    </button>
+                                    <button
+                                        title="Supprimer"
+                                        onClick={() => setConfirmDelete(p._id || p.id)}
+                                        className="p-1.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all focus:z-10">
+                                        <Trash2 size={12} />
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+
+                            {confirmDelete === (p._id || p.id) && (
+                                <div className="col-span-12 p-4 bg-red-50 border-x-4 border-red-500 flex justify-between items-center animate-in slide-in-from-top-2">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-red-600">
+                                        Confirmer la suppression définitive ?
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => { deleteProject(p._id || p.id); setConfirmDelete(null); }}
+                                            className="px-4 py-1.5 bg-red-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all">
+                                            Confirmer
+                                        </button>
+                                        <button
+                                            onClick={() => setConfirmDelete(null)}
+                                            className="px-4 py-1.5 border-2 border-brand-teal text-brand-teal text-[9px] font-black uppercase tracking-widest hover:bg-brand-teal hover:text-white transition-all">
+                                            Annuler
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </React.Fragment>
                     ))
                 )}
             </div>
 
             {/* Edit slide-in panel */}
             {editProject && (
-                <EditProjectModal
-                    project={{
-                        ...editProject,
-                        // normalise fields so the modal pre-populates correctly
-                        name: editProject.title,
-                        address: editProject.location?.address || '',
-                        city: editProject.location?.city || '',
-                        startDate: editProject.startDate
-                            ? new Date(editProject.startDate).toISOString().slice(0, 10) : '',
-                        endDate: editProject.endDate
-                            ? new Date(editProject.endDate).toISOString().slice(0, 10) : '',
-                    }}
+                <ProjectModal
+                    project={editProject === 'new' ? null : editProject}
                     onClose={() => setEditProject(null)}
-                    onSave={handleSave}
+                    onSave={() => fetchMyProjects()}
                 />
             )}
         </div>
@@ -318,43 +334,116 @@ const ProjectsPanel = ({ projectAction, setProjectAction }) => {
 };
 
 /* QUOTES – artisan + expert */
-const QuotesPanel = ({ role }) => (
-    <div>
-        <div className="flex justify-between items-center mb-8">
-            <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Devis</h3>
-                <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
-                    {role === 'artisan' ? 'Devis générés pour vos projets' : 'Devis consultés en tant qu\'expert'}
-                </p>
+const QuotesPanel = ({ role, onView }) => {
+    const { quotes, loading, fetchMyQuotes, deleteQuote } = useQuoteStore();
+    const { convertToInvoice } = useInvoiceStore();
+    const [editQuote, setEditQuote] = useState(null);
+    const [converting, setConverting] = useState(null);
+
+    useEffect(() => {
+        fetchMyQuotes();
+    }, [fetchMyQuotes]);
+
+    const handleConvert = async (quoteId) => {
+        setConverting(quoteId);
+        const res = await convertToInvoice(quoteId);
+        if (res.success) {
+            fetchMyQuotes(); // Refresh to update status
+        }
+        setConverting(null);
+    };
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Devis</h3>
+                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
+                        {role === 'artisan' ? 'Devis générés pour vos projets' : 'Devis consultés en tant qu\'expert'}
+                    </p>
+                </div>
+                {role === 'artisan' && (
+                    <button
+                        onClick={() => setEditQuote('new')}
+                        className="btn-primary flex items-center gap-2 text-sm"
+                    >
+                        <Plus size={16} /> Nouveau Devis
+                    </button>
+                )}
             </div>
-            {role === 'artisan' && (
-                <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Nouveau Devis</button>
+
+            <div className="space-y-0 border-4 border-brand-teal relative">
+                {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><Loader2 className="animate-spin text-brand-teal" /></div>}
+                <div className="grid grid-cols-7 bg-brand-teal text-white p-4">
+                    {['Réf.', 'Projet', 'Client', 'Total', 'Validité', 'Statut', 'Actions'].map(h => (
+                        <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+                    ))}
+                </div>
+                {quotes.length === 0 ? (
+                    <div className="p-12 text-center bg-white">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal/30">Aucun devis enregistré</p>
+                    </div>
+                ) : (
+                    quotes.map((q, i) => (
+                        <div key={q._id || q.id} className={`grid grid-cols-7 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
+                            <p className="font-black text-xs text-brand-orange">{q.quoteNumber}</p>
+                            <p className="text-xs font-bold text-brand-teal">{q.project?.title || '—'}</p>
+                            <p className="text-xs font-bold text-brand-slate/60 truncate pr-2">{q.clientName}</p>
+                            <p className="text-xs font-black text-brand-teal whitespace-nowrap">{q.totalAmount?.toLocaleString()} DT</p>
+                            <p className="text-[10px] font-bold text-brand-slate/40">
+                                {q.validUntil ? new Date(q.validUntil).toLocaleDateString() : '—'}
+                            </p>
+                            <StatusBadge status={q.status || 'Draft'} />
+                            <div className="flex gap-1">
+                                <button
+                                    onClick={() => onView(q)}
+                                    className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"
+                                    title="Voir"
+                                >
+                                    <Eye size={12} />
+                                </button>
+                                {role === 'artisan' && q.status !== 'Converted to Invoice' && (
+                                    <>
+                                        <button
+                                            onClick={() => setEditQuote(q)}
+                                            className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all"
+                                            title="Modifier"
+                                        >
+                                            <Pencil size={12} />
+                                        </button>
+                                        <button
+                                            disabled={converting === q._id}
+                                            onClick={() => handleConvert(q._id)}
+                                            className="p-1.5 border-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-white transition-all disabled:opacity-50"
+                                            title="Transformer en Facture"
+                                        >
+                                            {converting === q._id ? <Loader2 size={12} className="animate-spin" /> : <Receipt size={12} />}
+                                        </button>
+                                        <button
+                                            onClick={() => deleteQuote(q._id)}
+                                            className="p-1.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                            title="Supprimer"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {editQuote && (
+                <QuoteModal
+                    quote={editQuote === 'new' ? null : editQuote}
+                    onClose={() => setEditQuote(null)}
+                    onSave={() => fetchMyQuotes()}
+                />
             )}
         </div>
-        <div className="space-y-0 border-4 border-brand-teal">
-            <div className="grid grid-cols-6 bg-brand-teal text-white p-4">
-                {['Référence', 'Projet', 'Client', 'Total (DT)', 'Statut', 'Actions'].map(h => (
-                    <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
-                ))}
-            </div>
-            {QUOTES.map((q, i) => (
-                <div key={q.id} className={`grid grid-cols-6 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                    <p className="font-black text-xs text-brand-orange">{q.ref}</p>
-                    <p className="text-xs font-bold text-brand-teal">{q.project}</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{q.client}</p>
-                    <p className="text-xs font-black text-brand-teal">{q.total.toLocaleString()} DT</p>
-                    <StatusBadge status={q.status} />
-                    <div className="flex gap-2">
-                        <button className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"><Eye size={12} /></button>
-                        {role === 'artisan' && (
-                            <button className="p-1.5 border-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-white transition-all"><Download size={12} /></button>
-                        )}
-                    </div>
-                </div>
-            ))}
-        </div>
-    </div>
-);
+    );
+};
 
 /* ORDERS – artisan (place) + manufacturer (process) */
 const OrdersPanel = ({ role }) => (
@@ -398,33 +487,93 @@ const OrdersPanel = ({ role }) => (
 );
 
 /* INVOICES – artisan + expert */
-const InvoicesPanel = () => (
-    <div>
-        <div className="flex justify-between items-center mb-8">
-            <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Factures</h3>
-                <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Générées depuis les devis acceptés</p>
-            </div>
-        </div>
-        <div className="space-y-0 border-4 border-brand-teal">
-            <div className="grid grid-cols-6 bg-brand-teal text-white p-4">
-                {['Réf.', 'Devis', 'Client', 'Total', 'Payé', 'Statut'].map(h => (
-                    <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
-                ))}
-            </div>
-            {INVOICES.map((f, i) => (
-                <div key={f.id} className={`grid grid-cols-6 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                    <p className="font-black text-xs text-brand-orange">{f.ref}</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{f.quote}</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{f.client}</p>
-                    <p className="text-xs font-black text-brand-teal">{f.total.toLocaleString()} DT</p>
-                    <p className="text-xs font-bold text-brand-green">{f.paid.toLocaleString()} DT</p>
-                    <StatusBadge status={f.status} />
+const InvoicesPanel = ({ onView }) => {
+    const { invoices, loading, summary, fetchMyInvoices, fetchSummary } = useInvoiceStore();
+
+    useEffect(() => {
+        fetchMyInvoices();
+        fetchSummary();
+    }, [fetchMyInvoices, fetchSummary]);
+
+    return (
+        <div>
+            <div className="flex justify-between items-end mb-8">
+                <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Historique Facturation</h3>
+                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">Registre des transactions industrialisées</p>
                 </div>
-            ))}
+                {summary && (
+                    <div className="bg-brand-teal text-white px-6 py-3 border-b-4 border-brand-orange">
+                        <p className="text-[8px] font-black uppercase tracking-[0.2em] opacity-60">Revenue Total</p>
+                        <p className="text-xl font-black">{summary.totalRevenue?.toLocaleString()} DT</p>
+                    </div>
+                )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div className="bg-white border-2 border-brand-teal/10 p-4">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-brand-teal/40">Total Factures</p>
+                    <p className="text-xl font-black text-brand-teal">{summary?.count || 0}</p>
+                </div>
+                <div className="bg-white border-2 border-brand-teal/10 p-4">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-brand-teal/40">Montant Payé</p>
+                    <p className="text-xl font-black text-brand-green">{summary?.paidAmount?.toLocaleString() || 0} DT</p>
+                </div>
+                <div className="bg-white border-2 border-brand-teal/10 p-4">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-brand-teal/40">En Attente</p>
+                    <p className="text-xl font-black text-brand-orange">{summary?.pendingAmount?.toLocaleString() || 0} DT</p>
+                </div>
+                <div className="bg-brand-orange text-white p-4">
+                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Statut Système</p>
+                    <p className="text-xl font-black">OPÉRATIONNEL</p>
+                </div>
+            </div>
+
+            <div className="space-y-0 border-4 border-brand-teal relative">
+                {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><Loader2 className="animate-spin text-brand-teal" /></div>}
+                <div className="grid grid-cols-7 bg-brand-teal text-white p-4">
+                    {['Réf.', 'Devis Origine', 'Client', 'Total', 'Due Date', 'Statut', 'Actions'].map(h => (
+                        <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+                    ))}
+                </div>
+                {invoices.length === 0 ? (
+                    <div className="p-12 text-center bg-white">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal/30">Aucune facture générée</p>
+                    </div>
+                ) : (
+                    invoices.map((f, i) => (
+                        <div key={f._id || f.id} className={`grid grid-cols-7 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
+                            <p className="font-black text-xs text-brand-orange">{f.invoiceNumber}</p>
+                            <p className="text-xs font-bold text-brand-slate/60">{f.quote?.quoteNumber || 'Direct'}</p>
+                            <p className="text-xs font-bold text-brand-teal">{f.clientName}</p>
+                            <p className="text-xs font-black text-brand-teal">{f.totalAmount?.toLocaleString()} DT</p>
+                            <p className="text-[10px] font-bold text-brand-slate/40">
+                                {f.dueDate ? new Date(f.dueDate).toLocaleDateString() : '—'}
+                            </p>
+                            <StatusBadge status={f.status} />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => onView(f)}
+                                    className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"
+                                    title="Voir"
+                                >
+                                    <Eye size={12} />
+                                </button>
+                                <button
+                                    onClick={() => generateInvoicePDF(f)}
+                                    className="p-1.5 border-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-white transition-all"
+                                    title="Télécharger PDF (Industrial)"
+                                >
+                                    <Download size={12} />
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /* PRODUCTS – manufacturer only */
 const ProductsPanel = () => (
@@ -503,25 +652,95 @@ const AccessLogsPanel = () => (
 );
 
 /* SETTINGS – all roles */
-const SettingsPanel = ({ user }) => (
-    <div className="max-w-2xl">
-        <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal mb-8">Paramètres du Compte</h3>
-        <div className="card space-y-6">
-            {[
-                { label: 'Entreprise', value: user?.companyName },
-                { label: 'Email', value: user?.email },
-                { label: 'Téléphone', value: user?.phone || '—' },
-                { label: 'Rôle', value: user?.role },
-            ].map(f => (
-                <div key={f.label} className="flex items-center justify-between border-b border-brand-teal/10 pb-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal/50">{f.label}</p>
-                    <p className="font-black text-sm text-brand-teal capitalize">{f.value}</p>
-                </div>
-            ))}
-            <button className="btn-primary w-full mt-4">Modifier le Profil</button>
+const SettingsPanel = ({ user }) => {
+    const { updateProfile, loading } = useAuthStore();
+    const [editMode, setEditMode] = useState(false);
+    const [formData, setFormData] = useState({
+        companyName: user?.companyName || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+    });
+    const [status, setStatus] = useState(null);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const res = await updateProfile(formData);
+        if (res.success) {
+            setEditMode(false);
+            setStatus('Profil mis à jour avec succès');
+            setTimeout(() => setStatus(null), 3000);
+        } else {
+            setStatus('Erreur: ' + res.message);
+        }
+    };
+
+    return (
+        <div className="max-w-2xl">
+            <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal mb-8">Paramètres du Compte</h3>
+            <div className="card space-y-6">
+                {status && (
+                    <div className="p-4 bg-brand-teal text-white font-black uppercase text-[9px] tracking-widest animate-in fade-in">
+                        {status}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {[
+                        { label: 'Entreprise', key: 'companyName', type: 'text' },
+                        { label: 'Email', key: 'email', type: 'email' },
+                        { label: 'Téléphone', key: 'phone', type: 'tel' },
+                    ].map(f => (
+                        <div key={f.label} className="border-b border-brand-teal/10 pb-4">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-brand-teal/50 mb-2 block">{f.label}</label>
+                            {editMode ? (
+                                <input
+                                    type={f.type}
+                                    value={formData[f.key]}
+                                    onChange={(e) => setFormData({ ...formData, [f.key]: e.target.value })}
+                                    className="w-full bg-brand-cream border-2 border-brand-teal/20 px-4 py-2 text-sm font-black text-brand-teal focus:border-brand-teal outline-none"
+                                />
+                            ) : (
+                                <p className="font-black text-sm text-brand-teal capitalize">{user?.[f.key] || '—'}</p>
+                            )}
+                        </div>
+                    ))}
+
+                    <div className="border-b border-brand-teal/10 pb-4">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-brand-teal/50 mb-2 block">Rôle</label>
+                        <p className="font-black text-sm text-brand-orange uppercase">{user?.role}</p>
+                    </div>
+
+                    {!editMode ? (
+                        <button
+                            type="button"
+                            onClick={() => setEditMode(true)}
+                            className="btn-primary w-full mt-4"
+                        >
+                            Modifier le Profil
+                        </button>
+                    ) : (
+                        <div className="flex gap-4 mt-4">
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="btn-primary flex-1"
+                            >
+                                {loading ? 'Enregistrement...' : 'Sauvegarder'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => { setEditMode(false); setFormData({ companyName: user.companyName, email: user.email, phone: user.phone || '' }); }}
+                                className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-2 border-brand-teal text-brand-teal hover:bg-brand-cream transition-all"
+                            >
+                                Annuler
+                            </button>
+                        </div>
+                    )}
+                </form>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /* ─────────────────────────────────────────────
    Main Dashboard component
@@ -530,20 +749,11 @@ const Dashboard = () => {
     const { user, logout } = useAuthStore();
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [activeTab, setActiveTab] = useState('Overview');
-    const [projectAction, setProjectAction] = useState('list'); // 'list' or 'create'
+    const [editProject, setEditProject] = useState(null);
+    const [viewItem, setViewItem] = useState(null); // { item, type }
 
-    const navigation = [
-        { name: 'Overview', icon: LayoutDashboard },
-        { name: 'Projects', icon: Briefcase },
-        { name: 'Invoices', icon: FileText },
-        { name: 'Marketplace', icon: ShoppingBag },
-        { name: 'Network', icon: Users },
-        // Conditional Navigation based on Role could be here, but for now we add for all and let components handle permissions or show placeholders
-        // Ideally filter this list based on user.role
-        ...(user?.role === 'admin' ? [{ name: 'User Mgmt', icon: Shield }] : []),
-        { name: 'Documents', icon: FolderPlus },
-        { name: 'Preferences', icon: Settings },
-    ];
+    // Use role-based navigation mapping
+    const navigation = NAV_BY_ROLE[user?.role] || NAV_BY_ROLE.artisan;
 
     const stats = [
         { label: 'Active Sites', value: '12', trend: '+2', color: 'brand-teal' },
@@ -570,7 +780,7 @@ const Dashboard = () => {
                             key={item.name}
                             onClick={() => {
                                 setActiveTab(item.name);
-                                if (item.name === 'Projects') setProjectAction('list');
+                                if (item.name === 'Projects') setEditProject(null);
                             }}
                             aria-label={`Go to ${item.name}`}
                             className={`flex items-center gap-4 p-4 border-2 transition-all group ${activeTab === item.name
@@ -589,15 +799,18 @@ const Dashboard = () => {
                 {/* User + logout */}
                 <div className="p-4 border-t-4 border-white/10 bg-black/10">
                     {sidebarOpen ? (
-                        <div className="flex items-center gap-3 mb-4">
+                        <div
+                            onClick={() => setActiveTab('Settings')}
+                            className="flex items-center gap-3 mb-4 cursor-pointer hover:bg-white/5 p-2 -m-2 transition-all group/user"
+                        >
                             <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black text-sm shrink-0">
                                 {user?.companyName?.charAt(0)}
                             </div>
                             <div>
-                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1">{user?.companyName}</p>
+                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1 group-hover/user:text-brand-orange transition-colors">{user?.companyName}</p>
                                 <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{user?.role}</p>
                             </div>
-                            <ChevronRight size={14} className="text-white/20 group-hover/user:text-white/60 group-hover/user:translate-x-0.5 transition-all" />
+                            <ChevronRight size={14} className="text-white/20 group-hover/user:text-white/60 group-hover/user:translate-x-0.5 transition-all ml-auto" />
                         </div>
                     ) : (
                         <div className="flex justify-center mb-4">
@@ -672,15 +885,17 @@ const Dashboard = () => {
                                         All industrial systems are operational and ready for deployment.
                                     </p>
 
-                                    <button
-                                        onClick={() => {
-                                            setActiveTab('Projects');
-                                            setProjectAction('create');
-                                        }}
-                                        className="btn-primary flex items-center gap-3"
-                                    >
-                                        Initialize New Site <Plus size={20} />
-                                    </button>
+                                    {user?.role === 'artisan' && (
+                                        <button
+                                            onClick={() => {
+                                                setActiveTab('Projects');
+                                                setEditProject('new');
+                                            }}
+                                            className="btn-primary flex items-center gap-3"
+                                        >
+                                            Initialize New Site <Plus size={20} />
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="absolute bottom-8 right-8 text-brand-teal opacity-10">
                                     <Hammer size={120} />
@@ -763,22 +978,31 @@ const Dashboard = () => {
 
                     {activeTab === 'Projects' && (
                         <div className="animate-in">
-                            <ProjectsPanel projectAction={projectAction} setProjectAction={setProjectAction} />
+                            <ProjectsPanel editProject={editProject} setEditProject={setEditProject} onView={(item) => setViewItem({ item, type: 'project' })} />
                         </div>
                     )}
 
                     {activeTab === 'User Mgmt' && <UserList />}
                     {activeTab === 'Documents' && <DocumentLibrary />}
-                    {activeTab === 'Quotes' && <QuotesPanel role={user?.role} />}
+                    {activeTab === 'Quotes' && <QuotesPanel role={user?.role} onView={(item) => setViewItem({ item, type: 'quote' })} />}
                     {activeTab === 'Orders' && <OrdersPanel role={user?.role} />}
-                    {activeTab === 'Invoices' && <InvoicesPanel />}
+                    {activeTab === 'Invoices' && <InvoicesPanel onView={(item) => setViewItem({ item, type: 'invoice' })} />}
                     {activeTab === 'Products' && <ProductsPanel />}
                     {activeTab === 'Access Logs' && <AccessLogsPanel />}
                     {activeTab === 'Settings' && <SettingsPanel user={user} />}
                     {activeTab === 'Preferences' && <SettingsPanel user={user} />}
                 </section>
 
-                <VoiceAssistant />
+                <VoiceAssistant onNavigate={setActiveTab} role={user?.role} />
+
+                {viewItem && (
+                    <DetailModal
+                        item={viewItem.item}
+                        type={viewItem.type}
+                        onClose={() => setViewItem(null)}
+                        onDownloadPDF={generateInvoicePDF}
+                    />
+                )}
             </main>
         </div>
     );

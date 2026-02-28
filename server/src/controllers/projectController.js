@@ -101,6 +101,30 @@ exports.deleteProject = async (req, res) => {
     }
 };
 
+// @desc    Archive a project
+// @route   PATCH /api/projects/:id/archive
+// @access  Private (Artisan – own projects only)
+exports.archiveProject = async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
+
+        if (!project) {
+            return res.status(404).json({ success: false, message: 'Project not found' });
+        }
+
+        if (project.artisan.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+
+        project.status = project.status === 'archived' ? 'planned' : 'archived';
+        await project.save();
+
+        res.status(200).json({ success: true, data: project });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
 // @desc    Get all projects (Admin only)
 // @route   GET /api/projects
 // @access  Private (Admin)

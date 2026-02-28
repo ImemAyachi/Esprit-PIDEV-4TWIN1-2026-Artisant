@@ -4,6 +4,7 @@ const {
     getMyProjects,
     updateProject,
     deleteProject,
+    archiveProject,
     getAllProjects,
 } = require('../controllers/projectController');
 const { protect, authorize } = require('../middleware/auth');
@@ -23,6 +24,7 @@ router.get('/my', authorize('artisan'), getMyProjects);
 
 // Artisan: update or delete their own project
 router.put('/:id', authorize('artisan', 'admin'), updateProject);
+router.patch('/:id/archive', authorize('artisan', 'admin'), archiveProject);
 router.delete('/:id', authorize('artisan', 'admin'), deleteProject);
 
 module.exports = router;
