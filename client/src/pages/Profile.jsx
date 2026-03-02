@@ -169,7 +169,7 @@ const Profile = () => {
             <div className="max-w-5xl mx-auto p-12">
                 {/* Profile Header Card */}
                 <div className="bg-white border-8 border-brand-teal mb-12 relative overflow-hidden group">
-                    {/* Decorative elements */}
+                    {/* decorative elements */}
                     <div className="absolute top-0 right-0 w-80 h-full bg-brand-orange transform translate-x-20 -skew-x-12 opacity-5 group-hover:translate-x-10 transition-transform duration-700"></div>
                     <div className="absolute bottom-0 left-0 w-full h-1 bg-brand-orange"></div>
 

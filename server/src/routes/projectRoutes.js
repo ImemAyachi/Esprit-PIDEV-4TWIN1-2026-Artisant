@@ -2,7 +2,9 @@ const express = require('express');
 const {
     createProject,
     getMyProjects,
-    getAllProjects
+    getAllProjects,
+    archiveProject,
+    deleteProject
 } = require('../controllers/projectController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -16,5 +18,7 @@ router
     .post(authorize('artisan', 'admin'), createProject);
 
 router.get('/my', authorize('artisan'), getMyProjects);
+router.patch('/:id/archive', authorize('artisan'), archiveProject);
+router.delete('/:id', authorize('artisan'), deleteProject);
 
 module.exports = router;
