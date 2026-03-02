@@ -7,30 +7,29 @@ import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 
 // Accessibility
 import ScreenReaderFocus from './components/ScreenReaderFocus';
 
-// Protected Route Component
-const ProtectedRoute = ({ children, requireAdmin = false }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, loading } = useAuthStore();
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-teal"></div>
-    </div>
-  );
-
-  if (!isAuthenticated) return <Navigate to="/login" />;
-
-  if (requireAdmin && user?.role !== 'admin') {
-    return <Navigate to="/dashboard" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-teal"></div>
+      </div>
+    );
   }
 
-  // Redirect admin away from normal dashboard to admin dashboard
-  if (!requireAdmin && user?.role === 'admin' && window.location.pathname === '/dashboard') {
-    return <Navigate to="/admin" />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -41,7 +40,7 @@ function App() {
 
   useEffect(() => {
     getMe();
-  }, [getMe]);
+  }, []);
 
   return (
     <Router>
@@ -50,26 +49,38 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert']}>
               <Dashboard />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
               <Profile />
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
 }
-
 
 export default App;

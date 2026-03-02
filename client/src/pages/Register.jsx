@@ -9,7 +9,6 @@ const roles = [
     { id: 'artisan', label: 'Artisan', icon: Hammer, desc: 'Project site management and labor orchestration.' },
     { id: 'manufacturer', label: 'Manufacturer', icon: Wrench, desc: 'Industrial supply chain and catalog publication.' },
     { id: 'expert', label: 'Expert', icon: Leaf, desc: 'Technical consulting and professional oversight.' },
-    { id: 'admin', label: 'Admin', icon: Shield, desc: 'System orchestration and protocol management.' },
 ];
 
 const Register = () => {
@@ -106,7 +105,7 @@ const Register = () => {
                         {/* Role Selection */}
                         <div className="space-y-4">
                             <label className="label">Operational Sector</label>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border-4 border-brand-teal">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal">
                                 {roles.map((role) => (
                                     <button
                                         key={role.id}

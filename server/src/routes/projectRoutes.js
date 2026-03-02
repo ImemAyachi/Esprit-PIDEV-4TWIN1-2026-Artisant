@@ -3,8 +3,9 @@ const {
     createProject,
     getMyProjects,
     getAllProjects,
+    updateProject,
     archiveProject,
-    deleteProject
+    deleteProject,
 } = require('../controllers/projectController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -12,13 +13,19 @@ const router = express.Router();
 
 router.use(protect);
 
-router
-    .route('/')
-    .get(authorize('admin'), getAllProjects)
-    .post(authorize('artisan', 'admin'), createProject);
+// Admin: list all projects
+router.get('/', authorize('admin'), getAllProjects);
 
+// Artisan: create a project
+router.post('/', authorize('artisan', 'admin'), createProject);
+
+// Artisan: get their own projects
 router.get('/my', authorize('artisan'), getMyProjects);
-router.patch('/:id/archive', authorize('artisan'), archiveProject);
-router.delete('/:id', authorize('artisan'), deleteProject);
+
+// Artisan/Admin: update, archive, or delete a project
+router.put('/:id', authorize('artisan', 'admin'), updateProject);
+router.patch('/:id/archive', authorize('artisan', 'admin'), archiveProject);
+router.delete('/:id', authorize('artisan', 'admin'), deleteProject);
 
 module.exports = router;
+
