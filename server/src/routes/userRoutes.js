@@ -13,8 +13,7 @@ const router = express.Router();
 router.use(protect); // Protect all routes
 router.use(authorize('admin')); // Restrict all routes to admin
 
-router.route('/')
-    .get(getAllUsers);
+router.get('/', userController.getAllUsers);
 
 router.route('/:id')
     .get(getUser)

@@ -12,18 +12,28 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!token) {
-        return res.status(401).json({ message: 'Not authorized to access this route' });
+        return res.status(401).json({
+            message: 'Not authorized to access this route',
+        });
     }
 
     try {
-        // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Get user from token
-        req.user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.id).select(
+            '_id role permissions isActive'
+        );
 
-        if (!req.user) {
-            return res.status(401).json({ message: 'The user belonging to this token no longer exists' });
+        if (!user) {
+            return res.status(401).json({
+                message: 'User no longer exists',
+            });
+        }
+
+        if (!user.isActive) {
+            return res.status(403).json({
+                message: 'Account is deactivated',
+            });
         }
 
         // Block explicitly deactivated accounts (isActive === false)
@@ -34,16 +44,17 @@ exports.protect = async (req, res, next) => {
 
         next();
     } catch (err) {
-        return res.status(401).json({ message: 'Not authorized to access this route' });
+        return res.status(401).json({
+            message: 'Invalid or expired token',
+        });
     }
 };
 
-// Grant access to specific roles
 exports.authorize = (...roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
+        if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({
-                message: `User role ${req.user.role} is not authorized to access this route`,
+                message: `User role ${req.user?.role} is not authorized`,
             });
         }
         next();
