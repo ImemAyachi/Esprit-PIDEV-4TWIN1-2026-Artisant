@@ -9,6 +9,11 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
+import Marketplace from './pages/Marketplace';
+import ManageProducts from './pages/ManageProducts';
+import OrderForm from './pages/OrderForm';
+import OrderStatus from './pages/OrderStatus';
+import OrderHistory from './pages/OrderHistory';
 
 // Accessibility
 import ScreenReaderFocus from './components/ScreenReaderFocus';
@@ -73,6 +78,52 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Module 4 — Marketplace & Commandes */}
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+              <Marketplace />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/manage-products"
+          element={
+            <ProtectedRoute allowedRoles={['manufacturer', 'admin']}>
+              <ManageProducts />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/order/new"
+          element={
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+              <OrderForm />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/orders/:id/status"
+          element={
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+              <OrderStatus />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/orders/history"
+          element={
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+              <OrderHistory />
             </ProtectedRoute>
           }
         />
