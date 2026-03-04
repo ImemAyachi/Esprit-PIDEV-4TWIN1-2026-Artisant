@@ -22,6 +22,14 @@ app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/quotes', require('./routes/quoteRoutes'));
 app.use('/api/invoices', require('./routes/invoiceRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/public', require('./routes/publicRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
+
+// Static folder for uploads
+const path = require('path');
+app.use('/uploads', express.static(path.join(path.resolve(), '/uploads')));
 
 // Global Error Handler
 app.use((err, req, res, next) => {

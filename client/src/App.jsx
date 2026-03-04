@@ -11,7 +11,6 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
-import Profile from './pages/Profile';
 import Marketplace from './pages/Marketplace';
 import ManageProducts from './pages/ManageProducts';
 import OrderForm from './pages/OrderForm';
@@ -115,11 +114,7 @@ function App() {
         {/* Module 4 — Marketplace & Commandes */}
         <Route
           path="/marketplace"
-          element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
-              <Marketplace />
-            </ProtectedRoute>
-          }
+          element={<Marketplace />}
         />
 
         <Route

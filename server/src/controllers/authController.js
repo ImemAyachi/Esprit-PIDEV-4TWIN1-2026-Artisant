@@ -34,12 +34,14 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const userData = {
+        const user = await User.create({
             companyName,
             email,
             password,
             role: (role || 'artisan').toLowerCase(),
             phone,
+            faceEmbedding: faceEmbedding || [],
+            hasFaceAuth: !!(faceEmbedding && faceEmbedding.length > 0)
         });
 
         sendTokenResponse(user, 201, res);

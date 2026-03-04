@@ -74,7 +74,7 @@ export default function Marketplace() {
                             <p className="text-[10px] font-black uppercase tracking-widest text-brand-orange mt-1">Plateforme Industrielle d'Échange</p>
                         </div>
                     </div>
-                    {cart.length > 0 && (
+                    {user && cart.length > 0 && (
                         <button
                             onClick={() => navigate('/order/new', { state: { cart } })}
                             className="btn-primary flex items-center gap-3 animate-in"
@@ -200,6 +200,14 @@ export default function Marketplace() {
                                             </div>
                                         </div>
                                         <div className="p-5 flex-1 flex flex-col">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <div className="w-6 h-6 bg-brand-teal text-white flex items-center justify-center text-[10px] font-black">
+                                                    {product.manufacturer?.companyName?.charAt(0) || 'M'}
+                                                </div>
+                                                <span className="text-[10px] font-bold text-brand-teal/60 uppercase tracking-widest truncate">
+                                                    {product.manufacturer?.companyName || 'Fabricant'}
+                                                </span>
+                                            </div>
                                             <h2 className="text-lg font-black uppercase tracking-tight text-brand-teal mb-2 leading-tight">{product.name}</h2>
                                             <p className="m-0 text-brand-slate opacity-60 text-xs font-bold leading-relaxed line-clamp-2 flex-1 relative">
                                                 {product.description}
@@ -209,13 +217,15 @@ export default function Marketplace() {
                                                     <span className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Tarif Unitaire</span>
                                                     <strong className="text-xl font-black text-brand-teal leading-none mt-1">{product.price?.toFixed(2)} DT</strong>
                                                 </div>
-                                                <button
-                                                    onClick={() => addToCart(product)}
-                                                    className="w-12 h-12 bg-white border-2 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all focus:outline-none focus:ring-4 focus:ring-brand-orange/30 group/cart shrink-0"
-                                                    aria-label={`Ajouter ${product.name} au panier`}
-                                                >
-                                                    <Plus size={20} className="group-active/cart:scale-90 transition-transform" />
-                                                </button>
+                                                {user && (
+                                                    <button
+                                                        onClick={() => addToCart(product)}
+                                                        className="w-12 h-12 bg-white border-2 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all focus:outline-none focus:ring-4 focus:ring-brand-orange/30 group/cart shrink-0"
+                                                        aria-label={`Ajouter ${product.name} au panier`}
+                                                    >
+                                                        <Plus size={20} className="group-active/cart:scale-90 transition-transform" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     </article>

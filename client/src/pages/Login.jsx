@@ -17,7 +17,7 @@ const Login = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        document.body.style.overflow = 'hidden';
+        // Only hide overflow if needed, but let's allow it for mobile/small screens
         return () => { document.body.style.overflow = 'unset'; };
     }, []);
 
@@ -94,8 +94,8 @@ const Login = () => {
             </div>
 
             {/* Form Side */}
-            <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative overflow-hidden">
-                <div className="max-w-md w-full">
+            <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-12 relative overflow-y-auto custom-scrollbar">
+                <div className="max-w-md w-full my-auto">
                     {/* Back link */}
                     <Link to="/" className="inline-flex items-center gap-2 mb-8 group overflow-hidden">
                         <img src={logo} alt="" className="w-8 h-8 object-contain" />
