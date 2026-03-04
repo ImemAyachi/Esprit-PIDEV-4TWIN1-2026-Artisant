@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import useAuthStore from './store/authStore';
+import GestureController from './components/GestureController';
 
 // Pages
 import Landing from './pages/Landing';
@@ -8,6 +10,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import Profile from './pages/Profile';
 
 // Accessibility
 import ScreenReaderFocus from './components/ScreenReaderFocus';
@@ -44,6 +47,24 @@ function App() {
   return (
     <Router>
       <ScreenReaderFocus />
+      <GestureController />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#18181b',
+            color: '#fff',
+            borderRadius: '12px',
+            padding: '12px 16px',
+            border: '1px solid rgba(255,255,255,0.1)',
+            fontWeight: '600',
+            fontSize: '13px',
+          },
+          success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -54,6 +75,15 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert']}>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+              <Profile />
             </ProtectedRoute>
           }
         />

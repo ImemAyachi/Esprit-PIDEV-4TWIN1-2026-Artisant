@@ -60,6 +60,27 @@ const useProjectStore = create((set) => ({
         }
     },
 
+    // PATCH /api/projects/:id/archive
+    archiveProject: async (id) => {
+        set({ loading: true, error: null });
+        try {
+            const res = await api.patch(`/projects/${id}/archive`);
+            set((state) => ({
+                projects: state.projects.map((p) =>
+                    p._id === id ? res.data.data : p
+                ),
+                loading: false,
+            }));
+            return { success: true, data: res.data.data };
+        } catch (err) {
+            set({
+                error: err.response?.data?.message || 'Failed to archive project',
+                loading: false,
+            });
+            return { success: false, message: err.response?.data?.message };
+        }
+    },
+
     // DELETE /api/projects/:id
     deleteProject: async (id) => {
         set({ loading: true, error: null });
