@@ -4,13 +4,7 @@ import { Hand, StopCircle, ArrowLeft, ArrowRight, X, ArrowUp, ArrowDown, MousePo
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../utils/cn';
 import toast from 'react-hot-toast';
-
-// App routes in navigation order (Artisant platform)
-const APP_ROUTES = [
-    { path: '/dashboard', label: 'Dashboard' },
-    { path: '/profile', label: 'Profil' },
-    { path: '/admin', label: 'Administration' },
-];
+import useAuthStore from '../store/authStore';
 
 const CONFIDENCE_THRESHOLD = 0.70;
 const FRAMES_TO_TRIGGER = 10;
@@ -39,7 +33,46 @@ const FINGER_COLORS = {
 const GestureController = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { user } = useAuthStore();
     const videoRef = useRef(null);
+
+    const getAppRoutes = useCallback(() => {
+        if (!user) return [];
+        switch (user.role) {
+            case 'artisan':
+                return [
+                    { path: '/dashboard', label: 'Dashboard' },
+                    { path: '/marketplace', label: 'Marketplace' },
+                    { path: '/orders/history', label: 'Commandes' },
+                    { path: '/profile', label: 'Profil' }
+                ];
+            case 'manufacturer':
+                return [
+                    { path: '/dashboard', label: 'Dashboard' },
+                    { path: '/marketplace', label: 'Marketplace' },
+                    { path: '/manage-products', label: 'Produits' },
+                    { path: '/orders/history', label: 'Commandes' },
+                    { path: '/profile', label: 'Profil' }
+                ];
+            case 'admin':
+                return [
+                    { path: '/admin', label: 'Administration' },
+                    { path: '/marketplace', label: 'Marketplace' },
+                    { path: '/manage-products', label: 'Produits' },
+                    { path: '/orders/history', label: 'Commandes' },
+                    { path: '/profile', label: 'Profil' }
+                ];
+            default: // expert
+                return [
+                    { path: '/dashboard', label: 'Dashboard' },
+                    { path: '/marketplace', label: 'Marketplace' },
+                    { path: '/orders/history', label: 'Commandes' },
+                    { path: '/profile', label: 'Profil' }
+                ];
+        }
+    }, [user]);
+
+    const appRoutes = getAppRoutes();
     const [recognizer, setRecognizer] = useState(null);
     const [isEnabled, setIsEnabled] = useState(false);
     const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -76,7 +109,7 @@ const GestureController = () => {
 
     const getCurrentRouteIndex = () => {
         const path = window.location.pathname;
-        const idx = APP_ROUTES.findIndex(r => path.startsWith(r.path));
+        const idx = appRoutes.findIndex(r => path.startsWith(r.path));
         return idx >= 0 ? idx : 0;
     };
 
@@ -86,7 +119,8 @@ const GestureController = () => {
         setScrollDirection(dir);
         const amt = dir === 'up' ? -50 : 50;
         scrollIntervalRef.current = setInterval(() => {
-            window.scrollBy({ top: amt, behavior: 'auto' });
+            const scrollContainer = document.querySelector('.custom-scrollbar') || document.querySelector('main section.overflow-y-auto') || window;
+            scrollContainer.scrollBy({ top: amt, behavior: 'auto' });
         }, 40);
         toast.success(`Défilement ${dir === 'up' ? '↑' : '↓'}`, { id: 'scroll' });
     }, []);
@@ -138,7 +172,7 @@ const GestureController = () => {
         if (gesture === 'Pointing_Up') {
             const idx = getCurrentRouteIndex();
             if (idx > 0) {
-                const target = APP_ROUTES[idx - 1];
+                const target = appRoutes[idx - 1];
                 navigate(target.path);
                 toast.success(`← ${target.label}`, { id: 'nav' });
             } else {
@@ -146,8 +180,8 @@ const GestureController = () => {
             }
         } else if (gesture === 'Victory') {
             const idx = getCurrentRouteIndex();
-            if (idx < APP_ROUTES.length - 1) {
-                const target = APP_ROUTES[idx + 1];
+            if (idx < appRoutes.length - 1) {
+                const target = appRoutes[idx + 1];
                 navigate(target.path);
                 toast.success(`→ ${target.label}`, { id: 'nav' });
             } else {
@@ -160,7 +194,7 @@ const GestureController = () => {
         } else if (gesture === 'Closed_Fist') {
             stopScroll();
         }
-    }, [navigate, startScroll, stopScroll]);
+    }, [navigate, startScroll, stopScroll, appRoutes]);
 
     // Load MediaPipe model
     useEffect(() => {
