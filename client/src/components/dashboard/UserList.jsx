@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../api/axios';
 import { 
     Trash2, Edit2, Shield, AlertCircle, Search, Filter, 
-    UserCheck, UserMinus, UserCog, UserSecret, Activity, 
+    UserCheck, UserMinus, UserCog, User, Activity, 
     MoreVertical, CheckSquare, Square, Download, LogIn, 
     Lock, Unlock, ShieldAlert, History
 } from 'lucide-react';
@@ -330,7 +330,7 @@ const UserList = () => {
                                             className="p-3 bg-brand-teal text-white hover:bg-brand-orange transition-all"
                                             title="PROTOCOL: IMPERSONATE"
                                         >
-                                            <UserSecret size={18} />
+                                            <User size={18} />
                                         </button>
                                         <button 
                                             onClick={() => fetchActivity(user._id)}

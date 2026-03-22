@@ -61,7 +61,7 @@ const invoiceSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-calculate totals and balance
-invoiceSchema.pre('save', function(next) {
+invoiceSchema.pre('save', async function() {
     let subtotal = 0;
     this.items.forEach(item => {
         let lineTotal = item.unitPrice * item.quantity;
@@ -88,8 +88,6 @@ invoiceSchema.pre('save', function(next) {
         const days = this.payment.terms === 'Net 15' ? 15 : this.payment.terms === 'Net 60' ? 60 : 30;
         this.payment.dueDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     }
-
-    next();
 });
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

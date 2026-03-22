@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Mail, Shield, Phone, Building2, Edit3, Save, X, 
     Calendar, Image, CheckCircle2, AlertCircle, User, Lock, 
-    Unlock, smartphone, monitor, Info, Trash2, Download, 
+    Unlock, Info, Trash2, Download, 
     Smartphone, Monitor, Laptop, Globe, LogOut, Check, RefreshCw,
     MapPin, Briefcase, Award, History, Layout, Command, Key
 } from 'lucide-react';

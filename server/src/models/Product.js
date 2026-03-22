@@ -49,9 +49,8 @@ const productSchema = new mongoose.Schema({
 productSchema.index({ name: 'text', description: 'text', category: 'text' });
 
 // Pre-save to calculate available stock
-productSchema.pre('save', function(next) {
+productSchema.pre('save', async function() {
     this.stock.available = this.stock.total - this.stock.reserved;
-    next();
 });
 
 module.exports = mongoose.model('Product', productSchema);

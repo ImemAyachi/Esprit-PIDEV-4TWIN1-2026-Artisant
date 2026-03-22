@@ -46,7 +46,7 @@ const orderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save to calculate totals if not provided
-orderSchema.pre('save', function(next) {
+orderSchema.pre('save', async function() {
     if (this.isNew) {
         this.statusTimeline.push({
             status: 'pending',
@@ -55,7 +55,6 @@ orderSchema.pre('save', function(next) {
             user: this.artisan
         });
     }
-    next();
 });
 
 module.exports = mongoose.model('Order', orderSchema);

@@ -40,11 +40,11 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
 };
 
 function App() {
-  const { checkAuth } = useAuthStore();
+  const { getMe } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    getMe();
+  }, [getMe]);
 
   return (
     <Router>

@@ -59,7 +59,7 @@ const quoteSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-calculate totals before saving
-quoteSchema.pre('save', function(next) {
+quoteSchema.pre('save', async function() {
     let subtotal = 0;
     this.items.forEach(item => {
         let lineTotal = item.unitPrice * item.quantity;
@@ -81,8 +81,6 @@ quoteSchema.pre('save', function(next) {
     if (!this.validUntil) {
         this.validUntil = new Date(Date.now() + this.validityPeriod * 24 * 60 * 60 * 1000);
     }
-
-    next();
 });
 
 module.exports = mongoose.model('Quote', quoteSchema);

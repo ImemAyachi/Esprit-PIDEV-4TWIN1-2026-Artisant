@@ -144,11 +144,36 @@ exports.checkOverdue = async (req, res) => {
     }
 };
 
-// @desc    Get Financial Summary
-// @route   GET /api/invoices/summary
-// @access  Private (Artisan)
 exports.getFinancialSummary = async (req, res) => {
     try {
+        if (req.user.role === 'manufacturer') {
+            const Product = require('../models/Product');
+            const Order = require('../models/Order');
+            
+            const products = await Product.find({ manufacturer: req.user.id }).distinct('_id');
+            const orders = await Order.find({ 'items.product': { $in: products }, status: { $ne: 'cancelled' } });
+
+            const summary = {
+                totalQuotes: 0, // Manufacturers don't usually use the Quote model
+                totalInvoiced: orders.reduce((acc, o) => acc + o.financials.total, 0),
+                totalPaid: orders.reduce((acc, o) => o.payment.status === 'paid' ? acc + o.financials.total : acc, 0),
+                totalOutstanding: orders.reduce((acc, o) => o.payment.status === 'unpaid' ? acc + o.financials.total : acc, 0),
+                aging: { current: 0, '1-30': 0, '31-60': 0, '61-90': 0, '90+': 0 }
+            };
+
+            const today = new Date();
+            orders.filter(o => o.payment.status === 'unpaid').forEach(o => {
+                const diffDays = Math.ceil((today - o.createdAt) / (1000 * 60 * 60 * 24));
+                if (diffDays <= 0) summary.aging.current += o.financials.total;
+                else if (diffDays <= 30) summary.aging['1-30'] += o.financials.total;
+                else if (diffDays <= 60) summary.aging['31-60'] += o.financials.total;
+                else if (diffDays <= 90) summary.aging['61-90'] += o.financials.total;
+                else summary.aging['90+'] += o.financials.total;
+            });
+
+            return res.status(200).json({ success: true, data: summary });
+        }
+
         const invoices = await Invoice.find({ artisan: req.user.id, status: { $ne: 'void' } });
         const quotes = await Quote.find({ artisan: req.user.id, isDeleted: false });
 

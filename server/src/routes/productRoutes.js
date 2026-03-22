@@ -8,7 +8,7 @@ const {
     addProductReview,
     getLowStockProducts 
 } = require('../controllers/productController');
-const { protect, authorize } = require('../middlewares/authMiddleware');
+const { protect, authorize } = require('../middleware/auth');
 
 router.route('/')
     .get(getProducts)

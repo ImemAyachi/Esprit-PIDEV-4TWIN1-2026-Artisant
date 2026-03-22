@@ -116,3 +116,6 @@ export const generateDocumentPDF = (docType, data) => {
         console.error("PDF Fail:", error);
     }
 };
+
+export const generateInvoicePDF = (data) => generateDocumentPDF('INVOICE', data);
+export const generateQuotePDF = (data) => generateDocumentPDF('QUOTE', data);

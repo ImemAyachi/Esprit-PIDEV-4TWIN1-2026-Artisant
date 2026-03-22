@@ -51,6 +51,7 @@ const sendTokenResponse = async (user, statusCode, req, res) => {
 // ─── Password Register ──────────────────────────────────────────────────────
 exports.register = async (req, res) => {
     try {
+        console.log('[AUTH] Registration Body:', req.body);
         const { companyName, email, password, phone, role, faceEmbedding } = req.body;
 
         if (!companyName || !email || !password || !phone) {
@@ -65,6 +66,8 @@ exports.register = async (req, res) => {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
 
+        console.log(`[AUTH] Registering user with role: ${role}`);
+
         const user = await User.create({
             companyName,
             email,
@@ -76,6 +79,8 @@ exports.register = async (req, res) => {
             emailVerificationOTP: otp,
             emailVerificationExpires: otpExpires
         });
+
+        console.log(`[AUTH] Created user with role: ${user.role}`);
 
         // In a real app, send email here. For now, we return it in response for dev ease
         sendTokenResponse(user, 201, req, res);

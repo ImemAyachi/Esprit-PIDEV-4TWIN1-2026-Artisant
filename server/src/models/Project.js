@@ -99,14 +99,12 @@ const projectSchema = new mongoose.Schema({
 });
 
 // Auto-calculate progress based on milestones
-projectSchema.pre('save', function(next) {
+projectSchema.pre('save', async function() {
     if (this.milestones && this.milestones.length > 0) {
         const total = this.milestones.length;
-        const completed = this.milestones.filter(m => m.status === 'Completed').length;
         const weights = this.milestones.reduce((acc, m) => acc + (m.percentage || 0), 0);
         this.progress = Math.round(weights / total);
     }
-    next();
 });
 
 const Project = mongoose.model('Project', projectSchema);

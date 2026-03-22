@@ -43,8 +43,16 @@ exports.getProducts = async (req, res) => {
 // @access  Private (Manufacturer/Admin)
 exports.createProduct = async (req, res) => {
     try {
+        const productData = { ...req.body };
+        if (!productData.images || productData.images.length === 0) {
+            productData.images = [{ 
+                url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&q=80&w=800', 
+                alt: 'Industrial Resource Placeholder' 
+            }];
+        }
+
         const product = new Product({
-            ...req.body,
+            ...productData,
             manufacturer: req.user.id,
             history: [{
                 action: 'created',

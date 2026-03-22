@@ -8,6 +8,7 @@ import {
     BarChart2, RefreshCw, CheckCircle2, ChevronDown, 
     ChevronRight, Layers, DollarSign, Package
 } from 'lucide-react';
+import useOrderStore from '../store/orderStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { toast } from 'react-hot-toast';
 
@@ -243,19 +244,30 @@ export default function ManageProducts() {
                             <form onSubmit={handleSave} className="space-y-8">
                                 <div className="grid grid-cols-2 gap-8">
                                     <div className="col-span-2 space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Identifiant Ressource</label>
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Identifiant Ressource (Nom)</label>
                                         <input required className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
                                     </div>
+                                    <div className="col-span-2 space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Description Technique</label>
+                                        <textarea required className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal h-24" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+                                    </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Catégorie</label>
-                                        <select className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Catégorie Principale</label>
+                                        <select required className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
                                             <option value="">Sélectionner</option>
                                             {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Sous-Catégorie</label>
+                                        <select className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal" value={form.subCategory} onChange={e => setForm({...form, subCategory: e.target.value})}>
+                                            <option value="">Sélectionner</option>
+                                            {CATEGORIES.find(c => c.name === form.category)?.subs.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Tarif de Sortie (DT)</label>
-                                        <input type="number" step="0.01" className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+                                        <input required type="number" step="0.01" className="w-full bg-brand-cream border-4 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal" value={form.price} onChange={e => setForm({...form, price: Number(e.target.value)})} />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Volume Initial</label>

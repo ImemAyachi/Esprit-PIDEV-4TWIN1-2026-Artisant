@@ -12,7 +12,7 @@ const { protect, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.use(protect);
-router.use(authorize('artisan', 'admin'));
+router.use(authorize('artisan', 'admin', 'manufacturer'));
 
 router.post('/', createInvoice);
 router.get('/my', getMyInvoices);
