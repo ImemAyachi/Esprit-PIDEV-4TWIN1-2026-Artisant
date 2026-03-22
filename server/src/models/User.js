@@ -29,6 +29,19 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please provide phone number'],
     },
+    address: {
+        street: String,
+        city: String,
+        state: String,
+        zipCode: String,
+        country: String,
+    },
+    professionalDetails: {
+        specialization: String,
+        bio: String,
+        yearsOfExperience: Number,
+        certifications: [String],
+    },
     avatarUrl: {
         type: String,
     },
@@ -45,6 +58,46 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     },
+    // Missing Security & Management Features
+    isEmailVerified: {
+        type: Boolean,
+        default: false,
+    },
+    emailVerificationOTP: String,
+    emailVerificationExpires: Date,
+    passwordResetToken: String,
+    passwordResetExpires: Date,
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false,
+    },
+    twoFactorSecret: String,
+    sessions: [{
+        device: String,
+        ip: String,
+        lastActive: { type: Date, default: Date.now },
+        isCurrent: Boolean,
+    }],
+    activityLog: [{
+        action: String,
+        timestamp: { type: Date, default: Date.now },
+        ip: String,
+    }],
+    roleChangeHistory: [{
+        oldRole: String,
+        newRole: String,
+        reason: String,
+        changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        timestamp: { type: Date, default: Date.now },
+    }],
+    temporaryPermissions: [{
+        role: String,
+        expiresAt: Date,
+        grantedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    }],
+    lastLogin: Date,
+    lastIP: String,
+    loginCount: { type: Number, default: 0 },
 }, {
     timestamps: true,
 });

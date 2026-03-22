@@ -1,257 +1,246 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useProductStore from '../store/productStore';
+import useCartStore from '../store/cartStore';
 import useAuthStore from '../store/authStore';
-import { Search, Mic, MicOff, Settings, ArrowLeft, ShoppingCart, Image as ImageIcon, Filter, Loader2, Plus, Info } from 'lucide-react';
+import { 
+    Search, Mic, MicOff, Settings, ArrowLeft, 
+    ShoppingCart, Image as ImageIcon, Filter, 
+    Loader2, Plus, Info, X, Check, ChevronDown,
+    SortAsc, SlidersHorizontal, Package, Star
+} from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { getImageUrl } from '../utils/imageUrl';
 
-const CATEGORIES = ['Tous', 'Textile', 'Céramique', 'Bijoux', 'Bois', 'Cuir', 'Métal', 'Autre'];
+const CATEGORIES = [
+    { id: 'all', label: 'Toutes Catégories' },
+    { id: 'Ciment', label: 'Ciment & Liants' },
+    { id: 'Acier', label: 'Acier & Métaux' },
+    { id: 'Bois', label: 'Menuiserie Bois' },
+    { id: 'Outillage', label: 'Outillage Machine' },
+    { id: 'Plaques', label: 'Isolants & Plaques' }
+];
 
 export default function Marketplace() {
-    const { products, pagination, loading, fetchProducts } = useProductStore();
+    const { products, loading, fetchProducts } = useProductStore();
+    const { addItem, items: cartItems, getFinancials } = useCartStore();
     const { user } = useAuthStore();
     const navigate = useNavigate();
 
-    const [filters, setFilters] = useState({ search: '', category: '', minPrice: '', maxPrice: '', page: 1 });
-    const [listening, setListening] = useState(false);
-    const [cart, setCart] = useState([]);
-    const recognitionRef = useRef(null);
+    const [filters, setFilters] = useState({ 
+        search: '', 
+        category: 'all', 
+        minPrice: '', 
+        maxPrice: '', 
+        sort: 'newest',
+        status: 'active'
+    });
+    
+    const [isListening, setIsListening] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    const load = useCallback(() => {
-        const f = { ...filters };
-        if (f.category === 'Tous') f.category = '';
-        fetchProducts(f);
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            fetchProducts(filters);
+        }, 500); // Debounce search
+        return () => clearTimeout(timeoutId);
     }, [filters, fetchProducts]);
 
-    useEffect(() => { load(); }, [load]);
-
-    // Voice search — Web Speech API (Zahra's feature)
     const startVoiceSearch = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            alert('ERREUR SYSTEME: La recherche vocale n\'est pas supportée par ce périphérique.');
-            return;
-        }
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'fr-FR';
-        recognition.interimResults = false;
-        recognition.onstart = () => setListening(true);
-        recognition.onresult = (e) => {
-            const transcript = e.results[0][0].transcript;
-            setFilters((f) => ({ ...f, search: transcript, page: 1 }));
-        };
-        recognition.onend = () => setListening(false);
-        recognition.onerror = () => setListening(false);
-        recognitionRef.current = recognition;
-        recognition.start();
+        if (!SpeechRecognition) return;
+        const rec = new SpeechRecognition();
+        rec.lang = 'fr-FR';
+        rec.onstart = () => setIsListening(true);
+        rec.onend = () => setIsListening(false);
+        rec.onresult = (e) => setFilters({ ...filters, search: e.results[0][0].transcript });
+        rec.start();
     };
 
-    const addToCart = (product) => {
-        setCart((prev) => {
-            const existing = prev.find((i) => i._id === product._id);
-            if (existing) return prev.map((i) => i._id === product._id ? { ...i, qty: i.qty + 1 } : i);
-            return [...prev, { ...product, qty: 1 }];
-        });
-    };
-
-    const handleFilterChange = (key, value) => {
-        setFilters((f) => ({ ...f, [key]: value, page: 1 }));
-    };
-
-    const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+    const cartTotal = getFinancials().subtotal;
 
     return (
         <DashboardLayout currentTab="Marketplace">
-            <div className="pb-20">
-                {/* Header */}
-                <div className="bg-white border-b-8 border-brand-teal px-8 py-6 sticky top-0 z-30 flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-6">
+            <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-brand-cream">
+                
+                {/* ── Sidebar Filters ── */}
+                <aside className={`bg-white border-r-4 border-brand-teal transition-all duration-500 overflow-y-auto ${sidebarOpen ? 'w-80' : 'w-0 border-r-0'}`}>
+                    <div className="p-8 space-y-12 w-80">
                         <div>
-                            <h1 className="m-0 text-3xl font-black uppercase tracking-tighter text-brand-teal leading-none">
-                                Réseau d'Approvisionnement
-                            </h1>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-brand-orange mt-1">Plateforme Industrielle d'Échange</p>
-                        </div>
-                    </div>
-                    {user && cart.length > 0 && (
-                        <button
-                            onClick={() => navigate('/order/new', { state: { cart } })}
-                            className="btn-primary flex items-center gap-3 animate-in"
-                            aria-label={`Panier, ${cart.length} produits, total ${cartTotal.toFixed(2)} DT`}
-                        >
-                            <ShoppingCart size={18} />
-                            <span className="flex flex-col items-start leading-tight">
-                                <span className="text-[10px] tracking-widest opacity-80">Finaliser ({cart.length})</span>
-                                <span className="text-sm">{cartTotal.toFixed(2)} DT</span>
-                            </span>
-                        </button>
-                    )}
-                </div>
-
-                {/* Search + Filters (Zahra) */}
-                <section aria-label="Filtres de recherche" className="p-8 max-w-7xl mx-auto border-b-4 border-brand-teal/20 mb-8 pb-10">
-                    <div className="flex flex-col md:flex-row gap-4 mb-6 relative">
-                        {/* Main search bar */}
-                        <div className="flex-1 relative flex items-center">
-                            <label htmlFor="search-input" className="sr-only">Rechercher un produit</label>
-                            <Search className="absolute left-4 text-brand-teal/40" size={20} />
-                            <input
-                                id="search-input"
-                                type="search"
-                                placeholder="RECHERCHER UNE RÉFÉRENCE, UN MATÉRIAU..."
-                                value={filters.search}
-                                onChange={(e) => handleFilterChange('search', e.target.value)}
-                                className="w-full pl-12 pr-12 py-4 bg-white border-4 border-brand-teal text-brand-teal text-sm font-black uppercase tracking-widest placeholder:-brand-teal/30 focus:outline-none focus:border-brand-orange"
-                            />
-                            {/* Voice search button */}
-                            <button
-                                onClick={startVoiceSearch}
-                                aria-label={listening ? 'Écoute en cours...' : 'Activer la recherche vocale'}
-                                className={`absolute right-2 p-2 border-2 transition-all flex items-center justify-center ${listening ? 'bg-red-50 border-red-500 text-red-500 animate-pulse' : 'border-transparent text-brand-teal hover:bg-brand-teal/10'} focus:outline-none`}
-                            >
-                                {listening ? <Mic size={20} /> : <MicOff size={20} />}
-                            </button>
-                        </div>
-
-                        <div className="flex gap-4">
-                            <div className="relative">
-                                <label htmlFor="min-price" className="sr-only">Prix minimum</label>
-                                <input id="min-price" type="number" placeholder="MIN (DT)" value={filters.minPrice} onChange={(e) => handleFilterChange('minPrice', e.target.value)} className="w-28 py-4 px-4 bg-white border-2 border-brand-teal text-brand-teal text-sm font-black uppercase focus:outline-none focus:border-brand-orange text-center" />
-                            </div>
-                            <div className="relative">
-                                <label htmlFor="max-price" className="sr-only">Prix maximum</label>
-                                <input id="max-price" type="number" placeholder="MAX (DT)" value={filters.maxPrice} onChange={(e) => handleFilterChange('maxPrice', e.target.value)} className="w-28 py-4 px-4 bg-white border-2 border-brand-teal text-brand-teal text-sm font-black uppercase focus:outline-none focus:border-brand-orange text-center" />
-                            </div>
-                        </div>
-
-                        {user?.role === 'manufacturer' || user?.role === 'admin' ? (
-                            <button onClick={() => navigate('/manage-products')} className="btn-secondary whitespace-nowrap flex items-center justify-center gap-2">
-                                <Settings size={18} /> Console Fabricant
-                            </button>
-                        ) : null}
-                    </div>
-
-                    {/* Category filter */}
-                    <div role="group" aria-label="Filtrer par catégorie" className="flex flex-wrap gap-2">
-                        {CATEGORIES.map((cat) => {
-                            const isSelected = filters.category === cat || (cat === 'Tous' && !filters.category);
-                            return (
-                                <button
-                                    key={cat}
-                                    onClick={() => handleFilterChange('category', cat === 'Tous' ? '' : cat)}
-                                    aria-pressed={isSelected}
-                                    className={`px-4 py-2 border-2 text-[10px] font-black uppercase tracking-widest transition-all focus:outline-none focus:border-brand-orange ${isSelected ? 'bg-brand-teal border-brand-teal text-white shadow-[2px_2px_0_0_#A66E4E]' : 'bg-white border-brand-teal text-brand-teal hover:bg-brand-cream'}`}
-                                >
-                                    {cat}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </section>
-
-                {/* Product Grid (Linda) */}
-                <main id="main-content" className="px-8 max-w-7xl mx-auto">
-                    <div className="flex justify-between items-end mb-8">
-                        <h2 className="text-xl font-black uppercase tracking-tighter text-brand-teal border-l-4 border-brand-orange pl-4">Ressources Disponibles</h2>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal/50" aria-live="polite">
-                            {loading ? 'CALCUL DU VOLUME...' : `UNITÉS TROUVÉES: ${pagination?.total || products.length}`}
-                        </p>
-                    </div>
-
-                    {loading ? (
-                        <div className="text-center p-20 border-4 border-brand-teal/20 bg-white" role="status" aria-live="polite">
-                            <Loader2 className="animate-spin text-brand-orange mx-auto mb-4" size={48} />
-                            <p className="text-xs font-black uppercase tracking-widest text-brand-teal">Traitement de la requête...</p>
-                        </div>
-                    ) : products.length === 0 ? (
-                        <div className="text-center p-20 border-4 border-brand-teal/20 bg-white">
-                            <Filter className="mx-auto text-brand-teal/20 mb-4" size={64} />
-                            <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal/30 mb-2">Base vide</h3>
-                            <p className="text-sm font-black uppercase tracking-widest text-brand-teal">Aucune correspondance dans l'inventaire.</p>
-                        </div>
-                    ) : (
-                        <>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {products.map((product) => (
-                                    <article
-                                        key={product._id}
-                                        className="bg-white border-4 border-brand-teal flex flex-col hover:-translate-y-1 hover:shadow-[8px_8px_0_0_#2D5A5A] transition-all group"
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal opacity-40 mb-6 flex items-center gap-2">
+                                <Filter size={14} /> Paramètres de Flux
+                            </h3>
+                            <div className="space-y-2">
+                                {CATEGORIES.map(cat => (
+                                    <button 
+                                        key={cat.id}
+                                        onClick={() => setFilters({ ...filters, category: cat.id })}
+                                        className={`w-full text-left p-4 text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                                            filters.category === cat.id ? 'bg-brand-teal text-white border-brand-teal shadow-[4px_4px_0px_0px_rgba(255,120,80,1)]' : 'bg-transparent text-brand-teal border-transparent hover:bg-brand-cream'
+                                        }`}
                                     >
-                                        {/* Product image with alt text (Linda accessibility ♿) */}
-                                        <div className="relative h-48 border-b-4 border-brand-teal overflow-hidden bg-brand-cream/50 flex items-center justify-center">
-                                            {product.images?.[0] ? (
-                                                <img
-                                                    src={getImageUrl(product.images[0])}
-                                                    alt={`Photo du produit ${product.name} dans la catégorie ${product.category}`}
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                                />
-                                            ) : (
-                                                <div
-                                                    role="img"
-                                                    aria-label={`Aucune image disponible pour ${product.name}`}
-                                                    className="text-brand-teal/20"
-                                                >
-                                                    <ImageIcon size={64} />
-                                                </div>
-                                            )}
-                                            <div className="absolute top-2 right-2 bg-brand-orange text-white px-2 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm">
-                                                {product.category}
-                                            </div>
-                                        </div>
-                                        <div className="p-5 flex-1 flex flex-col">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <div className="w-6 h-6 bg-brand-teal text-white flex items-center justify-center text-[10px] font-black">
-                                                    {product.manufacturer?.companyName?.charAt(0) || 'M'}
-                                                </div>
-                                                <span className="text-[10px] font-bold text-brand-teal/60 uppercase tracking-widest truncate">
-                                                    {product.manufacturer?.companyName || 'Fabricant'}
-                                                </span>
-                                            </div>
-                                            <h2 className="text-lg font-black uppercase tracking-tight text-brand-teal mb-2 leading-tight">{product.name}</h2>
-                                            <p className="m-0 text-brand-slate opacity-60 text-xs font-bold leading-relaxed line-clamp-2 flex-1 relative">
-                                                {product.description}
-                                            </p>
-                                            <div className="mt-6 pt-4 border-t-2 border-brand-teal/10 flex justify-between items-center">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Tarif Unitaire</span>
-                                                    <strong className="text-xl font-black text-brand-teal leading-none mt-1">{product.price?.toFixed(2)} DT</strong>
-                                                </div>
-                                                {user && (
-                                                    <button
-                                                        onClick={() => addToCart(product)}
-                                                        className="w-12 h-12 bg-white border-2 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-orange hover:text-white hover:border-brand-orange transition-all focus:outline-none focus:ring-4 focus:ring-brand-orange/30 group/cart shrink-0"
-                                                        aria-label={`Ajouter ${product.name} au panier`}
-                                                    >
-                                                        <Plus size={20} className="group-active/cart:scale-90 transition-transform" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </article>
+                                        {cat.label}
+                                    </button>
                                 ))}
                             </div>
+                        </div>
 
-                            {/* Pagination */}
-                            {pagination?.pages > 1 && (
-                                <nav aria-label="Pagination" className="mt-12 flex justify-center gap-2">
-                                    {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => {
-                                        const isCurrent = filters.page === p;
-                                        return (
-                                            <button
-                                                key={p}
-                                                onClick={() => setFilters((f) => ({ ...f, page: p }))}
-                                                aria-current={isCurrent ? 'page' : undefined}
-                                                className={`w-10 h-10 border-2 flex items-center justify-center text-sm font-black transition-all focus:outline-none ${isCurrent ? 'bg-brand-teal border-brand-teal text-white' : 'bg-white border-brand-teal text-brand-teal hover:bg-brand-cream'}`}
-                                            >
-                                                {p}
-                                            </button>
-                                        );
-                                    })}
-                                </nav>
+                        <div>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal opacity-40 mb-6">Tranche Tarifaire (DT)</h3>
+                            <div className="flex gap-4">
+                                <input 
+                                    type="number" 
+                                    placeholder="MIN" 
+                                    className="w-full bg-brand-cream border-2 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal"
+                                    value={filters.minPrice}
+                                    onChange={e => setFilters({...filters, minPrice: e.target.value})}
+                                />
+                                <input 
+                                    type="number" 
+                                    placeholder="MAX" 
+                                    className="w-full bg-brand-cream border-2 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal"
+                                    value={filters.maxPrice}
+                                    onChange={e => setFilters({...filters, maxPrice: e.target.value})}
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal opacity-40 mb-6">Tri des Ressources</h3>
+                            <select 
+                                className="w-full bg-brand-cream border-2 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal"
+                                value={filters.sort}
+                                onChange={e => setFilters({...filters, sort: e.target.value})}
+                            >
+                                <option value="newest">Plus Récents</option>
+                                <option value="price_asc">Prix Croissant</option>
+                                <option value="price_desc">Prix Décroissant</option>
+                                <option value="popular">Popularité</option>
+                            </select>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* ── Main Content ── */}
+                <main className="flex-1 flex flex-col min-w-0">
+                    {/* Toolbar */}
+                    <div className="bg-white border-b-4 border-brand-teal p-6 flex items-center justify-between gap-6 shrink-0 z-20">
+                        <div className="flex items-center gap-6 flex-1">
+                            <button 
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center hover:bg-brand-orange transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]"
+                            >
+                                <SlidersHorizontal size={20} />
+                            </button>
+                            <div className="flex-1 relative max-w-2xl group">
+                                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-brand-teal/30 group-focus-within:text-brand-orange transition-colors" size={20} />
+                                <input 
+                                    className="w-full pl-16 pr-16 py-4 bg-brand-cream border-2 border-brand-teal/10 text-xs font-black uppercase tracking-widest outline-none focus:border-brand-teal focus:bg-white transition-all shadow-inner"
+                                    placeholder="RECHERCHER DANS LE GISEMENT INDUSTRIEL..."
+                                    value={filters.search}
+                                    onChange={e => setFilters({...filters, search: e.target.value})}
+                                />
+                                <button 
+                                    onClick={startVoiceSearch}
+                                    className={`absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-brand-teal/20 hover:text-brand-teal'}`}
+                                >
+                                    {isListening ? <Mic size={18} /> : <MicOff size={18} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {cartItems.length > 0 && (
+                            <button 
+                                onClick={() => navigate('/checkout')}
+                                className="px-8 py-4 bg-brand-orange text-white text-xs font-black uppercase tracking-[0.2em] shadow-[8px_8px_0px_0px_rgba(45,90,90,0.2)] hover:bg-brand-teal transition-all flex items-center gap-4 animate-in slide-in-from-right-4"
+                            >
+                                <ShoppingCart size={20} />
+                                <div className="flex flex-col items-start leading-none gap-1">
+                                    <span className="text-[8px] font-black opacity-60">FINALISER ({cartItems.length})</span>
+                                    <span>{cartTotal.toLocaleString()} DT</span>
+                                </div>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Product Grid */}
+                    <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="flex justify-between items-end mb-12">
+                                <div>
+                                    <h2 className="text-4xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-2">Gisement Matériaux</h2>
+                                    <p className="text-[10px] font-black uppercase text-brand-teal/30 tracking-[0.4em]">Flux Actif / Qualité Certifiée Artisant</p>
+                                </div>
+                                <p className="text-[10px] font-black uppercase text-brand-orange">Unités Disponibles: {products.length}</p>
+                            </div>
+
+                            {loading ? (
+                                <div className="h-64 flex flex-col items-center justify-center gap-4">
+                                    <Loader2 size={48} className="animate-spin text-brand-orange" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-brand-teal/40 italic">Interrogation du stock central...</span>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
+                                    {products.map(product => (
+                                        <div key={product._id} className="bg-white border-4 border-brand-teal relative group hover:shadow-[16px_16px_0px_0px_rgba(45,90,90,0.1)] transition-all">
+                                            {/* Image Area */}
+                                            <div className="relative h-60 bg-brand-cream overflow-hidden cursor-pointer" onClick={() => navigate(`/marketplace/${product._id}`)}>
+                                                <img 
+                                                    src={product.images?.[0]?.url || '/placeholder.png'} 
+                                                    alt={product.images?.[0]?.alt || product.name}
+                                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                                />
+                                                <div className="absolute top-0 right-0 bg-white border-b-4 border-l-4 border-brand-teal px-4 py-2 flex items-center gap-1">
+                                                    <Star size={10} className="fill-brand-orange text-brand-orange" />
+                                                    <span className="text-[10px] font-black">{product.ratings?.average || '0.0'}</span>
+                                                </div>
+                                                {product.stock?.available <= 5 && (
+                                                    <div className="absolute bottom-4 left-4 bg-red-500 text-white px-4 py-1 text-[9px] font-black uppercase tracking-widest animate-pulse">
+                                                        Stock Critique: {product.stock?.available}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Details Area */}
+                                            <div className="p-8 border-t-4 border-brand-teal">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <p className="text-[8px] font-black uppercase text-brand-teal/40 tracking-widest mb-1">{product.category}</p>
+                                                        <h3 className="text-xl font-black uppercase tracking-tighter text-brand-teal group-hover:text-brand-orange transition-colors line-clamp-1">{product.name}</h3>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2 mb-8 text-[9px] font-black text-brand-teal/60 opacity-60 uppercase">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-orange" />
+                                                    <span>{product.manufacturer?.companyName || 'Usine Alpha'}</span>
+                                                </div>
+
+                                                <div className="flex items-end justify-between pt-6 border-t-2 border-brand-teal/5">
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-brand-teal/30 uppercase mb-1">Prix Unitaire</p>
+                                                        <p className="text-2xl font-black text-brand-teal">{product.price?.toLocaleString()} <span className="text-xs">DT</span></p>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => addItem(product)}
+                                                        className="w-14 h-14 bg-brand-teal text-white flex items-center justify-center hover:bg-brand-orange transition-all shadow-[4px_4px_0px_0px_rgba(45,90,90,0.2)] active:scale-95"
+                                                    >
+                                                        <Plus size={24} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
-                        </>
-                    )}
+
+                            {!loading && products.length === 0 && (
+                                <div className="h-96 border-8 border-dashed border-brand-teal/10 flex flex-col items-center justify-center text-center p-20">
+                                    <Package size={64} className="text-brand-teal/10 mb-8" />
+                                    <h3 className="text-3xl font-black uppercase text-brand-teal opacity-20 mb-4">Aucune Ressource Détectée</h3>
+                                    <p className="text-sm font-black uppercase tracking-widest text-brand-teal/40 max-w-md italic">Ajustez vos filtres de gisement pour élargir le spectre de recherche.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </main>
             </div>
         </DashboardLayout>

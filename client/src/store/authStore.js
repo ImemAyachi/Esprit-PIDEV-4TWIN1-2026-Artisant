@@ -121,21 +121,79 @@ const useAuthStore = create((set, get) => ({
         }
     },
 
-    updateProfile: async (userData) => {
+    verifyEmail: async (otp) => {
         set({ loading: true, error: null });
         try {
-            const response = await api.put('/auth/me/profile', userData);
-            set({
-                user: response.data.data.user,
-                loading: false,
-                error: null,
-            });
-            return { success: true, data: response.data.data.user };
+            await api.post('/auth/me/verify-email', { otp });
+            set({ user: { ...get().user, isEmailVerified: true }, loading: false });
+            return { success: true };
         } catch (error) {
-            set({
-                error: error.response?.data?.message || 'Update failed',
-                loading: false,
-            });
+            set({ error: error.response?.data?.message || 'Verification failed', loading: false });
+            return { success: false, message: error.response?.data?.message };
+        }
+    },
+
+    forgotPassword: async (email) => {
+        try {
+            await api.post('/auth/forgot-password', { email });
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message };
+        }
+    },
+
+    resetPassword: async (token, password) => {
+        try {
+            await api.post('/auth/reset-password', { token, password });
+            return { success: true };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message };
+        }
+    },
+
+    toggle2FA: async () => {
+        try {
+            const response = await api.post('/auth/me/2fa/toggle');
+            set({ user: { ...get().user, twoFactorEnabled: response.data.data.enabled } });
+            return { success: true, data: response.data.data };
+        } catch (error) {
+            return { success: false, message: error.response?.data?.message };
+        }
+    },
+
+    getSessions: async () => {
+        try {
+            const response = await api.get('/auth/me/sessions');
+            return response.data.data.sessions;
+        } catch (error) {
+            return [];
+        }
+    },
+
+    deleteSession: async (sessionId) => {
+        try {
+            await api.delete(`/auth/me/sessions/${sessionId}`);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    },
+
+    deleteAccount: async () => {
+        try {
+            await api.delete('/auth/me/account');
+            get().logout();
+            return true;
+        } catch (error) {
+            return false;
+        }
+    },
+
+    elevateUser: async (userId, role, durationHours) => {
+        try {
+            await api.post(`/users/${userId}/elevate`, { role, durationHours });
+            return { success: true };
+        } catch (error) {
             return { success: false, message: error.response?.data?.message };
         }
     },

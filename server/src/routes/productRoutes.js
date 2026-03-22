@@ -1,26 +1,29 @@
 const express = require('express');
-const {
-    getProducts,
-    getProductById,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    generateAIDescription,
-} = require('../controllers/productController');
-const { protect, authorize } = require('../middleware/auth');
-
 const router = express.Router();
+const { 
+    getProducts, 
+    createProduct, 
+    updateProduct, 
+    bulkUpdateProducts,
+    addProductReview,
+    getLowStockProducts 
+} = require('../controllers/productController');
+const { protect, authorize } = require('../middlewares/authMiddleware');
 
-// AI description — must be before /:id to avoid route conflict
-router.post('/ai-description', protect, authorize('manufacturer', 'admin'), generateAIDescription);
+router.route('/')
+    .get(getProducts)
+    .post(protect, authorize('manufacturer', 'admin'), createProduct);
 
-// Public routes
-router.get('/', getProducts);
-router.get('/:id', getProductById);
+router.route('/bulk')
+    .patch(protect, authorize('manufacturer', 'admin'), bulkUpdateProducts);
 
-// Protected CRUD
-router.post('/', protect, authorize('manufacturer', 'admin'), createProduct);
-router.put('/:id', protect, authorize('manufacturer', 'admin'), updateProduct);
-router.delete('/:id', protect, authorize('manufacturer', 'admin'), deleteProduct);
+router.route('/low-stock')
+    .get(protect, authorize('manufacturer', 'admin'), getLowStockProducts);
+
+router.route('/:id')
+    .put(protect, authorize('manufacturer', 'admin'), updateProduct);
+
+router.route('/:id/review')
+    .post(protect, addProductReview);
 
 module.exports = router;

@@ -37,7 +37,7 @@ const NAV_BY_ROLE = {
         { name: 'Documents', icon: FolderOpen },
         { name: 'Quotes', icon: ClipboardList },
         { name: 'Invoices', icon: Receipt },
-        { name: 'Access Logs', icon: BarChart2 },
+        { name: 'Analytics', icon: BarChart2 },
         { name: 'Settings', icon: Settings },
     ],
     admin: [

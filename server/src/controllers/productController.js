@@ -1,146 +1,151 @@
 const Product = require('../models/Product');
 
-// @desc    Get all products (with search, filter, pagination)
+// @desc    Get all products with advanced filtering and search
 // @route   GET /api/products
 // @access  Public
-const getProducts = async (req, res) => {
+exports.getProducts = async (req, res) => {
     try {
-        const { search, category, minPrice, maxPrice, manufacturer, page = 1, limit = 12 } = req.query;
-
-        const query = {};
+        const { search, category, minPrice, maxPrice, status, manufacturer, sort } = req.query;
+        let query = { isDeleted: false };
 
         if (search) {
-            query.$or = [
-                { name: { $regex: search, $options: 'i' } },
-                { description: { $regex: search, $options: 'i' } },
-                { category: { $regex: search, $options: 'i' } },
-            ];
+            query.$text = { $search: search };
         }
-
-        if (category) query.category = { $regex: category, $options: 'i' };
-        if (manufacturer) query.manufacturer = manufacturer;
+        if (category && category !== 'all') {
+            query.category = category;
+        }
         if (minPrice || maxPrice) {
             query.price = {};
             if (minPrice) query.price.$gte = Number(minPrice);
             if (maxPrice) query.price.$lte = Number(maxPrice);
         }
+        if (status) query.status = status;
+        if (manufacturer) query.manufacturer = manufacturer;
 
-        const skip = (Number(page) - 1) * Number(limit);
-        const total = await Product.countDocuments(query);
+        // Sorting
+        let sortBy = '-createdAt';
+        if (sort === 'price_asc') sortBy = 'price';
+        if (sort === 'price_desc') sortBy = '-price';
+        if (sort === 'popular') sortBy = '-ratings.average';
+
         const products = await Product.find(query)
-            .populate('manufacturer', 'companyName email')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(Number(limit));
+            .populate('manufacturer', 'companyName')
+            .sort(sortBy);
 
-        res.json({
-            success: true,
-            data: products,
-            pagination: {
-                total,
-                page: Number(page),
-                pages: Math.ceil(total / Number(limit)),
-            },
-        });
+        res.status(200).json({ success: true, count: products.length, data: products });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Get single product
-// @route   GET /api/products/:id
-// @access  Public
-const getProductById = async (req, res) => {
-    try {
-        const product = await Product.findById(req.params.id).populate('manufacturer', 'companyName email');
-        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
-        res.json({ success: true, data: product });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
-    }
-};
-
-// @desc    Create a product
+// @desc    Create product with history
 // @route   POST /api/products
-// @access  manufacturer / admin
-const createProduct = async (req, res) => {
+// @access  Private (Manufacturer/Admin)
+exports.createProduct = async (req, res) => {
     try {
-        const product = await Product.create({ ...req.body, manufacturer: req.user.id });
+        const product = new Product({
+            ...req.body,
+            manufacturer: req.user.id,
+            history: [{
+                action: 'created',
+                user: req.user.id,
+                details: 'Référencement initial du produit dans le catalogue.'
+            }]
+        });
+
+        await product.save();
         res.status(201).json({ success: true, data: product });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Update a product
+// @desc    Update product + stock history
 // @route   PUT /api/products/:id
-// @access  manufacturer (owner) / admin
-const updateProduct = async (req, res) => {
+// @access  Private (Manufacturer)
+exports.updateProduct = async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
-        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+        let product = await Product.findById(req.params.id);
+        if (!product) return res.status(404).json({ success: false, message: 'Source introuvable.' });
 
-        if (req.user.role !== 'admin' && String(product.manufacturer) !== String(req.user._id || req.user.id)) {
-            return res.status(403).json({ success: false, message: 'Not authorized' });
+        // Authorization check
+        if (product.manufacturer.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'Accès non autorisé.' });
         }
 
-        const updated = await Product.findByIdAndUpdate(req.params.id, req.body, {
+        const updates = req.body;
+        if (updates.stock?.total !== undefined) {
+            const diff = updates.stock.total - product.stock.total;
+            product.history.push({
+                action: 'stock_adjusted',
+                user: req.user.id,
+                details: `Stock ajusté de ${diff > 0 ? '+' : ''}${diff} unités. Raison: Réassortiment.`
+            });
+        }
+
+        product = await Product.findByIdAndUpdate(req.params.id, updates, {
             new: true,
-            runValidators: true,
+            runValidators: true
         });
-        res.json({ success: true, data: updated });
+
+        res.status(200).json({ success: true, data: product });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Delete a product
-// @route   DELETE /api/products/:id
-// @access  manufacturer (owner) / admin
-const deleteProduct = async (req, res) => {
+// @desc    Bulk update products
+// @route   PATCH /api/products/bulk
+// @access  Private (Manufacturer/Admin)
+exports.bulkUpdateProducts = async (req, res) => {
+    try {
+        const { ids, updates } = req.body;
+        await Product.updateMany(
+            { _id: { $in: ids }, manufacturer: req.user.id },
+            { $set: updates }
+        );
+        res.status(200).json({ success: true, message: 'Protocoles de masse mis à jour.' });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Add review to product
+// @route   POST /api/products/:id/review
+// @access  Private (Any authenticated user)
+exports.addProductReview = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-        if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+        if (!product) return res.status(404).json({ success: false, message: 'Produit non répertorié.' });
 
-        // Ownership check
-        if (req.user.role !== 'admin' && String(product.manufacturer) !== String(req.user._id || req.user.id)) {
-            return res.status(403).json({ success: false, message: 'Not authorized to delete this product' });
-        }
+        const { rating, comment } = req.body;
+        product.reviews.push({ user: req.user.id, rating: Number(rating), comment });
+        
+        // Update average rating
+        const totalRating = product.reviews.reduce((acc, r) => acc + r.rating, 0);
+        product.ratings.average = totalRating / product.reviews.length;
+        product.ratings.count = product.reviews.length;
 
-        await Product.findByIdAndDelete(req.params.id);
-        res.json({ success: true, message: 'Product deleted' });
+        await product.save();
+        res.status(201).json({ success: true, data: product });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Generate AI description for a product
-// @route   POST /api/products/ai-description
-// @access  manufacturer / admin
-const generateAIDescription = async (req, res) => {
+// @desc    Get low stock alerts
+// @route   GET /api/products/low-stock
+// @access  Private (Manufacturer/Admin)
+exports.getLowStockProducts = async (req, res) => {
     try {
-        const { name, category, specifications } = req.body;
+        const products = await Product.find({
+            manufacturer: req.user.id,
+            'stock.available': { $lte: 5 }, // Hardcoded threshold or use product threshold
+            isDeleted: false
+        }).sort('stock.available');
 
-        // AI mock — replace with a real LLM call if an API key is available
-        const specsText = (specifications || [])
-            .map((s) => `${s.key}: ${s.value}`)
-            .join(', ');
-
-        const description = `${name} est un produit de qualité supérieure dans la catégorie ${category}. `
-            + (specsText ? `Caractéristiques techniques : ${specsText}. ` : '')
-            + `Fabriqué avec soin par des artisans experts, ce produit allie durabilité et esthétique pour satisfaire les exigences les plus élevées.`;
-
-        res.json({ success: true, description });
+        res.status(200).json({ success: true, count: products.length, data: products });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        res.status(400).json({ success: false, message: err.message });
     }
-};
-
-module.exports = {
-    getProducts,
-    getProductById,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    generateAIDescription,
 };

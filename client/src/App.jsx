@@ -13,9 +13,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
 import Marketplace from './pages/Marketplace';
 import ManageProducts from './pages/ManageProducts';
-import OrderForm from './pages/OrderForm';
+import Checkout from './pages/Checkout';
 import OrderStatus from './pages/OrderStatus';
 import OrderHistory from './pages/OrderHistory';
+import QuoteAcceptance from './pages/QuoteAcceptance';
+import ProductDetail from './pages/ProductDetail';
 
 // Accessibility
 import ScreenReaderFocus from './components/ScreenReaderFocus';
@@ -31,54 +33,36 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(user?.role)) return <Navigate to="/dashboard" replace />;
+  
   return children;
 };
 
 function App() {
-  const { getMe } = useAuthStore();
+  const { checkAuth } = useAuthStore();
 
   useEffect(() => {
-    getMe();
-  }, []);
+    checkAuth();
+  }, [checkAuth]);
 
   return (
     <Router>
-      <ScreenReaderFocus />
+      <Toaster position="top-right" />
       <GestureController />
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#18181b',
-            color: '#fff',
-            borderRadius: '12px',
-            padding: '12px 16px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            fontWeight: '600',
-            fontSize: '13px',
-          },
-          success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
-          error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-        }}
-      />
+      <ScreenReaderFocus />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/quotes/:id/accept" element={<QuoteAcceptance />} />
 
+        {/* Universal Protected Routes */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert']}>
+            <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -87,36 +71,47 @@ function App() {
         <Route
           path="/profile"
           element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
+            <ProtectedRoute>
               <Profile />
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Module 4 — Marketplace & Commandes */}
+        {/* Marketplace & Orders */}
         <Route
           path="/marketplace"
-          element={<Marketplace />}
+          element={
+            <ProtectedRoute>
+              <Marketplace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/marketplace/:id"
+          element={
+            <ProtectedRoute>
+              <ProductDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders/history"
+          element={
+            <ProtectedRoute>
+              <OrderHistory />
+            </ProtectedRoute>
+          }
         />
 
+        {/* Manufacturer Specific */}
         <Route
           path="/manage-products"
           element={
@@ -126,34 +121,19 @@ function App() {
           }
         />
 
+        {/* Admin Specific */}
         <Route
-          path="/order/new"
+          path="/admin"
           element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
-              <OrderForm />
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AdminDashboard />
             </ProtectedRoute>
           }
         />
 
-        <Route
-          path="/orders/:id/status"
-          element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
-              <OrderStatus />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/orders/history"
-          element={
-            <ProtectedRoute allowedRoles={['artisan', 'manufacturer', 'expert', 'admin']}>
-              <OrderHistory />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Redirects */}
+        <Route path="/order/new" element={<Navigate to="/checkout" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );

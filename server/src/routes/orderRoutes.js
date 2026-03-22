@@ -1,21 +1,27 @@
 const express = require('express');
-const {
-    createOrder,
-    getMyOrders,
-    getOrderById,
-    updateOrderStatus,
-    getAllOrders,
-} = require('../controllers/orderController');
-const { protect, authorize } = require('../middleware/auth');
-
 const router = express.Router();
+const { 
+    createOrder, 
+    getMyOrders, 
+    getManufacturerOrders,
+    updateOrderStatus, 
+    getOrderAnalytics 
+} = require('../controllers/orderController');
+const { protect, authorize } = require('../middlewares/authMiddleware');
 
-router.use(protect);
+router.route('/')
+    .post(protect, createOrder);
 
-router.get('/', authorize('admin'), getAllOrders);
-router.post('/', createOrder);
-router.get('/my', getMyOrders);
-router.get('/:id', getOrderById);
-router.patch('/:id/status', authorize('admin', 'manufacturer'), updateOrderStatus);
+router.route('/my')
+    .get(protect, getMyOrders);
+
+router.route('/manufacturer')
+    .get(protect, authorize('manufacturer', 'admin'), getManufacturerOrders);
+
+router.route('/summary')
+    .get(protect, getOrderAnalytics);
+
+router.route('/:id/status')
+    .patch(protect, authorize('manufacturer', 'admin'), updateOrderStatus);
 
 module.exports = router;

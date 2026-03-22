@@ -1,296 +1,404 @@
-import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, Save, Send, Loader2, CheckCircle2, Calculator } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+    X, Plus, Trash2, Save, Send, ChevronRight, 
+    ChevronLeft, Receipt, DollarSign, Percent, 
+    Calculator, User, Briefcase, FileText, 
+    Package, ArrowRight, AlertCircle, History,
+    Calendar, CheckCircle2, ShieldCheck
+} from 'lucide-react';
 import useQuoteStore from '../../store/quoteStore';
-import useProjectStore from '../../store/projectStore';
+import useProductStore from '../../store/productStore';
+import { toast } from 'react-hot-toast';
+
+const TAX_TYPES = [
+    { label: 'TVA 19%', value: 19 },
+    { label: 'TVA 7%', value: 7 },
+    { label: 'Exonéré 0%', value: 0 }
+];
 
 const QuoteModal = ({ quote, onClose, onSave }) => {
-    const isEdit = !!(quote && (quote._id || quote.id));
-    const { createQuote, updateQuote } = useQuoteStore();
-    const { projects, fetchMyProjects } = useProjectStore();
-
-    const [loading, setLoading] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [error, setError] = useState(null);
-
-    const [form, setForm] = useState({
-        project: '',
-        clientName: '',
-        clientEmail: '',
-        items: [{ description: '', quantity: 1, unitPrice: 0 }],
-        tax: 0,
-        validUntil: '',
+    const { createQuote, updateQuote, loading } = useQuoteStore();
+    const { products, fetchProducts } = useProductStore();
+    const [step, setStep] = useState(1);
+    
+    // Form State
+    const [formData, setFormData] = useState({
+        title: '',
+        client: { name: '', email: '', address: '', phone: '' },
+        items: [{ description: '', quantity: 1, unitPrice: 0, taxRate: 19, discount: { type: 'percentage', value: 0 } }],
+        validityPeriod: 30,
+        termsAndConditions: 'Paiement à la réception. Validité du devis: 30 jours.',
+        notes: '',
+        shipping: 0
     });
 
     useEffect(() => {
-        fetchMyProjects();
-        if (isEdit) {
-            setForm({
-                project: quote.project?._id || quote.project || '',
-                clientName: quote.clientName || '',
-                clientEmail: quote.clientEmail || '',
-                items: quote.items || [{ description: '', quantity: 1, unitPrice: 0 }],
-                tax: quote.tax || 0,
-                validUntil: quote.validUntil ? new Date(quote.validUntil).toISOString().split('T')[0] : '',
+        if (quote) {
+            setFormData({
+                ...quote,
+                items: quote.items.map(i => ({
+                    ...i,
+                    discount: i.discount || { type: 'percentage', value: 0 }
+                }))
             });
         }
-    }, [quote, isEdit, fetchMyProjects]);
+        fetchProducts();
+    }, [quote, fetchProducts]);
+
+    // Financial Calculations
+    const financials = useMemo(() => {
+        let subtotal = 0;
+        const processedItems = formData.items.map(item => {
+            let lineTotal = item.unitPrice * item.quantity;
+            if (item.discount.type === 'percentage') {
+                lineTotal -= lineTotal * (item.discount.value / 100);
+            } else {
+                lineTotal -= item.discount.value;
+            }
+            subtotal += lineTotal;
+            return { ...item, total: lineTotal };
+        });
+
+        const taxAmount = subtotal * 0.19; // Simplified global VAT for calculation display
+        const grandTotal = subtotal + taxAmount + Number(formData.shipping);
+
+        return { subtotal, taxAmount, grandTotal, processedItems };
+    }, [formData]);
 
     const handleAddItem = () => {
-        setForm({
-            ...form,
-            items: [...form.items, { description: '', quantity: 1, unitPrice: 0 }]
-        });
+        setFormData(prev => ({
+            ...prev,
+            items: [...prev.items, { description: '', quantity: 1, unitPrice: 0, taxRate: 19, discount: { type: 'percentage', value: 0 } }]
+        }));
     };
 
     const handleRemoveItem = (index) => {
-        const newItems = form.items.filter((_, i) => i !== index);
-        setForm({ ...form, items: newItems });
+        setFormData(prev => ({
+            ...prev,
+            items: prev.items.filter((_, i) => i !== index)
+        }));
     };
 
     const handleItemChange = (index, field, value) => {
-        const newItems = [...form.items];
-        newItems[index] = { ...newItems[index], [field]: value };
-        setForm({ ...form, items: newItems });
+        const newItems = [...formData.items];
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            newItems[index][parent][child] = value;
+        } else {
+            newItems[index][field] = value;
+        }
+        setFormData(prev => ({ ...prev, items: newItems }));
     };
 
-    const calculateSubtotal = () => {
-        return form.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
+    const handleProductSelect = (index, product) => {
+        const newItems = [...formData.items];
+        newItems[index] = {
+            ...newItems[index],
+            product: product._id,
+            description: product.name,
+            unitPrice: product.price,
+            taxRate: 19
+        };
+        setFormData(prev => ({ ...prev, items: newItems }));
     };
 
-    const subtotal = calculateSubtotal();
-    const total = subtotal + Number(form.tax);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-
-        if (!form.project || !form.clientName || form.items.length === 0) {
-            setError("Veuillez remplir tous les champs obligatoires");
-            setLoading(false);
-            return;
+    const handleSubmit = async (status = 'draft') => {
+        const data = { ...formData, status };
+        let res;
+        if (quote?._id) {
+            res = await updateQuote(quote._id, data);
+        } else {
+            res = await createQuote(data);
         }
 
-        try {
-            let res;
-            if (isEdit) {
-                res = await updateQuote(quote._id || quote.id, form);
-            } else {
-                res = await createQuote(form);
-            }
-
-            if (res.success) {
-                setSaved(true);
-                setTimeout(() => {
-                    onSave && onSave();
-                    onClose();
-                }, 1500);
-            } else {
-                setError(res.message);
-            }
-        } catch (err) {
-            setError("Une erreur est survenue");
-        } finally {
-            setLoading(false);
+        if (res.success) {
+            toast.success(status === 'sent' ? 'Protocole expédié au client !' : 'Gisement sauvegardé en brouillon.');
+            onSave?.();
+            onClose();
+        } else {
+            toast.error(res.message || 'Échec de la transaction.');
         }
     };
 
     return (
-        <>
-            {/* Backdrop */}
-            <div className="fixed inset-0 bg-brand-slate/60 z-[70] backdrop-blur-[2px] transition-opacity" onClick={onClose} />
-
-            {/* Slide-in panel */}
-            <aside className="fixed top-0 right-0 h-full w-full max-w-2xl bg-brand-cream border-l-8 border-brand-teal z-[80] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-right duration-300">
-
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-brand-teal/80 backdrop-blur-sm" onClick={onClose} />
+            
+            <div className="relative bg-white w-full max-w-6xl h-[90vh] flex flex-col border-8 border-brand-teal shadow-[20px_20px_0px_0px_rgba(45,90,90,0.5)] overflow-hidden animate-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="bg-brand-teal text-white px-8 py-6 flex items-start justify-between shrink-0">
-                    <div>
-                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-white/50">
-                            Module Commercial / Devis
-                        </span>
-                        <h2 className="text-2xl font-black uppercase tracking-tighter leading-none">
-                            {isEdit ? 'Modifier le Devis' : 'Émettre un Nouveau Devis'}
-                        </h2>
+                <div className="bg-brand-teal p-6 flex justify-between items-center border-b-8 border-brand-orange">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white flex items-center justify-center">
+                            <Receipt className="text-brand-teal" size={28} />
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-black uppercase text-white tracking-tighter">
+                                {quote ? `Mise à jour Protocol v${quote.version || 1}` : 'Génération Devis Industriel'}
+                            </h2>
+                            <p className="text-[10px] font-black uppercase text-white/50 tracking-[0.3em]">Module de Facturation & Trading</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 border-2 border-white/20 text-white/60 hover:bg-white hover:text-brand-teal transition-all mt-1">
-                        <X size={18} />
-                    </button>
+                    <div className="flex items-center gap-6">
+                        <div className="hidden md:flex gap-2">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className={`h-1.5 w-12 transition-all ${step >= i ? 'bg-brand-orange' : 'bg-white/20'}`} />
+                            ))}
+                        </div>
+                        <button onClick={onClose} className="p-2 text-white hover:bg-brand-orange transition-all"><X size={24} /></button>
+                    </div>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8 space-y-8">
-                    {error && (
-                        <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs font-bold uppercase tracking-widest">
-                            {error}
+                {/* Progress Content */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-12">
+                    {step === 1 && (
+                        <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4">
+                            <section className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                <div className="space-y-6">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-brand-teal flex items-center gap-2">
+                                        <User size={14} className="text-brand-orange" /> Informations Contractant
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="col-span-2 space-y-2">
+                                            <input 
+                                                className="w-full bg-brand-cream border-2 border-brand-teal/10 px-4 py-3 text-sm font-bold uppercase outline-none focus:border-brand-orange"
+                                                placeholder="Référence Titre (ex: Travaux Peinture Phase 1)"
+                                                value={formData.title}
+                                                onChange={e => setFormData({...formData, title: e.target.value})}
+                                            />
+                                        </div>
+                                        <input 
+                                            className="bg-brand-cream border-2 border-brand-teal/10 px-4 py-3 text-sm font-bold placeholder:text-brand-teal/20 outline-none focus:border-brand-orange"
+                                            placeholder="Nom du Client"
+                                            value={formData.client.name}
+                                            onChange={e => setFormData({...formData, client: {...formData.client, name: e.target.value}})}
+                                        />
+                                        <input 
+                                            className="bg-brand-cream border-2 border-brand-teal/10 px-4 py-3 text-sm font-bold placeholder:text-brand-teal/20 outline-none focus:border-brand-orange"
+                                            placeholder="Email de facturation"
+                                            value={formData.client.email}
+                                            onChange={e => setFormData({...formData, client: {...formData.client, email: e.target.value}})}
+                                        />
+                                        <input 
+                                            className="bg-brand-cream border-2 border-brand-teal/10 px-4 py-3 text-sm font-bold placeholder:text-brand-teal/20 outline-none focus:border-brand-orange"
+                                            placeholder="Téléphone Liaison"
+                                            value={formData.client.phone}
+                                            onChange={e => setFormData({...formData, client: {...formData.client, phone: e.target.value}})}
+                                        />
+                                        <div className="col-span-2">
+                                            <textarea 
+                                                className="w-full bg-brand-cream border-2 border-brand-teal/10 px-4 py-3 text-sm font-bold placeholder:text-brand-teal/20 outline-none focus:border-brand-orange min-h-[80px]"
+                                                placeholder="Adresse Géographique / Matrice de livraison"
+                                                value={formData.client.address}
+                                                onChange={e => setFormData({...formData, client: {...formData.client, address: e.target.value}})}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-brand-cream p-8 border-4 border-brand-teal/5 relative">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-brand-teal flex items-center gap-2 mb-6">
+                                        <ShieldCheck size={14} className="text-brand-orange" /> Paramètres de Validité
+                                    </h3>
+                                    <div className="space-y-6">
+                                        <div>
+                                            <label className="text-[9px] font-black uppercase opacity-40 block mb-2">Période d'Expiration (Jours)</label>
+                                            <input 
+                                                type="number"
+                                                className="w-full bg-white border-2 border-brand-teal/10 px-4 py-3 font-black text-brand-teal outline-none"
+                                                value={formData.validityPeriod}
+                                                onChange={e => setFormData({...formData, validityPeriod: e.target.value})}
+                                            />
+                                        </div>
+                                        <div className="p-4 bg-white border-l-4 border-brand-orange">
+                                            <p className="text-[10px] font-bold text-brand-teal leading-relaxed">
+                                                Ce devis sera automatiquement marqué comme <span className="text-brand-orange font-black">EXPIRÉ</span> 
+                                                le {new Date(Date.now() + formData.validityPeriod * 86400000).toLocaleDateString()}.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     )}
 
-                    {/* Section: Client & Project */}
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-3 border-b-2 border-brand-teal/10 pb-2">
-                            <Calculator size={16} className="text-brand-teal" />
-                            <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-teal">Informations de Base</h3>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-brand-teal/50 ml-1">Projet Associé *</label>
-                                <select
-                                    className="input-field border-2 border-brand-teal/20 focus:border-brand-teal"
-                                    value={form.project}
-                                    onChange={(e) => setForm({ ...form, project: e.target.value })}
-                                    required
+                    {step === 2 && (
+                        <div className="animate-in fade-in slide-in-from-right-4 space-y-8">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-black uppercase tracking-tighter text-brand-teal flex items-center gap-2">
+                                    <Package size={20} className="text-brand-orange" /> Décomposition des Postes
+                                </h3>
+                                <button 
+                                    onClick={handleAddItem}
+                                    className="px-6 py-2 bg-brand-teal text-white text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-orange transition-all shadow-[4px_4px_0px_0px_rgba(45,90,90,0.2)]"
                                 >
-                                    <option value="">Sélectionner un projet</option>
-                                    {projects.map(p => (
-                                        <option key={p._id || p.id} value={p._id || p.id}>{p.title}</option>
-                                    ))}
-                                </select>
+                                    <Plus size={16} /> Ajouter une Ligne
+                                </button>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-brand-teal/50 ml-1">Client *</label>
-                                <input
-                                    type="text"
-                                    className="input-field border-2 border-brand-teal/20 focus:border-brand-teal"
-                                    placeholder="Nom du client"
-                                    value={form.clientName}
-                                    onChange={(e) => setForm({ ...form, clientName: e.target.value })}
-                                    required
-                                />
+
+                            <div className="space-y-4">
+                                {formData.items.map((item, index) => (
+                                    <div key={index} className="grid grid-cols-12 gap-4 bg-white p-4 border-2 border-brand-teal/10 hover:border-brand-teal transition-all group relative">
+                                        <div className="col-span-5 space-y-2">
+                                            <label className="text-[8px] font-black uppercase opacity-30">Désignation / Matériau</label>
+                                            <div className="relative">
+                                                <input 
+                                                    className="w-full bg-brand-cream border-b-2 border-brand-teal/10 px-2 py-2 text-xs font-bold outline-none focus:border-brand-teal"
+                                                    value={item.description}
+                                                    onChange={e => handleItemChange(index, 'description', e.target.value)}
+                                                />
+                                                {/* Product Catalog Dropdown would go here */}
+                                            </div>
+                                        </div>
+                                        <div className="col-span-1 space-y-2">
+                                            <label className="text-[8px] font-black uppercase opacity-30">Qté</label>
+                                            <input 
+                                                type="number"
+                                                className="w-full bg-brand-cream border-b-2 border-brand-teal/10 px-2 py-2 text-xs font-black outline-none focus:border-brand-teal"
+                                                value={item.quantity}
+                                                onChange={e => handleItemChange(index, 'quantity', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <label className="text-[8px] font-black uppercase opacity-30">Prix Unitaire (DT)</label>
+                                            <input 
+                                                type="number"
+                                                className="w-full bg-brand-cream border-b-2 border-brand-teal/10 px-2 py-2 text-xs font-black outline-none focus:border-brand-teal"
+                                                value={item.unitPrice}
+                                                onChange={e => handleItemChange(index, 'unitPrice', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <label className="text-[8px] font-black uppercase opacity-30">Remise (%)</label>
+                                            <input 
+                                                type="number"
+                                                className="w-full bg-brand-cream border-b-2 border-brand-teal/10 px-2 py-2 text-xs font-black outline-none focus:border-brand-teal"
+                                                value={item.discount.value}
+                                                onChange={e => handleItemChange(index, 'discount.value', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="col-span-2 space-y-2 text-right">
+                                            <label className="text-[8px] font-black uppercase opacity-30">Total Ligne</label>
+                                            <p className="py-2 text-xs font-black text-brand-teal">
+                                                {((item.unitPrice * item.quantity) * (1 - (item.discount.value/100))).toLocaleString()} DT
+                                            </p>
+                                        </div>
+
+                                        {formData.items.length > 1 && (
+                                            <button 
+                                                onClick={() => handleRemoveItem(index)}
+                                                className="absolute -right-4 top-1/2 -translate-y-1/2 p-2 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <Trash2 size={12} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
                         </div>
+                    )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-brand-teal/50 ml-1">Email Client</label>
-                                <input
-                                    type="email"
-                                    className="input-field border-2 border-brand-teal/20 focus:border-brand-teal"
-                                    placeholder="client@email.com"
-                                    value={form.clientEmail}
-                                    onChange={(e) => setForm({ ...form, clientEmail: e.target.value })}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[9px] font-black uppercase tracking-widest text-brand-teal/50 ml-1">Validité </label>
-                                <input
-                                    type="date"
-                                    className="input-field border-2 border-brand-teal/20 focus:border-brand-teal"
-                                    value={form.validUntil}
-                                    onChange={(e) => setForm({ ...form, validUntil: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Section: Items */}
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between border-b-2 border-brand-teal/10 pb-2">
-                            <div className="flex items-center gap-3">
-                                <Plus size={16} className="text-brand-teal" />
-                                <h3 className="text-[10px] font-black uppercase tracking-widest text-brand-teal">Lignes du Devis</h3>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={handleAddItem}
-                                className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal transition-colors"
-                            >
-                                + Ajouter une ligne
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {form.items.map((item, index) => (
-                                <div key={index} className="grid grid-cols-12 gap-2 items-end bg-white p-3 border-2 border-brand-teal/5">
-                                    <div className="col-span-6 space-y-1">
-                                        <label className="text-[8px] font-bold uppercase text-brand-teal/40">Description</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-brand-cream border-2 border-transparent focus:border-brand-teal/20 p-2 text-xs font-bold outline-none"
-                                            value={item.description}
-                                            onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                                            placeholder="Service ou produit..."
+                    {step === 3 && (
+                        <div className="animate-in fade-in slide-in-from-right-4 space-y-12">
+                            <section className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                                <div className="md:col-span-2 space-y-8">
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-teal">Clauses & Conditions</h4>
+                                        <textarea 
+                                            className="w-full bg-brand-cream border-2 border-brand-teal/10 p-6 text-xs font-bold min-h-[150px] outline-none focus:border-brand-orange"
+                                            value={formData.termsAndConditions}
+                                            onChange={e => setFormData({...formData, termsAndConditions: e.target.value})}
                                         />
                                     </div>
-                                    <div className="col-span-2 space-y-1">
-                                        <label className="text-[8px] font-bold uppercase text-brand-teal/40">Qté</label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-brand-cream border-2 border-transparent focus:border-brand-teal/20 p-2 text-xs font-bold outline-none"
-                                            value={item.quantity}
-                                            onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="col-span-3 space-y-1">
-                                        <label className="text-[8px] font-bold uppercase text-brand-teal/40">Prix Unitaire</label>
-                                        <input
-                                            type="number"
-                                            className="w-full bg-brand-cream border-2 border-transparent focus:border-brand-teal/20 p-2 text-xs font-bold outline-none"
-                                            value={item.unitPrice}
-                                            onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="col-span-1 pb-1">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveItem(index)}
-                                            className="p-2 text-brand-slate/20 hover:text-red-500 transition-colors"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
+                                    <div className="p-8 bg-brand-teal text-white border-l-8 border-brand-orange">
+                                        <div className="flex items-start gap-4">
+                                            <AlertCircle size={24} className="text-brand-orange shrink-0" />
+                                            <div>
+                                                <h5 className="font-black uppercase text-xs mb-2">Notice d'Authenticité</h5>
+                                                <p className="text-[10px] font-bold opacity-60 leading-relaxed">
+                                                    Une fois expédié, ce protocole sera scellé temporellement. Toute modification ultérieure générera automatiquement une nouvelle itération (v2, v3...) pour garantir l'intégrité de l'audit financier.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* Totals */}
-                    <div className="bg-brand-teal text-white p-8 space-y-4">
-                        <div className="flex justify-between items-center text-xs font-bold uppercase tracking-widest opacity-60">
-                            <span>Sous-total</span>
-                            <span>{subtotal.toLocaleString()} DT</span>
-                        </div>
-                        <div className="flex justify-between items-center gap-4">
-                            <span className="text-xs font-bold uppercase tracking-widest opacity-60">Taxes / Frais</span>
-                            <input
-                                type="number"
-                                className="w-24 bg-white/10 border-2 border-white/20 p-1 text-right text-xs font-bold outline-none focus:border-brand-orange"
-                                value={form.tax}
-                                onChange={(e) => setForm({ ...form, tax: e.target.value })}
-                            />
-                        </div>
-                        <div className="pt-4 border-t-2 border-white/10 flex justify-between items-center">
-                            <span className="text-lg font-black uppercase tracking-tighter">Total Devis</span>
-                            <span className="text-2xl font-black text-brand-orange">{total.toLocaleString()} DT</span>
-                        </div>
-                    </div>
-                </form>
+                                <div className="bg-white border-4 border-brand-teal p-8 flex flex-col justify-between">
+                                    <div className="space-y-6">
+                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-teal mb-8">Récapitulatif Fiscal</h4>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center text-xs font-bold text-brand-slate">
+                                                <span>SOUS-TOTAL HT</span>
+                                                <span className="font-black">{financials.subtotal.toLocaleString()} DT</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs font-bold text-brand-teal">
+                                                <span>TVA (Général 19%)</span>
+                                                <span className="font-black">{(financials.subtotal * 0.19).toLocaleString()} DT</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-[10px] font-black text-brand-slate opacity-40">
+                                                <span>LOGISTIQUE / LIVRAISON</span>
+                                                <input 
+                                                    type="number"
+                                                    className="w-20 bg-brand-cream border-b border-brand-teal/20 px-1 py-1 text-right outline-none focus:border-brand-teal"
+                                                    value={formData.shipping}
+                                                    onChange={e => setFormData({...formData, shipping: Number(e.target.value)})}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                {/* Footer actions */}
-                <div className="px-8 py-6 border-t-8 border-brand-teal bg-white shrink-0 flex gap-4">
-                    <button type="button" onClick={onClose} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest border-2 border-brand-teal text-brand-teal hover:bg-brand-cream transition-all">
-                        Abandonner
-                    </button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading || saved}
-                        className="flex-[2] py-4 text-[10px] font-black uppercase tracking-[0.2em] bg-brand-teal text-white border-2 border-brand-teal hover:bg-brand-orange hover:border-brand-orange transition-all flex items-center justify-center gap-3 disabled:opacity-70 shadow-[4px_4px_0px_0px_rgba(45,90,90,0.2)]"
+                                    <div className="mt-12 pt-12 border-t-4 border-brand-teal">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <span className="text-[10px] font-black uppercase text-brand-teal/40">Total Net à Payer</span>
+                                            <span className="text-3xl font-black text-brand-teal">{financials.grandTotal.toLocaleString()} DT</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer Controls */}
+                <div className="bg-brand-cream p-8 flex justify-between items-center border-t-8 border-brand-teal">
+                    <button 
+                        onClick={() => step > 1 ? setStep(step - 1) : onClose()} 
+                        className="px-8 py-3 border-4 border-brand-teal text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-teal hover:text-white transition-all shadow-[6px_6px_0px_0px_rgba(45,90,90,0.1)]"
                     >
-                        {loading ? (
-                            <><Loader2 size={18} className="animate-spin" /> Traitement...</>
-                        ) : saved ? (
-                            <><CheckCircle2 size={18} className="text-white" /> Devis Enregistré !</>
+                        {step === 1 ? <Trash2 size={16} /> : <ChevronLeft size={18} />}
+                        {step === 1 ? 'Abandonner' : 'Retour'}
+                    </button>
+
+                    <div className="flex gap-4">
+                        {step < 3 ? (
+                            <button 
+                                onClick={() => setStep(step + 1)}
+                                className="px-12 py-4 bg-brand-teal text-white text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:bg-brand-orange transition-all shadow-[8px_8px_0px_0px_rgba(45,90,90,0.2)]"
+                            >
+                                Continuer <ChevronRight size={18} />
+                            </button>
                         ) : (
                             <>
-                                {isEdit ? <Save size={18} /> : <Send size={18} />}
-                                {isEdit ? 'Enregistrer les Modifications' : 'Générer le Devis'}
+                                <button 
+                                    onClick={() => handleSubmit('draft')}
+                                    disabled={loading}
+                                    className="px-8 py-4 border-4 border-brand-teal text-brand-teal text-xs font-black uppercase tracking-widest hover:bg-brand-teal hover:text-white transition-all flex items-center gap-2"
+                                >
+                                    <Save size={18} /> Brouillon
+                                </button>
+                                <button 
+                                    onClick={() => handleSubmit('sent')}
+                                    disabled={loading}
+                                    className="px-12 py-4 bg-brand-orange text-white text-xs font-black uppercase tracking-widest hover:bg-brand-teal flex items-center gap-2 transition-all shadow-[8px_8px_0px_0px_rgba(45,90,90,0.2)] group"
+                                >
+                                    Fermer & Expédier <Send size={18} className="group-hover:translate-x-2 transition-transform" />
+                                </button>
                             </>
                         )}
-                    </button>
+                    </div>
                 </div>
-            </aside>
-        </>
+            </div>
+        </div>
     );
 };
 
