@@ -3,8 +3,10 @@ import api from '../../api/axios';
 import { 
     FileText, FolderPlus, Eye, Heart, Download, Search, Plus, 
     ChevronRight, MoreVertical, Share2, Trash2, Folder, 
-    Tag as TagIcon, ArrowLeft, Upload, Loader2, X, Archive
+    Tag as TagIcon, ArrowLeft, Upload, Loader2, X, Archive,
+    FolderOpen, LayoutDashboard
 } from 'lucide-react';
+
 import useAuthStore from '../../store/authStore';
 import DocumentPreview from './DocumentPreview';
 import { toast } from 'react-hot-toast';
@@ -25,6 +27,13 @@ const DocumentLibrary = () => {
     useEffect(() => {
         fetchDocuments();
     }, [search, currentFolder]);
+
+    useEffect(() => {
+        if (selectedDoc) {
+            api.post(`/documents/${selectedDoc._id}/consult`, { action: 'view' });
+        }
+    }, [selectedDoc]);
+
 
     const fetchDocuments = async () => {
         setLoading(true);

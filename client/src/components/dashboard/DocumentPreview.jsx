@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight, Download, Share2, History } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, ChevronLeft, ChevronRight, Download, Share2, History, FileText } from 'lucide-react';
+
 
 const DocumentPreview = ({ document, onClose }) => {
     const [zoom, setZoom] = useState(100);

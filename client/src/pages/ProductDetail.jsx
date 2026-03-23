@@ -2,13 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useProductStore from '../store/productStore';
 import useCartStore from '../store/cartStore';
-import { 
-    ShoppingCart, ArrowLeft, Star, Package, 
-    ShieldCheck, Truck, ShieldAlert, Plus, 
-    Minus, Loader2, Info, ChevronRight, MessageSquare
-} from 'lucide-react';
+import { Loader2, ArrowLeft, Star, Package, Plus, Minus, Info, ChevronRight, MessageSquare, ShoppingCart, ShieldCheck, Truck, ShieldAlert } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { toast } from 'react-hot-toast';
+import { getImageUrl } from '../utils/imageUrl';
 
 const ProductDetail = () => {
     const { id } = useParams();
@@ -63,7 +60,7 @@ const ProductDetail = () => {
                     <div className="space-y-6">
                         <div className="aspect-square bg-white border-8 border-brand-teal overflow-hidden group cursor-zoom-in relative">
                             <img 
-                                src={product.images?.[activeImg]?.url || '/placeholder.png'} 
+                                src={getImageUrl(product.images?.[activeImg]) || '/placeholder.png'} 
                                 className="w-full h-full object-cover group-hover:scale-150 transition-transform duration-700 origin-center"
                                 alt={product.name}
                             />
@@ -75,7 +72,7 @@ const ProductDetail = () => {
                                     onClick={() => setActiveImg(idx)}
                                     className={`w-24 h-24 border-4 transition-all ${activeImg === idx ? 'border-brand-orange' : 'border-brand-teal/10 hover:border-brand-teal'}`}
                                 >
-                                    <img src={img.url} className="w-full h-full object-cover" alt="" />
+                                    <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" />
                                 </button>
                             ))}
                         </div>
@@ -118,7 +115,8 @@ const ProductDetail = () => {
                         <div className="bg-brand-teal p-10 text-white border-8 border-brand-teal shadow-[16px_16px_0px_0px_rgba(45,90,90,0.1)] flex flex-wrap items-center justify-between gap-8">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 mb-2">Net à Payer (HT)</p>
-                                <p className="text-4xl font-black">{product.price.toLocaleString()} <span className="text-sm">DT</span></p>
+                                <p className="text-4xl font-black">{(product.price || 0).toLocaleString()} <span className="text-sm">DT</span></p>
+
                             </div>
                             <div className="flex items-center gap-6">
                                 <div className="flex items-center gap-4 bg-white/10 border-2 border-white/20 p-2">

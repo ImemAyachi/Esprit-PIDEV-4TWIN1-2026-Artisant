@@ -7,8 +7,9 @@ import {
     Receipt, BarChart2, Eye, Download, CheckCircle2, Loader2,
     AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil,
     FileText, Users, Shield, FolderPlus, ArrowRight,
-    Archive, Trash2, CreditCard, DollarSign, User
+    Archive, Trash2, CreditCard, DollarSign, User, Mic
 } from 'lucide-react';
+
 import useAuthStore from '../store/authStore';
 import useProjectStore from '../store/projectStore';
 import useQuoteStore from '../store/quoteStore';
@@ -752,6 +753,11 @@ const Dashboard = () => {
                                     key={i}
                                     tabIndex="0"
                                     aria-label={`${stat.label}: ${stat.value}, trend is ${stat.trend}`}
+                                    onClick={() => {
+                                        if (stat.label.includes('Site')) setActiveTab('Projects');
+                                        if (stat.label.includes('Quote')) setActiveTab('Quotes');
+                                        if (stat.label.includes('Rank')) setActiveTab('Analytics');
+                                    }}
                                     className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group cursor-pointer focus:z-10"
                                 >
                                     <div className="flex justify-between items-start mb-4">
@@ -774,16 +780,21 @@ const Dashboard = () => {
                             <div className="card h-full min-h-[400px]">
                                 <div className="flex justify-between items-center mb-10">
                                     <h4 className="text-xl font-black uppercase tracking-tight text-brand-teal">System Ledger</h4>
-                                    <button className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">View Logs</button>
+                                    <button 
+                                        onClick={() => setActiveTab('Analytics')}
+                                        className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal"
+                                    >
+                                        View Logs
+                                    </button>
                                 </div>
                                 <div className="space-y-6">
                                     {[1, 2, 3, 4].map((i) => (
                                         <div
                                             key={i}
-                                            tabIndex="0"
-                                            aria-label="System Ledger entry: Project Sync Completed. Site-Alpha deployment verified by controller."
+                                            onClick={() => setActiveTab('Analytics')}
                                             className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer focus:border-brand-teal/20 focus:bg-brand-cream"
                                         >
+
                                             <div className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
                                                 <Clock size={20} />
                                             </div>
@@ -797,6 +808,7 @@ const Dashboard = () => {
                                         </div>
                                     ))}
                                 </div>
+
                             </div>
 
                             {/* Creative Box */}
@@ -810,7 +822,10 @@ const Dashboard = () => {
                                     <p className="font-bold text-sm text-white/50 leading-relaxed max-w-xs mb-8">
                                         Expand your operational reach by connecting with verified experts and manufacturers.
                                     </p>
-                                    <button className="btn-outline-white w-full flex items-center justify-center gap-3">
+                                    <button 
+                                        onClick={() => setActiveTab('Marketplace')}
+                                        className="btn-outline-white w-full flex items-center justify-center gap-3"
+                                    >
                                         Explore Ecosystem <ArrowRight size={20} />
                                     </button>
                                 </div>

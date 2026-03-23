@@ -2,11 +2,13 @@ const express = require('express');
 const {
     createInvoice,
     getMyInvoices,
+    updateInvoice,
+    deleteInvoice,
+    getFinancialSummary,
     recordPayment,
-    voidInvoice,
-    checkOverdue,
-    getFinancialSummary
+    voidInvoice
 } = require('../controllers/invoiceController');
+
 const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
@@ -19,6 +21,9 @@ router.get('/my', getMyInvoices);
 router.get('/summary', getFinancialSummary);
 router.patch('/:id/payment', recordPayment);
 router.patch('/:id/void', voidInvoice);
-router.get('/check-overdue', checkOverdue);
+router.put('/:id', updateInvoice);
+router.delete('/:id', deleteInvoice);
+
 
 module.exports = router;
+

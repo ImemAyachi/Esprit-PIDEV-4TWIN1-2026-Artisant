@@ -186,7 +186,7 @@ export default function Marketplace() {
                                             {/* Image Area */}
                                             <div className="relative h-60 bg-brand-cream overflow-hidden cursor-pointer" onClick={() => navigate(`/marketplace/${product._id}`)}>
                                                 <img 
-                                                    src={product.images?.[0]?.url || '/placeholder.png'} 
+                                                    src={getImageUrl(product.images?.[0]) || '/placeholder.png'} 
                                                     alt={product.images?.[0]?.alt || product.name}
                                                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                                 />

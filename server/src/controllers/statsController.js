@@ -11,9 +11,9 @@ exports.getStats = async (req, res) => {
         const manufacturerCount = await User.countDocuments({ role: 'manufacturer' });
         const projectCount = await Project.countDocuments();
 
-        // Sum total amount of all orders for transaction volume
-        const orders = await Order.find({}, 'totalAmount');
-        const totalVolume = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        // Sum total price of all orders for transaction volume
+        const orders = await Order.find({}, 'totalPrice');
+        const totalVolume = orders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
 
         res.status(200).json({
             success: true,
@@ -28,3 +28,4 @@ exports.getStats = async (req, res) => {
         res.status(500).json({ success: false, message: err.message });
     }
 };
+

@@ -11,6 +11,7 @@ import {
 import useOrderStore from '../store/orderStore';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { toast } from 'react-hot-toast';
+import { getImageUrl } from '../utils/imageUrl';
 
 const CATEGORIES = [
     { 
@@ -176,7 +177,7 @@ export default function ManageProducts() {
                                             <td className="p-6">
                                                 <div className="flex items-center gap-4">
                                                     <div className="w-12 h-12 bg-brand-cream border-2 border-brand-teal/10 p-1">
-                                                        <img src={p.images?.[0]?.url || '/placeholder.png'} className="w-full h-full object-cover" />
+                                                        <img src={getImageUrl(p.images?.[0]) || '/placeholder.png'} className="w-full h-full object-cover" />
                                                     </div>
                                                     <div>
                                                         <p className="font-black text-brand-teal uppercase">{p.name}</p>
@@ -190,7 +191,7 @@ export default function ManageProducts() {
                                                     {p.stock?.available}
                                                 </span>
                                             </td>
-                                            <td className="p-6 text-right font-black text-brand-teal">{p.price.toLocaleString()} DT</td>
+                                            <td className="p-6 text-right font-black text-brand-teal">{p.price?.toLocaleString()} DT</td>
                                             <td className="p-6 text-right">
                                                 <button 
                                                     onClick={() => { setForm(p); setEditingId(p._id); setShowForm(true); }}

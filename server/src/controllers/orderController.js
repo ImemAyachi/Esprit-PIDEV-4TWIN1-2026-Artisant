@@ -1,181 +1,202 @@
 const Order = require('../models/Order');
+const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 
-// @desc    Checkout and Create Order (Multi-step Logic)
+// @desc    Create new order
 // @route   POST /api/orders
-// @access  Private (Artisan/Expert/Admin)
 exports.createOrder = async (req, res) => {
     try {
-        const { items, shipping, payment, financials, notes } = req.body;
+        const { items, shipping, financials, vocalResumeUrl } = req.body;
 
-        // 1. Stock Reservation & Validation
-        for (const item of items) {
-            const product = await Product.findById(item.product);
-            if (!product) throw new Error(`Produit introuvable: ${item.name}`);
-            
-            if (product.stock.available < item.quantity) {
-                throw new Error(`Rupture de stock pour ${product.name}. Disponible: ${product.stock.available}`);
-            }
-
-            // Reserve Stock
-            product.stock.reserved += item.quantity;
-            product.stock.available = product.stock.total - product.stock.reserved;
-            await product.save();
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ success: false, message: 'Le panier est vide ou malformé.' });
         }
 
-        // 2. Generate Order Number (Industrial Format)
-        const orderCount = await Order.countDocuments() + 1;
-        const year = new Date().getFullYear();
-        const orderNumber = `ORD-${year}-${String(orderCount).padStart(4, '0')}`;
+        // Manufacturer resolution and item verification
+        const productIds = items.map(i => i.product);
+        const products = await Product.find({ _id: { $in: productIds } });
+        
+        if (products.length === 0) {
+            return res.status(400).json({ success: false, message: 'Aucun produit valide trouvé.' });
+        }
 
-        // 3. Estimate Delivery (Processing: 2 days + Method: 3 days)
-        const estimatedDelivery = new Date();
-        estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
+        const firstProduct = products[0];
+        const manufacturerId = firstProduct.manufacturer;
 
-        const order = new Order({
-            orderNumber,
-            artisan: req.user.id,
-            items,
-            shipping: { ...shipping, estimatedDelivery },
-            payment,
-            financials,
-            notes,
-            status: 'pending'
+        // Calculate total if financials missing or for verification
+        const calculatedTotal = items.reduce((sum, item) => {
+            const p = products.find(prod => prod._id.toString() === item.product);
+            return sum + (p?.unitPrice || 0) * item.quantity;
+        }, 0);
+
+        // Apply shipping cost logic (matching cartStore.js)
+        const finalTotal = calculatedTotal + (calculatedTotal * 0.19) + (calculatedTotal > 500 ? 0 : 50);
+
+        const timestamp = Date.now().toString().slice(-4);
+        const randomStr = Math.random().toString(36).substring(2, 4).toUpperCase();
+        const orderNumber = `ORD-${timestamp}-${randomStr}`;
+
+        const order = await Order.create({
+            artisan: req.user._id,
+            manufacturer: manufacturerId,
+            orderNumber: orderNumber,
+            shippingAddress: shipping?.address || 'Adresse de livraison par défaut',
+            totalPrice: financials?.total || finalTotal,
+            vocalResumeUrl: vocalResumeUrl,
+            status: 'en_attente'
         });
 
-        await order.save();
+
+        // Create order items with reliable database prices
+        for (const item of items) {
+            const prod = products.find(p => p._id.toString() === item.product);
+            await OrderItem.create({
+                order: order._id,
+                product: item.product,
+                quantity: item.quantity,
+                unitPrice: prod?.unitPrice || item.price || 0,
+                subtotal: (prod?.unitPrice || item.price || 0) * item.quantity
+            });
+        }
+
         res.status(201).json({ success: true, data: order });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        console.error('CRITICAL Order Creation Failure:', err);
+        res.status(400).json({ success: false, message: `System Error: ${err.message}` });
     }
 };
 
-// @desc    Get my orders with filters
+
+
+
+// @desc    Get all orders for the logged-in artisan
 // @route   GET /api/orders/my
-// @access  Private
 exports.getMyOrders = async (req, res) => {
     try {
-        const { status, timeframe } = req.query;
-        let query = { artisan: req.user.id };
-
-        if (status && status !== 'all') query.status = status;
+        const orders = await Order.find({ artisan: req.user.id })
+            .populate('manufacturer', 'companyName')
+            .sort('-createdAt');
         
-        if (timeframe === 'last_7') {
-            const d = new Date();
-            d.setDate(d.getDate() - 7);
-            query.createdAt = { $gte: d };
+        const mappedOrders = [];
+        for (const order of orders) {
+            const items = await OrderItem.find({ order: order._id }).populate('product');
+            mappedOrders.push({
+                ...order.toObject(),
+                orderNumber: order.orderNumber || `ORD-${order._id.toString().slice(-6).toUpperCase()}`,
+                financials: { total: order.totalPrice },
+                status: order.status === 'en_attente' ? 'pending' : 
+                        order.status === 'expédié' ? 'shipped' : 
+                        order.status === 'livré' ? 'delivered' : 
+                        order.status === 'annulé' ? 'cancelled' : order.status,
+                items: items.map(i => ({
+                    ...i.toObject(),
+                    name: i.product?.name || 'N/A',
+                    total: i.quantity * i.unitPrice
+                })),
+                shipping: { address: order.shippingAddress, contactName: req.user.companyName }
+            });
         }
 
-        const orders = await Order.find(query)
-            .populate('items.product', 'name images')
-            .sort('-createdAt');
-
-        res.status(200).json({ success: true, count: orders.length, data: orders });
+        res.status(200).json({ success: true, count: orders.length, data: mappedOrders });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Update order status with timeline & stock release
+// @desc    Get all orders for the logged-in manufacturer
+// @route   GET /api/orders/manufacturer
+exports.getManufacturerOrders = async (req, res) => {
+    try {
+        const orders = await Order.find({ manufacturer: req.user.id })
+            .populate('artisan', 'companyName email')
+            .sort('-createdAt');
+        
+        const mappedOrders = [];
+        for (const order of orders) {
+            const items = await OrderItem.find({ order: order._id }).populate('product');
+            mappedOrders.push({
+                ...order.toObject(),
+                orderNumber: order.orderNumber || `ORD-${order._id.toString().slice(-6).toUpperCase()}`,
+                financials: { total: order.totalPrice },
+                status: order.status === 'en_attente' ? 'pending' : 
+                        order.status === 'expédié' ? 'shipped' : 
+                        order.status === 'livré' ? 'delivered' : 
+                        order.status === 'annulé' ? 'cancelled' : order.status,
+                items: items.map(i => ({
+                    ...i.toObject(),
+                    name: i.product?.name || 'N/A',
+                    total: i.quantity * i.unitPrice
+                })),
+                shipping: { address: order.shippingAddress, contactName: order.artisan?.companyName }
+            });
+        }
+        res.status(200).json({ success: true, count: orders.length, data: mappedOrders });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Update order status
 // @route   PATCH /api/orders/:id/status
-// @access  Private (Manufacturer/Admin)
 exports.updateOrderStatus = async (req, res) => {
     try {
-        const { status, comment } = req.body;
-        const order = await Order.findById(req.params.id);
-        
-        if (!order) return res.status(404).json({ success: false, message: 'Source introuvable.' });
-
-        // Logic for stock release on cancellation or fulfillment
-        if (status === 'cancelled' && order.status !== 'cancelled') {
-            for (const item of order.items) {
-                const product = await Product.findById(item.product);
-                if (product) {
-                    product.stock.reserved -= item.quantity;
-                    // Note: In some systems, we only release if not yet shipped. 
-                    // But here it returns to available.
-                    await product.save();
-                }
-            }
-        }
-        
-        if (status === 'processing' && order.status === 'confirmed') {
-             // Permanent reduction upon fulfillment
-             for (const item of order.items) {
-                const product = await Product.findById(item.product);
-                if (product) {
-                    product.stock.reserved -= item.quantity;
-                    product.stock.total -= item.quantity;
-                    await product.save();
-                }
-            }
-        }
-
-        order.status = status;
-        order.statusTimeline.push({
-            status,
-            comment: comment || `Mise à jour du protocole par l'opérateur.`,
-            timestamp: new Date(),
-            user: req.user.id
-        });
-
-        await order.save();
+        const { status } = req.body;
+        const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
         res.status(200).json({ success: true, data: order });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Get orders received by manufacturer
-// @route   GET /api/orders/manufacturer
-// @access  Private (Manufacturer)
-exports.getManufacturerOrders = async (req, res) => {
+// @desc    Get order details (with items)
+// @route   GET /api/orders/:id
+exports.getOrder = async (req, res) => {
     try {
-        // Find orders containing products from this manufacturer
-        // Note: In this schema, we might need to filter items in the application layer 
-        // OR use aggregation to only return orders relevant to the manufacturer.
-        const orders = await Order.find({
-            'items.product': { $in: await Product.find({ manufacturer: req.user.id }).distinct('_id') }
-        })
-        .populate('artisan', 'companyName')
-        .populate('items.product', 'name images manufacturer')
-        .sort('-createdAt');
+        const order = await Order.findById(req.params.id)
+            .populate('artisan', 'companyName')
+            .populate('manufacturer', 'companyName');
+        
+        if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
 
-        res.status(200).json({ success: true, count: orders.length, data: orders });
+        const items = await OrderItem.find({ order: order._id }).populate('product');
+
+        res.status(200).json({ success: true, data: { order, items } });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Get order summary (analytics)
+// @desc    Get order analytics for dashboard
 // @route   GET /api/orders/summary
-// @access  Private
 exports.getOrderAnalytics = async (req, res) => {
     try {
-        const stats = await Order.aggregate([
-            { $match: { artisan: req.user.id } },
-            { $group: {
-                _id: null,
-                totalSpent: { $sum: '$financials.total' },
-                avgOrderValue: { $avg: '$financials.total' },
-                count: { $sum: 1 }
-            }}
-        ]);
+        const query = req.user.role === 'manufacturer' 
+            ? { manufacturer: req.user.id } 
+            : { artisan: req.user.id };
 
-        const categories = await Order.aggregate([
-            { $match: { artisan: req.user.id } },
-            { $unwind: '$items' },
-            { $group: {
-                _id: '$items.name',
-                count: { $sum: '$items.quantity' },
-                revenue: { $sum: '$items.total' }
-            }},
-            { $sort: { count: -1 } },
-            { $limit: 5 }
-        ]);
+        const orders = await Order.find(query);
+        const totalSpent = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+        
+        const analytics = {
+            totalOrders: orders.length,
+            totalRevenue: totalSpent,
+            stats: {
+                totalSpent: totalSpent,
+                avgOrderValue: orders.length > 0 ? totalSpent / orders.length : 0
+            },
+            statusDistribution: {
+                pending: orders.filter(o => o.status === 'en_attente').length,
+                shipped: orders.filter(o => o.status === 'expédié').length,
+                delivered: orders.filter(o => o.status === 'livré').length,
+                cancelled: orders.filter(o => o.status === 'annulé').length
+            }
+        };
 
-        res.status(200).json({ success: true, data: { stats: stats[0] || {}, popularItems: categories } });
+        res.status(200).json({ success: true, data: analytics });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
     }
 };
+
+

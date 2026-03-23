@@ -4,8 +4,9 @@ const {
     createOrder, 
     getMyOrders, 
     getManufacturerOrders,
-    updateOrderStatus, 
-    getOrderAnalytics 
+    updateOrderStatus,
+    getOrder,
+    getOrderAnalytics
 } = require('../controllers/orderController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -21,7 +22,12 @@ router.route('/manufacturer')
 router.route('/summary')
     .get(protect, getOrderAnalytics);
 
+router.route('/:id')
+    .get(protect, getOrder);
+
 router.route('/:id/status')
     .patch(protect, authorize('manufacturer', 'admin'), updateOrderStatus);
 
+
 module.exports = router;
+

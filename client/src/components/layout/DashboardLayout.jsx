@@ -8,6 +8,8 @@ import {
     FolderOpen, ClipboardList, Receipt, BarChart2, Shield, ChevronRight, Package,
 } from 'lucide-react';
 import VoiceAssistant from '../VoiceAssistant';
+import { toast } from 'react-hot-toast';
+
 
 const NAV_BY_ROLE = {
     guest: [
@@ -189,9 +191,11 @@ export default function DashboardLayout({ children, currentTab, onTabChange }) {
                             />
                         </div>
                         <button
+                            onClick={() => toast('Secure notification relay active: 0 new alerts', { icon: '🔔' })}
                             aria-label="View Notifications"
                             className="relative w-10 h-10 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
+
                             <Bell size={20} />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-brand-orange"></span>
                         </button>

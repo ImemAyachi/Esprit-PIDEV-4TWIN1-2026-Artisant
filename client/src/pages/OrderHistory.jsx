@@ -8,6 +8,7 @@ import {
     ChevronDown, ChevronUp, RefreshCw, MapPin, Search
 } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import { getImageUrl } from '../utils/imageUrl';
 import { toast } from 'react-hot-toast';
 
 const STATUS_MAP = {
@@ -124,7 +125,7 @@ export default function OrderHistory() {
                                                             <div key={idx} className="flex justify-between items-center bg-white border-2 border-brand-teal/5 p-4 group-hover:border-brand-teal transition-all">
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="w-10 h-10 bg-brand-cream border-2 border-brand-teal/5 flex items-center justify-center p-1">
-                                                                        <img src={item.product?.images?.[0]?.url || '/placeholder.png'} className="w-full h-full object-cover" />
+                                                                        <img src={getImageUrl(item.product?.images?.[0]) || '/placeholder.png'} className="w-full h-full object-cover" />
                                                                     </div>
                                                                     <span className="text-[10px] font-black uppercase tracking-tight text-brand-teal">{item.name}</span>
                                                                 </div>
