@@ -1,3 +1,4 @@
+// Main dashboard UI mapping
 import React, { useState, useEffect } from 'react';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
@@ -780,7 +781,7 @@ const Dashboard = () => {
                             <div className="card h-full min-h-[400px]">
                                 <div className="flex justify-between items-center mb-10">
                                     <h4 className="text-xl font-black uppercase tracking-tight text-brand-teal">System Ledger</h4>
-                                    <button 
+                                    <button
                                         onClick={() => setActiveTab('Analytics')}
                                         className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal"
                                     >
@@ -822,7 +823,7 @@ const Dashboard = () => {
                                     <p className="font-bold text-sm text-white/50 leading-relaxed max-w-xs mb-8">
                                         Expand your operational reach by connecting with verified experts and manufacturers.
                                     </p>
-                                    <button 
+                                    <button
                                         onClick={() => setActiveTab('Marketplace')}
                                         className="btn-outline-white w-full flex items-center justify-center gap-3"
                                     >

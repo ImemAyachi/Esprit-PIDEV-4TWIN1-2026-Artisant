@@ -1,3 +1,4 @@
+// User routes definition
 const express = require('express');
 const {
     getAllUsers,
