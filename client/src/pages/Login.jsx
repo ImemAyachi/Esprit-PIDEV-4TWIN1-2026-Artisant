@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, Key, Loader2, MoveRight, Hammer, ScanFace, LockKeyhole, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+// eslint-disable-next-line no-unused-vars
+import { AnimatePresence, motion } from 'framer-motion';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
 import FacialRecognitionCapture from '../components/FacialRecognitionCapture';
@@ -9,20 +10,18 @@ import FacialRecognitionCapture from '../components/FacialRecognitionCapture';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [authMode, setAuthMode] = useState('password'); // 'password' | 'face'
-    const [faceState, setFaceState] = useState('idle'); // 'idle' | 'captured' | 'verifying' | 'success' | 'error'
+    const [authMode, setAuthMode] = useState('password'); // 'pswd' | 'face'
+    const [faceState, setFaceState] = useState('idle'); //  | 'captured' | 'verifying' | 'success' | 'error'
     const [faceMessage, setFaceMessage] = useState('');
     const [capturedEmbedding, setCapturedEmbedding] = useState(null);
     const { login, loginWithFace, loading, error, clearError } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Only hide overflow if needed, but let's allow it for mobile/small screens
         return () => { document.body.style.overflow = 'unset'; };
     }, []);
 
-    // Clear error when switching modes
-    useEffect(() => { clearError?.(); }, [authMode]);
+    useEffect(() => { clearError?.(); }, [authMode, clearError]);
 
     const redirectAfterLogin = () => {
         const role = useAuthStore.getState().user?.role;
@@ -36,42 +35,41 @@ const Login = () => {
         if (success) redirectAfterLogin();
     };
 
-    // Step 1: camera scan done → store embedding, show submit button
     const handleFaceCapture = (embedding) => {
         setCapturedEmbedding(embedding);
         setFaceState('captured');
         setFaceMessage('');
     };
 
-    // Step 2: user clicks the submit button → call API
     const handleFaceSubmit = async () => {
-        if (!email) {
+        try {
+            if (!email) {
+                setFaceState('error');
+                setFaceMessage('Please enter your email address first.');
+                return;
+            }
+            if (!capturedEmbedding) return;
+            setFaceState('verifying');
+            const result = await loginWithFace(email, capturedEmbedding);
+            if (result.success) {
+                setFaceState('success');
+                setTimeout(() => redirectAfterLogin(), 800);
+            } else {
+                setFaceState('error');
+                setFaceMessage(result.message || 'Face not recognized. Try again or use password.');
+                setCapturedEmbedding(null);
+            }
+        } catch (err) {
             setFaceState('error');
-            setFaceMessage('Please enter your email address first.');
-            return;
-        }
-        if (!capturedEmbedding) return;
-        setFaceState('verifying');
-        const result = await loginWithFace(email, capturedEmbedding);
-        if (result.success) {
-            setFaceState('success');
-            setTimeout(() => redirectAfterLogin(), 800);
-        } else {
-            setFaceState('error');
-            setFaceMessage(result.message || 'Face not recognized. Try again or use password.');
+            setFaceMessage('An unexpected error occurred. Try again.');
             setCapturedEmbedding(null);
         }
     };
 
-    const handleFaceReset = () => {
-        setCapturedEmbedding(null);
-        setFaceState('idle');
-        setFaceMessage('');
-    };
+
 
     return (
         <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">
-            {/* Visual Side */}
             <div className="hidden lg:flex w-1/2 bg-brand-teal relative items-center justify-center p-20 border-r-8 border-brand-teal">
                 <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
                     <img src={logo} alt="" className="w-[30rem] h-[30rem] object-contain invert grayscale" />
@@ -93,10 +91,8 @@ const Login = () => {
                 </div>
             </div>
 
-            {/* Form Side */}
             <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-12 relative overflow-y-auto custom-scrollbar">
                 <div className="max-w-md w-full my-auto">
-                    {/* Back link */}
                     <Link to="/" className="inline-flex items-center gap-2 mb-8 group overflow-hidden">
                         <img src={logo} alt="" className="w-8 h-8 object-contain" />
                         <span className="text-xs font-black uppercase tracking-widest text-brand-teal group-hover:pl-2 transition-all">
@@ -113,198 +109,216 @@ const Login = () => {
                         </p>
                     </div>
 
-                    <form className="space-y-8" onSubmit={handleSubmit}>
-                        {error && (() => {
-                            const isDeactivated = error.toLowerCase().includes('deactivat') ||
-                                error.toLowerCase().includes('désactivé');
-                            return (
-                                <div style={{
-                                    padding: '16px 20px',
-                                    border: `4px solid ${isDeactivated ? '#c0392b' : '#1B4D4D'}`,
-                                    background: isDeactivated ? '#fdecea' : '#FF6B35',
-                                    color: isDeactivated ? '#c0392b' : '#fff',
-                                    animation: 'shake 0.4s ease',
-                                }}>
-                                    {isDeactivated ? (
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                            {/* Lock icon */}
-                                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-                                                stroke="currentColor" strokeWidth="2.5"
-                                                strokeLinecap="square" style={{ flexShrink: 0, marginTop: 1 }}>
-                                                <rect x="3" y="11" width="18" height="11" rx="0" ry="0" />
-                                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                                            </svg>
-                                            <div>
-                                                <p style={{
-                                                    fontWeight: 900, fontSize: 12,
-                                                    textTransform: 'uppercase', letterSpacing: '0.1em',
-                                                    marginBottom: 4
-                                                }}>
-                                                    Compte désactivé
-                                                </p>
-                                                <p style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, lineHeight: 1.5 }}>
-                                                    Votre compte a été désactivé par un administrateur.
-                                                    Veuillez contacter le support pour plus d'informations.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p style={{
-                                            fontWeight: 700, fontSize: 11,
-                                            textTransform: 'uppercase', letterSpacing: '0.1em'
+                    <div className="flex border-4 border-brand-teal mb-8">
+                        <button
+                            type="button"
+                            onClick={() => { setAuthMode('password'); setFaceState('idle'); }}
+                            className={`flex-1 py-3 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${authMode === 'password' ? 'bg-brand-teal text-white' : 'bg-white text-brand-teal hover:bg-brand-cream'}`}
+                        >
+                            <LockKeyhole size={14} />
+                            Password
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setAuthMode('face'); setFaceState('idle'); }}
+                            className={`flex-1 py-3 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all border-l-4 border-brand-teal ${authMode === 'face' ? 'bg-brand-teal text-white' : 'bg-white text-brand-teal hover:bg-brand-cream'}`}
+                        >
+                            <ScanFace size={14} />
+                            Face ID
+                        </button>
+                    </div>
+
+                    <AnimatePresence mode="wait">
+                        {authMode === 'password' ? (
+                            <motion.form
+                                key="password-form"
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: 20 }}
+                                className="space-y-6"
+                                onSubmit={handlePasswordSubmit}
+                            >
+                                {error && (() => {
+                                    const isDeactivated = error.toLowerCase().includes('deactivat') ||
+                                        error.toLowerCase().includes('désactivé');
+                                    return (
+                                        <div style={{
+                                            padding: '16px 20px',
+                                            border: `4px solid ${isDeactivated ? '#c0392b' : '#1B4D4D'}`,
+                                            background: isDeactivated ? '#fdecea' : '#FF6B35',
+                                            color: isDeactivated ? '#c0392b' : '#fff',
+                                            animation: 'shake 0.4s ease',
                                         }}>
-                                            {error}
+                                            {isDeactivated ? (
+                                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                                    <AlertTriangle size={22} style={{ flexShrink: 0, marginTop: 1 }} />
+                                                    <div>
+                                                        <p style={{
+                                                            fontWeight: 900, fontSize: 12,
+                                                            textTransform: 'uppercase', letterSpacing: '0.1em',
+                                                            marginBottom: 4
+                                                        }}>
+                                                            Compte désactivé
+                                                        </p>
+                                                        <p style={{ fontSize: 11, fontWeight: 600, opacity: 0.8, lineHeight: 1.5 }}>
+                                                            Votre compte a été désactivé par un administrateur.
+                                                            Veuillez contacter le support pour plus d'informations.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p style={{
+                                                    fontWeight: 700, fontSize: 11,
+                                                    textTransform: 'uppercase', letterSpacing: '0.1em'
+                                                }}>
+                                                    {error}
+                                                </p>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+
+                                <div className="space-y-5">
+                                    <div>
+                                        <label htmlFor="email-pw" className="label">Primary Identifier</label>
+                                        <input
+                                            id="email-pw"
+                                            type="email"
+                                            required
+                                            className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                            placeholder="name@industry.com"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="relative group">
+                                        <div className="flex justify-between items-center mb-2">
+                                            <label htmlFor="password" className="label mb-0">Security Key</label>
+                                            <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">
+                                                Recover Access
+                                            </a>
+                                        </div>
+                                        <input
+                                            id="password"
+                                            type="password"
+                                            required
+                                            className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                            placeholder="••••••••"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                        />
+                                        <div className="absolute right-4 top-[42px] text-brand-teal/20 pointer-events-none group-focus-within:text-white/20 transition-colors">
+                                            <Key size={18} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
+                                >
+                                    {loading ? (
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                    ) : (
+                                        <>
+                                            Authenticate Session
+                                            <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
+                                        </>
+                                    )}
+                                </button>
+                            </motion.form>
+                        ) : (
+                            <motion.div
+                                key="face-form"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-5"
+                            >
+                                <div>
+                                    <label htmlFor="email-face" className="label">Account Email</label>
+                                    <input
+                                        id="email-face"
+                                        type="email"
+                                        required
+                                        className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                        placeholder="name@industry.com"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                    />
+                                    {!email && (
+                                        <p className="text-[9px] font-bold text-brand-orange mt-1 uppercase tracking-widest">
+                                            ↑ Enter your email first
                                         </p>
                                     )}
                                 </div>
-                            );
-                        })()}
 
-                        <div className="space-y-5">
-                            <div>
-                                <label htmlFor="email-pw" className="label">Primary Identifier</label>
-                                <input
-                                    id="email-pw"
-                                    type="email"
-                                    required
-                                    className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
-                                    placeholder="name@industry.com"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-                            <div className="relative group">
-                                <div className="flex justify-between items-center mb-2">
-                                    <label htmlFor="password" className="label mb-0">Security Key</label>
-                                    <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">
-                                        Recover Access
-                                    </a>
-                                </div>
-                                <input
-                                    id="password"
-                                    type="password"
-                                    required
-                                    className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                                <div className="absolute right-4 top-[42px] text-brand-teal/20 pointer-events-none group-focus-within:text-white/20 transition-colors">
-                                    <Key size={18} />
-                                </div>
-                            </div>
-                        </div>
+                                {faceState === 'error' && (
+                                    <div className="bg-red-500/10 border-2 border-red-500 p-3 flex items-center gap-2">
+                                        <AlertTriangle size={16} className="text-red-500 shrink-0" />
+                                        <p className="text-xs font-bold text-red-600 uppercase tracking-wider">{faceMessage}</p>
+                                    </div>
+                                )}
+                                {faceState === 'success' && (
+                                    <div className="bg-green-500/10 border-2 border-green-500 p-3 flex items-center gap-2">
+                                        <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                                        <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Identity verified! Redirecting...</p>
+                                    </div>
+                                )}
+                                {faceState === 'verifying' && (
+                                    <div className="bg-brand-teal/10 border-2 border-brand-teal p-3 flex items-center gap-2">
+                                        <Loader2 size={16} className="text-brand-teal shrink-0 animate-spin" />
+                                        <p className="text-xs font-bold text-brand-teal uppercase tracking-wider">Verifying identity with server...</p>
+                                    </div>
+                                )}
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
-                        >
-                            {loading ? (
-                                <Loader2 className="w-6 h-6 animate-spin" />
-                            ) : (
-                                <>
-                                    Authenticate Session
-                                    <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
-                                </>
-                            )}
-                        </button>
-                    </motion.form>
-                    ) : (
-                    <motion.div
-                        key="face-form"
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        className="space-y-5"
-                    >
-                        {/* Email field (required for face login too) */}
-                        <div>
-                            <label htmlFor="email-face" className="label">Account Email</label>
-                            <input
-                                id="email-face"
-                                type="email"
-                                required
-                                className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
-                                placeholder="name@industry.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                            {!email && (
-                                <p className="text-[9px] font-bold text-brand-orange mt-1 uppercase tracking-widest">
-                                    ↑ Enter your email first
+                                <div className="border-4 border-brand-teal overflow-hidden mx-auto max-w-sm w-full">
+                                    <FacialRecognitionCapture
+                                        mode="verify"
+                                        onVerify={handleFaceCapture}
+                                        label="Scan Face to Login"
+                                    />
+                                </div>
+
+                                <p className="text-[9px] text-brand-teal/40 text-center uppercase tracking-widest font-bold">
+                                    Look directly at the camera. Ensure good lighting.
                                 </p>
-                            )}
-                        </div>
 
-                        {/* Status messages */}
-                        {faceState === 'error' && (
-                            <div className="bg-red-500/10 border-2 border-red-500 p-3 flex items-center gap-2">
-                                <AlertTriangle size={16} className="text-red-500 shrink-0" />
-                                <p className="text-xs font-bold text-red-600 uppercase tracking-wider">{faceMessage}</p>
-                            </div>
+                                <button
+                                    type="button"
+                                    onClick={handleFaceSubmit}
+                                    disabled={!capturedEmbedding || loading || faceState === 'verifying' || faceState === 'success'}
+                                    className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    {faceState === 'verifying' ? (
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                    ) : (
+                                        <>
+                                            <ScanFace size={22} />
+                                            Authenticate with Face ID
+                                            <MoveRight size={22} className="group-hover:translate-x-2 transition-transform" />
+                                        </>
+                                    )}
+                                </button>
+                            </motion.div>
                         )}
-                        {faceState === 'success' && (
-                            <div className="bg-green-500/10 border-2 border-green-500 p-3 flex items-center gap-2">
-                                <CheckCircle2 size={16} className="text-green-500 shrink-0" />
-                                <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Identity verified! Redirecting...</p>
-                            </div>
-                        )}
-                        {faceState === 'verifying' && (
-                            <div className="bg-brand-teal/10 border-2 border-brand-teal p-3 flex items-center gap-2">
-                                <Loader2 size={16} className="text-brand-teal shrink-0 animate-spin" />
-                                <p className="text-xs font-bold text-brand-teal uppercase tracking-wider">Verifying identity with server...</p>
-                            </div>
-                        )}
+                    </AnimatePresence>
 
-                        {/* Camera */}
-                        <div className="border-4 border-brand-teal overflow-hidden mx-auto max-w-sm w-full">
-                            <FacialRecognitionCapture
-                                mode="verify"
-                                onVerify={handleFaceCapture}
-                                label="Scan Face to Login"
-                            />
-                        </div>
-
-                        <p className="text-[9px] text-brand-teal/40 text-center uppercase tracking-widest font-bold">
-                            Look directly at the camera. Ensure good lighting.
+                    <div className="mt-8 pt-8 border-t-4 border-brand-teal/10">
+                        <p className="text-xs font-bold text-brand-teal opacity-60 uppercase tracking-widest leading-loose">
+                            New to the Platform? <br />
+                            <Link to="/register" className="text-brand-orange hover:text-brand-teal transition-colors border-b-2 border-brand-orange">
+                                Initialize your account today
+                            </Link>
                         </p>
-
-                        {/* Submit button — appears after face is scanned */}
-                        <button
-                            type="button"
-                            onClick={handleFaceSubmit}
-                            disabled={!capturedEmbedding || loading || faceState === 'verifying' || faceState === 'success'}
-                            className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            {faceState === 'verifying' ? (
-                                <Loader2 className="w-6 h-6 animate-spin" />
-                            ) : (
-                                <>
-                                    <ScanFace size={22} />
-                                    Authenticate with Face ID
-                                    <MoveRight size={22} className="group-hover:translate-x-2 transition-transform" />
-                                </>
-                            )}
-                        </button>
-                    </motion.div>
-                        )}
-                </AnimatePresence>
-
-                <div className="mt-8 pt-8 border-t-4 border-brand-teal/10">
-                    <p className="text-xs font-bold text-brand-teal opacity-60 uppercase tracking-widest leading-loose">
-                        New to the Platform? <br />
-                        <Link to="/register" className="text-brand-orange hover:text-brand-teal transition-colors border-b-2 border-brand-orange">
-                            Initialize your account today
-                        </Link>
-                    </p>
+                    </div>
                 </div>
-            </div>
 
-            <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange" />
-            <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal" />
+                <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange" />
+                <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal" />
+            </div>
         </div>
-        </div >
     );
 };
 
