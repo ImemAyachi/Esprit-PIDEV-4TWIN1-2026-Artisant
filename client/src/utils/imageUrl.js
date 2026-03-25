@@ -1,5 +1,10 @@
-export const getImageUrl = (url) => {
-    if (!url) return '';
+export const getImageUrl = (input) => {
+    if (!input) return '';
+    
+    // Handle if input is an object with a url property
+    let url = typeof input === 'string' ? input : input.url;
+    
+    if (!url || typeof url !== 'string') return '';
     if (url.startsWith('http')) return url;
 
     // Fallback to local server address if VITE_API_URL is not set or relative

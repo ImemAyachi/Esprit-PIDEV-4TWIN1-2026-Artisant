@@ -1,8 +1,23 @@
 const User = require('../models/User');
 
+// @desc    Get all users (Admin)
+// @route   GET /api/users
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password -facialFingerprint');
+        const { search, role, status } = req.query;
+        let query = {};
+
+        if (search) {
+            query.$or = [
+                { email: { $regex: search, $options: 'i' } },
+                { companyName: { $regex: search, $options: 'i' } },
+                { phone: { $regex: search, $options: 'i' } }
+            ];
+        }
+        if (role) query.role = role;
+        if (status !== undefined) query.isActive = status === 'true';
+
+        const users = await User.find(query).select('-password -faceEmbedding');
 
         res.status(200).json({
             status: 'success',
@@ -10,34 +25,24 @@ exports.getAllUsers = async (req, res) => {
             data: { users },
         });
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 
+// @desc    Get single user
+// @route   GET /api/users/:id
 exports.getUser = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id)
-            .select('-password -facialFingerprint');
-
-        if (!user) {
-            return res.status(404).json({
-                message: 'User not found',
-            });
-        }
-
-        res.status(200).json({
-            status: 'success',
-            data: { user },
-        });
+        const user = await User.findById(req.params.id).select('-password -faceEmbedding');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.status(200).json({ status: 'success', data: { user } });
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 
+// @desc    Update user
+// @route   PUT /api/users/:id
 exports.updateUser = async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate(req.params.id, req.body, {
@@ -89,67 +94,31 @@ exports.toggleAccountStatus = async (req, res) => {
     }
 };
 
+// @desc    Delete user
+// @route   DELETE /api/users/:id
 exports.deleteUser = async (req, res) => {
     try {
         const user = await User.findByIdAndDelete(req.params.id);
-
-        if (!user) {
-            return res.status(404).json({
-                message: 'User not found',
-            });
-        }
-
-        res.status(200).json({
-            status: 'success',
-            message: 'User deleted successfully',
-        });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.status(200).json({ status: 'success', message: 'User deleted successfully' });
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        });
+        res.status(500).json({ message: error.message });
     }
 };
 
+// @desc    Update user role
+// @route   PUT /api/users/:id/role
 exports.updateUserRole = async (req, res) => {
     try {
         const { role } = req.body;
-
         const allowedRoles = ['artisan', 'manufacturer', 'expert', 'admin'];
+        if (!allowedRoles.includes(role)) return res.status(400).json({ message: 'Invalid role' });
 
-        if (!allowedRoles.includes(role)) {
-            return res.status(400).json({
-                message: 'Invalid role',
-            });
-        }
+        const user = await User.findByIdAndUpdate(req.params.id, { role }, { new: true }).select('-password -faceEmbedding');
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        if (req.user._id.toString() === req.params.id && role !== 'admin') {
-            return res.status(400).json({
-                message: 'Admin cannot change their own role',
-            });
-        }
-
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { role },
-            {
-                new: true,
-                runValidators: true,
-            }
-        ).select('-password -facialFingerprint');
-
-        if (!user) {
-            return res.status(404).json({
-                message: 'User not found',
-            });
-        }
-
-        res.status(200).json({
-            status: 'success',
-            data: { user },
-        });
+        res.status(200).json({ status: 'success', data: { user } });
     } catch (error) {
-        res.status(500).json({
-            message: error.message,
-        });
+        res.status(500).json({ message: error.message });
     }
 };

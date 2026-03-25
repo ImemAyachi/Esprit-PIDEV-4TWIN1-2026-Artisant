@@ -1,43 +1,49 @@
 const mongoose = require('mongoose');
 
 const documentSchema = new mongoose.Schema({
-    title: {
-        type: String,
-        required: [true, 'Please provide a title'],
-        trim: true,
+    product: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        required: false,
     },
-    description: {
-        type: String,
-        required: [true, 'Please provide a description'],
-    },
-    type: {
-        type: String,
-        enum: ['Technical Sheet', 'Manual', 'Catalog', 'Legal'],
-        required: true,
-    },
-    url: {
-        type: String,
-        required: [true, 'Please provide a document URL'],
-    },
-    category: {
-        type: String,
-        required: true,
+    project: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Project',
+        required: false,
     },
     uploadedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    isAccessible: {
-        type: Boolean,
-        default: true,
+    name: {
+        type: String,
+        required: true,
+        trim: true,
+    },
+    type: {
+        type: String,
+        enum: ['fiche technique', 'certification', 'manuel', 'autre'],
+        default: 'autre',
+    },
+    fileUrl: {
+        type: String,
+        required: true,
+    },
+    accessibleVersionUrl: {
+        type: String,
     },
     aiSummary: {
-        type: String, // Simplified explanation
-    }
+        type: String,
+    },
+    favoritedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
 }, {
     timestamps: true,
 });
 
 const Document = mongoose.model('Document', documentSchema);
 module.exports = Document;
+

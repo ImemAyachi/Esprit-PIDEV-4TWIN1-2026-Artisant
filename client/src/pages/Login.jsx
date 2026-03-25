@@ -1,36 +1,73 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogIn, Key, Loader2, Sparkles, MoveRight, Hammer } from 'lucide-react';
+import { LogIn, Key, Loader2, MoveRight, Hammer, ScanFace, LockKeyhole, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../store/authStore';
 import logo from '../assets/logo.png';
+import FacialRecognitionCapture from '../components/FacialRecognitionCapture';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loading, error } = useAuthStore();
+    const [authMode, setAuthMode] = useState('password'); // 'password' | 'face'
+    const [faceState, setFaceState] = useState('idle'); // 'idle' | 'captured' | 'verifying' | 'success' | 'error'
+    const [faceMessage, setFaceMessage] = useState('');
+    const [capturedEmbedding, setCapturedEmbedding] = useState(null);
+    const { login, loginWithFace, loading, error, clearError } = useAuthStore();
     const navigate = useNavigate();
 
     useEffect(() => {
-        document.body.style.overflow = 'hidden';
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
+        // Only hide overflow if needed, but let's allow it for mobile/small screens
+        return () => { document.body.style.overflow = 'unset'; };
     }, []);
 
-    const handleSubmit = async (e) => {
+    // Clear error when switching modes
+    useEffect(() => { clearError?.(); }, [authMode]);
+
+    const redirectAfterLogin = () => {
+        const role = useAuthStore.getState().user?.role;
+        if (role === 'admin') navigate('/admin');
+        else navigate('/dashboard');
+    };
+
+    const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         const success = await login(email, password);
-        if (success) {
-            // Check role from store state (since user is updated in the store)
-            const role = useAuthStore.getState().user?.role;
-            if (role === 'admin') {
-                navigate('/admin');
-            } else {
-                navigate('/dashboard');
-            }
+        if (success) redirectAfterLogin();
+    };
+
+    // Step 1: camera scan done → store embedding, show submit button
+    const handleFaceCapture = (embedding) => {
+        setCapturedEmbedding(embedding);
+        setFaceState('captured');
+        setFaceMessage('');
+    };
+
+    // Step 2: user clicks the submit button → call API
+    const handleFaceSubmit = async () => {
+        if (!email) {
+            setFaceState('error');
+            setFaceMessage('Please enter your email address first.');
+            return;
+        }
+        if (!capturedEmbedding) return;
+        setFaceState('verifying');
+        const result = await loginWithFace(email, capturedEmbedding);
+        if (result.success) {
+            setFaceState('success');
+            setTimeout(() => redirectAfterLogin(), 800);
+        } else {
+            setFaceState('error');
+            setFaceMessage(result.message || 'Face not recognized. Try again or use password.');
+            setCapturedEmbedding(null);
         }
     };
 
+    const handleFaceReset = () => {
+        setCapturedEmbedding(null);
+        setFaceState('idle');
+        setFaceMessage('');
+    };
 
     return (
         <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">
@@ -39,40 +76,40 @@ const Login = () => {
                 <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
                     <img src={logo} alt="" className="w-[30rem] h-[30rem] object-contain invert grayscale" />
                 </div>
-
-                <div className="relative z-10 animate-in">
+                <div className="relative z-10">
                     <h1 className="text-8xl font-black text-white uppercase tracking-tighter leading-[0.8] mb-8">
                         The <br />
                         <span className="text-brand-orange">Platform</span> <br />
                         Standard.
                     </h1>
                     <div className="flex gap-4">
-                        <div className="w-12 h-12 bg-brand-orange"></div>
-                        <div className="w-12 h-12 bg-white"></div>
-                        <div className="w-12 h-12 bg-brand-green"></div>
+                        <div className="w-12 h-12 bg-brand-orange" />
+                        <div className="w-12 h-12 bg-white" />
+                        <div className="w-12 h-12 bg-brand-green" />
                     </div>
                 </div>
-
-                {/* Decorative Elements */}
                 <div className="absolute top-12 left-12 p-4 bg-white text-brand-teal border-4 border-brand-teal">
                     <Hammer size={40} />
                 </div>
             </div>
 
             {/* Form Side */}
-            <div className="flex-1 flex items-center justify-center p-8 md:p-12 relative overflow-hidden">
-                <div className="max-w-md w-full animate-in">
-                    <div className="mb-12">
-                        <Link to="/" className="inline-flex items-center gap-2 mb-8 group overflow-hidden">
-                            <img src={logo} alt="" className="w-8 h-8 object-contain" />
-                            <span className="text-xs font-black uppercase tracking-widest text-brand-teal group-hover:pl-2 transition-all">Back to overview</span>
-                        </Link>
+            <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-12 relative overflow-y-auto custom-scrollbar">
+                <div className="max-w-md w-full my-auto">
+                    {/* Back link */}
+                    <Link to="/" className="inline-flex items-center gap-2 mb-8 group overflow-hidden">
+                        <img src={logo} alt="" className="w-8 h-8 object-contain" />
+                        <span className="text-xs font-black uppercase tracking-widest text-brand-teal group-hover:pl-2 transition-all">
+                            Back to overview
+                        </span>
+                    </Link>
 
+                    <div className="mb-8">
                         <h2 className="text-5xl font-black text-brand-teal uppercase tracking-tighter mb-2">
                             Secure Access
                         </h2>
                         <p className="font-bold text-brand-teal opacity-60 uppercase text-[10px] tracking-[0.2em]">
-                            Enter your operational credentials
+                            Choose your authentication method
                         </p>
                     </div>
 
@@ -123,11 +160,11 @@ const Login = () => {
                             );
                         })()}
 
-                        <div className="space-y-6">
-                            <div className="relative group">
-                                <label htmlFor="email" className="label">Primary Identifier</label>
+                        <div className="space-y-5">
+                            <div>
+                                <label htmlFor="email-pw" className="label">Primary Identifier</label>
                                 <input
-                                    id="email"
+                                    id="email-pw"
                                     type="email"
                                     required
                                     className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
@@ -136,11 +173,12 @@ const Login = () => {
                                     onChange={(e) => setEmail(e.target.value)}
                                 />
                             </div>
-
                             <div className="relative group">
                                 <div className="flex justify-between items-center mb-2">
                                     <label htmlFor="password" className="label mb-0">Security Key</label>
-                                    <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">Recover Access</a>
+                                    <a href="#" className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">
+                                        Recover Access
+                                    </a>
                                 </div>
                                 <input
                                     id="password"
@@ -157,50 +195,115 @@ const Login = () => {
                             </div>
                         </div>
 
-                        <div className="pt-4">
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
-                            >
-                                {loading ? (
-                                    <Loader2 className="w-6 h-6 animate-spin" />
-                                ) : (
-                                    <>
-                                        Authenticate Session
-                                        <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
-                                    </>
-                                )}
-                            </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group"
+                        >
+                            {loading ? (
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                            ) : (
+                                <>
+                                    Authenticate Session
+                                    <MoveRight size={24} className="group-hover:translate-x-2 transition-transform" />
+                                </>
+                            )}
+                        </button>
+                    </motion.form>
+                    ) : (
+                    <motion.div
+                        key="face-form"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-5"
+                    >
+                        {/* Email field (required for face login too) */}
+                        <div>
+                            <label htmlFor="email-face" className="label">Account Email</label>
+                            <input
+                                id="email-face"
+                                type="email"
+                                required
+                                className="input-field border-4 border-brand-teal focus:bg-brand-teal focus:text-white placeholder:text-brand-teal/30"
+                                placeholder="name@industry.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            {!email && (
+                                <p className="text-[9px] font-bold text-brand-orange mt-1 uppercase tracking-widest">
+                                    ↑ Enter your email first
+                                </p>
+                            )}
                         </div>
 
-                        <div className="relative text-center">
-                            <div className="absolute inset-x-0 top-3 border-t border-brand-teal/20"></div>
-                            <span className="relative bg-brand-cream px-2 text-[8px] font-black uppercase tracking-widest text-brand-teal/40">Or</span>
+                        {/* Status messages */}
+                        {faceState === 'error' && (
+                            <div className="bg-red-500/10 border-2 border-red-500 p-3 flex items-center gap-2">
+                                <AlertTriangle size={16} className="text-red-500 shrink-0" />
+                                <p className="text-xs font-bold text-red-600 uppercase tracking-wider">{faceMessage}</p>
+                            </div>
+                        )}
+                        {faceState === 'success' && (
+                            <div className="bg-green-500/10 border-2 border-green-500 p-3 flex items-center gap-2">
+                                <CheckCircle2 size={16} className="text-green-500 shrink-0" />
+                                <p className="text-xs font-bold text-green-600 uppercase tracking-wider">Identity verified! Redirecting...</p>
+                            </div>
+                        )}
+                        {faceState === 'verifying' && (
+                            <div className="bg-brand-teal/10 border-2 border-brand-teal p-3 flex items-center gap-2">
+                                <Loader2 size={16} className="text-brand-teal shrink-0 animate-spin" />
+                                <p className="text-xs font-bold text-brand-teal uppercase tracking-wider">Verifying identity with server...</p>
+                            </div>
+                        )}
+
+                        {/* Camera */}
+                        <div className="border-4 border-brand-teal overflow-hidden mx-auto max-w-sm w-full">
+                            <FacialRecognitionCapture
+                                mode="verify"
+                                onVerify={handleFaceCapture}
+                                label="Scan Face to Login"
+                            />
                         </div>
 
+                        <p className="text-[9px] text-brand-teal/40 text-center uppercase tracking-widest font-bold">
+                            Look directly at the camera. Ensure good lighting.
+                        </p>
+
+                        {/* Submit button — appears after face is scanned */}
                         <button
                             type="button"
-                            className="w-full py-4 text-xs font-black uppercase tracking-widest border-2 border-brand-teal/20 text-brand-teal/60 hover:bg-brand-teal hover:text-white hover:border-brand-teal transition-all flex justify-center items-center gap-2"
+                            onClick={handleFaceSubmit}
+                            disabled={!capturedEmbedding || loading || faceState === 'verifying' || faceState === 'success'}
+                            className="btn-primary w-full py-5 text-base uppercase tracking-[0.2em] border-4 border-brand-teal flex justify-center items-center gap-4 group disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                            <Sparkles size={16} /> Login with Face ID
+                            {faceState === 'verifying' ? (
+                                <Loader2 className="w-6 h-6 animate-spin" />
+                            ) : (
+                                <>
+                                    <ScanFace size={22} />
+                                    Authenticate with Face ID
+                                    <MoveRight size={22} className="group-hover:translate-x-2 transition-transform" />
+                                </>
+                            )}
                         </button>
-                    </form>
+                    </motion.div>
+                        )}
+                </AnimatePresence>
 
-                    <div className="mt-12 pt-12 border-t-4 border-brand-teal/10">
-                        <p className="text-xs font-bold text-brand-teal opacity-60 uppercase tracking-widest leading-loose">
-                            New to the Platform? <br />
-                            <Link to="/register" className="text-brand-orange hover:text-brand-teal transition-colors border-b-2 border-brand-orange">
-                                Initialize your account today
-                            </Link>
-                        </p>
-                    </div>
+                <div className="mt-8 pt-8 border-t-4 border-brand-teal/10">
+                    <p className="text-xs font-bold text-brand-teal opacity-60 uppercase tracking-widest leading-loose">
+                        New to the Platform? <br />
+                        <Link to="/register" className="text-brand-orange hover:text-brand-teal transition-colors border-b-2 border-brand-orange">
+                            Initialize your account today
+                        </Link>
+                    </p>
                 </div>
+            </div>
 
-                {/* Corner Decoration */}
-                <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange"></div>
-                <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal"></div>
-            </div >
+            <div className="absolute bottom-0 right-0 w-24 h-24 bg-brand-orange" />
+            <div className="absolute bottom-8 right-8 w-24 h-24 border-8 border-brand-teal" />
+        </div>
         </div >
     );
 };

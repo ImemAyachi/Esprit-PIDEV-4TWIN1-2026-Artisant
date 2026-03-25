@@ -7,12 +7,14 @@ import {
     Receipt, BarChart2, Eye, Download, CheckCircle2, Loader2,
     AlertCircle, ChevronRight, Tag, ShieldCheck, Pencil,
     FileText, Users, Shield, FolderPlus, ArrowRight,
-    Archive, Trash2
+    Archive, Trash2, CreditCard, DollarSign, User, Mic
 } from 'lucide-react';
+
 import useAuthStore from '../store/authStore';
 import useProjectStore from '../store/projectStore';
 import useQuoteStore from '../store/quoteStore';
 import useInvoiceStore from '../store/invoiceStore';
+import useOrderStore from '../store/orderStore';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import logo from '../assets/logo.png';
@@ -21,7 +23,9 @@ import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
 import ProjectModal from '../components/dashboard/ProjectModal';
 import QuoteModal from '../components/dashboard/QuoteModal';
+import ProjectCalendar from '../components/dashboard/ProjectCalendar';
 import DetailModal from '../components/dashboard/DetailModal';
+import ConsultationHistoryAnalytics from '../components/dashboard/ConsultationHistoryAnalytics';
 import VoiceAssistant from '../components/VoiceAssistant';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
 
@@ -29,19 +33,18 @@ import { generateInvoicePDF } from '../utils/pdfGenerator';
 const NAV_BY_ROLE = {
     artisan: [
         { name: 'Overview', icon: LayoutDashboard },
-        { name: 'Marketplace', icon: ShoppingBag },
-        { name: 'Projects', icon: Briefcase },
-        { name: 'Quotes', icon: ClipboardList },
+        { name: 'Projects', icon: Hammer },
+        { name: 'Quotes', icon: FileText },
+        { name: 'Financials', icon: DollarSign },
         { name: 'Orders', icon: Package },
-        { name: 'Invoices', icon: Receipt },
-        { name: 'Documents', icon: FolderOpen },
-        { name: 'Settings', icon: Settings },
+        { name: 'Profile', icon: User },
     ],
     manufacturer: [
         { name: 'Overview', icon: LayoutDashboard },
         { name: 'Marketplace', icon: ShoppingBag },
         { name: 'Products', icon: Package },
         { name: 'Orders', icon: Package },
+        { name: 'Financials', icon: BarChart2 },
         { name: 'Documents', icon: FolderOpen },
         { name: 'Settings', icon: Settings },
     ],
@@ -51,7 +54,7 @@ const NAV_BY_ROLE = {
         { name: 'Documents', icon: FolderOpen },
         { name: 'Quotes', icon: ClipboardList },
         { name: 'Invoices', icon: Receipt },
-        { name: 'Access Logs', icon: BarChart2 },
+        { name: 'Analytics', icon: BarChart2 },
         { name: 'Settings', icon: Settings },
     ],
     admin: [
@@ -218,123 +221,15 @@ const OverviewPanel = ({ user }) => {
     );
 };
 
+import ProjectDashboard from '../components/dashboard/projects/ProjectDashboard';
+import QuoteDashboard from '../components/dashboard/QuoteDashboard';
+import Financials from '../components/dashboard/Financials';
+
 /* PROJECTS – artisan only */
-const ProjectsPanel = ({ editProject, setEditProject, onView }) => {
-    const { projects, loading, fetchMyProjects, archiveProject, deleteProject } = useProjectStore();
-    const [confirmDelete, setConfirmDelete] = useState(null);
-
-    useEffect(() => {
-        fetchMyProjects();
-    }, [fetchMyProjects]);
-
-
-    // Simplified logic: ProjectModal is now used for both create and edit
-    // Instead of inline ProjectCreation, we now use the modal triggered from buttons below
-
-    if (loading) {
-        return (
-            <div className="p-12 text-center text-brand-teal animate-pulse font-black uppercase tracking-widest">
-                Connecting to industrial ledger...
-            </div>
-        );
-    }
-
+const ProjectsPanel = () => {
     return (
-        <div>
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Mes Projets</h3>
-                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
-                        {loading ? 'Chargement...' : `${projects.length} projet(s)`}
-                    </p>
-                </div>
-                <button
-                    onClick={() => setEditProject('new')}
-                    className="btn-primary flex items-center gap-2 text-sm"
-                >
-                    <Plus size={16} /> Nouveau Projet
-                </button>
-            </div>
-            <div className="space-y-0 border-4 border-brand-teal">
-                <div className="grid grid-cols-5 bg-brand-teal text-white p-4">
-                    {['Nom du Projet', 'Client / Lieu', 'Date', 'Statut', 'Actions'].map(h => (
-                        <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
-                    ))}
-                </div>
-                {projects.length === 0 ? (
-                    <div className="p-20 text-center bg-white">
-                        <p className="text-brand-teal/30 font-black uppercase tracking-widest text-xs">Aucun projet actif détecté</p>
-                    </div>
-                ) : (
-                    projects.map((p, i) => (
-                        <React.Fragment key={p._id || p.id}>
-                            <div className={`grid grid-cols-5 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                                <p className="font-black text-xs text-brand-teal">{p.title || p.name}</p>
-                                <p className="text-xs font-bold text-brand-slate/60">{p.client || p.address || 'Standard'}</p>
-                                <p className="text-xs font-bold text-brand-slate/60">{p.startDate ? new Date(p.startDate).toLocaleDateString() : 'Non définie'}</p>
-                                <StatusBadge status={p.status} />
-                                <div className="flex gap-2">
-                                    <button
-                                        title="Voir"
-                                        onClick={() => onView(p)}
-                                        className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10">
-                                        <Eye size={12} />
-                                    </button>
-                                    <button
-                                        title="Modifier"
-                                        onClick={() => setEditProject(p)}
-                                        className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all focus:z-10">
-                                        <Pencil size={12} />
-                                    </button>
-                                    <button
-                                        title={p.status === 'archived' ? "Désarchiver" : "Archiver"}
-                                        onClick={() => archiveProject(p._id || p.id)}
-                                        className={`p-1.5 border-2 transition-all focus:z-10 ${p.status === 'archived'
-                                            ? 'border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white'
-                                            : 'border-brand-slate text-brand-slate hover:bg-brand-slate hover:text-white'}`}>
-                                        <Archive size={12} />
-                                    </button>
-                                    <button
-                                        title="Supprimer"
-                                        onClick={() => setConfirmDelete(p._id || p.id)}
-                                        className="p-1.5 border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all focus:z-10">
-                                        <Trash2 size={12} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {confirmDelete === (p._id || p.id) && (
-                                <div className="col-span-12 p-4 bg-red-50 border-x-4 border-red-500 flex justify-between items-center animate-in slide-in-from-top-2">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-red-600">
-                                        Confirmer la suppression définitive ?
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => { deleteProject(p._id || p.id); setConfirmDelete(null); }}
-                                            className="px-4 py-1.5 bg-red-500 text-white text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all">
-                                            Confirmer
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmDelete(null)}
-                                            className="px-4 py-1.5 border-2 border-brand-teal text-brand-teal text-[9px] font-black uppercase tracking-widest hover:bg-brand-teal hover:text-white transition-all">
-                                            Annuler
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </React.Fragment>
-                    ))
-                )}
-            </div>
-
-            {/* Edit slide-in panel */}
-            {editProject && (
-                <ProjectModal
-                    project={editProject === 'new' ? null : editProject}
-                    onClose={() => setEditProject(null)}
-                    onSave={() => fetchMyProjects()}
-                />
-            )}
+        <div className="animate-in fade-in duration-700">
+            <ProjectDashboard />
         </div>
     );
 };
@@ -452,45 +347,87 @@ const QuotesPanel = ({ role, onView }) => {
 };
 
 /* ORDERS – artisan (place) + manufacturer (process) */
-const OrdersPanel = ({ role }) => (
-    <div>
-        <div className="flex justify-between items-center mb-8">
-            <div>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Commandes</h3>
-                <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
-                    {role === 'artisan' ? 'Commandes que vous avez passées' : 'Commandes à traiter / livrer'}
-                </p>
-            </div>
-            {role === 'artisan' && (
-                <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Passer Commande</button>
-            )}
-        </div>
-        <div className="space-y-0 border-4 border-brand-teal">
-            <div className="grid grid-cols-6 bg-brand-teal text-white p-4">
-                {['Réf.', 'Produit', 'Qté', role === 'artisan' ? 'Fabricant' : 'Artisan', 'Statut', 'Actions'].map(h => (
-                    <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
-                ))}
-            </div>
-            {ORDERS.map((o, i) => (
-                <div key={o.id} className={`grid grid-cols-6 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
-                    <p className="font-black text-xs text-brand-orange">{o.ref}</p>
-                    <p className="text-xs font-bold text-brand-teal">{o.product}</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{o.qty} u.</p>
-                    <p className="text-xs font-bold text-brand-slate/60">{o.fabricant}</p>
-                    <StatusBadge status={o.status} />
-                    <div className="flex gap-2">
-                        <button className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"><Eye size={12} /></button>
-                        {role === 'manufacturer' && o.status === 'en_attente' && (
-                            <button className="p-1.5 border-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-white transition-all" title="Confirmer">
-                                <CheckCircle2 size={12} />
-                            </button>
-                        )}
-                    </div>
+const OrdersPanel = ({ role }) => {
+    const { orders, loading, fetchMyOrders, recordOrderPayment, updateOrderStatus } = useOrderStore();
+
+    useEffect(() => {
+        fetchMyOrders();
+    }, [fetchMyOrders]);
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Commandes</h3>
+                    <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest mt-1">
+                        {role === 'artisan' ? 'Commandes que vous avez passées' : 'Commandes à traiter / livrer'}
+                    </p>
                 </div>
-            ))}
+                {role === 'artisan' && (
+                    <button className="btn-primary flex items-center gap-2 text-sm"><Plus size={16} /> Passer Commande</button>
+                )}
+            </div>
+            <div className="space-y-0 border-4 border-brand-teal relative">
+                {loading && <div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center"><Loader2 className="animate-spin text-brand-teal" /></div>}
+                <div className="grid grid-cols-6 bg-brand-teal text-white p-4">
+                    {['Réf.', 'Produit', 'Qté', role === 'artisan' ? 'Fabricant' : 'Artisan', 'Statut', 'Actions'].map(h => (
+                        <p key={h} className="text-[9px] font-black uppercase tracking-widest">{h}</p>
+                    ))}
+                </div>
+                {orders.length === 0 ? (
+                    <div className="p-12 text-center bg-white italic text-brand-teal/30 text-xs font-bold uppercase">Aucune commande répertoriée</div>
+                ) : (
+                    orders.map((o, i) => (
+                        <div key={o._id || o.id} className={`grid grid-cols-6 p-4 border-b border-brand-teal/10 hover:bg-brand-cream transition-colors items-center ${i % 2 === 0 ? 'bg-white' : 'bg-brand-cream/40'}`}>
+                            <p className="font-black text-xs text-brand-orange">{String(o._id).slice(-6).toUpperCase()}</p>
+                            <p className="text-xs font-bold text-brand-teal truncate pr-2">{o.items?.[0]?.product?.name || 'Produit'}</p>
+                            <p className="text-xs font-bold text-brand-slate/60">{o.items?.[0]?.quantity || 1} u.</p>
+                            <p className="text-xs font-bold text-brand-slate/60 truncate pr-2">{role === 'artisan' ? 'Industrie' : (o.user?.name || 'Artisan')}</p>
+                            <div className="flex flex-col gap-1">
+                                <StatusBadge status={o.status} />
+                                <span className={`text-[7px] font-black uppercase tracking-widest px-1 py-0.5 rounded-sm w-fit ${o.paymentStatus === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {o.paymentStatus === 'Paid' ? 'PAYÉ' : 'NON PAYÉ'}
+                                </span>
+                            </div>
+                            <div className="flex gap-1 flex-wrap">
+                                <button className="p-1.5 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all"><Eye size={12} /></button>
+                                {role === 'manufacturer' && (
+                                    <>
+                                        {o.status === 'Pending' && (
+                                            <button
+                                                onClick={() => updateOrderStatus(o._id, 'Processing')}
+                                                className="p-1.5 border-2 border-brand-green text-brand-green hover:bg-brand-green hover:text-white transition-all"
+                                                title="Traiter la commande"
+                                            >
+                                                <CheckCircle2 size={12} />
+                                            </button>
+                                        )}
+                                        {o.paymentStatus !== 'Paid' && (
+                                            <button
+                                                onClick={() => {
+                                                    recordOrderPayment(o._id);
+                                                    if ('speechSynthesis' in window) {
+                                                        const u = new SpeechSynthesisUtterance("Paiement enregistré avec succès");
+                                                        u.lang = 'fr-FR';
+                                                        window.speechSynthesis.speak(u);
+                                                    }
+                                                }}
+                                                className="p-1.5 border-2 border-brand-orange text-brand-orange hover:bg-brand-orange hover:text-white transition-all"
+                                                title="Enregistrer le paiement"
+                                            >
+                                                <CreditCard size={12} />
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 /* INVOICES – artisan + expert */
 const InvoicesPanel = ({ onView }) => {
@@ -816,6 +753,11 @@ const Dashboard = () => {
                                     key={i}
                                     tabIndex="0"
                                     aria-label={`${stat.label}: ${stat.value}, trend is ${stat.trend}`}
+                                    onClick={() => {
+                                        if (stat.label.includes('Site')) setActiveTab('Projects');
+                                        if (stat.label.includes('Quote')) setActiveTab('Quotes');
+                                        if (stat.label.includes('Rank')) setActiveTab('Analytics');
+                                    }}
                                     className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group cursor-pointer focus:z-10"
                                 >
                                     <div className="flex justify-between items-start mb-4">
@@ -838,16 +780,21 @@ const Dashboard = () => {
                             <div className="card h-full min-h-[400px]">
                                 <div className="flex justify-between items-center mb-10">
                                     <h4 className="text-xl font-black uppercase tracking-tight text-brand-teal">System Ledger</h4>
-                                    <button className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal">View Logs</button>
+                                    <button 
+                                        onClick={() => setActiveTab('Analytics')}
+                                        className="text-[10px] font-black uppercase tracking-widest text-brand-orange hover:text-brand-teal"
+                                    >
+                                        View Logs
+                                    </button>
                                 </div>
                                 <div className="space-y-6">
                                     {[1, 2, 3, 4].map((i) => (
                                         <div
                                             key={i}
-                                            tabIndex="0"
-                                            aria-label="System Ledger entry: Project Sync Completed. Site-Alpha deployment verified by controller."
+                                            onClick={() => setActiveTab('Analytics')}
                                             className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer focus:border-brand-teal/20 focus:bg-brand-cream"
                                         >
+
                                             <div className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
                                                 <Clock size={20} />
                                             </div>
@@ -861,6 +808,7 @@ const Dashboard = () => {
                                         </div>
                                     ))}
                                 </div>
+
                             </div>
 
                             {/* Creative Box */}
@@ -874,7 +822,10 @@ const Dashboard = () => {
                                     <p className="font-bold text-sm text-white/50 leading-relaxed max-w-xs mb-8">
                                         Expand your operational reach by connecting with verified experts and manufacturers.
                                     </p>
-                                    <button className="btn-outline-white w-full flex items-center justify-center gap-3">
+                                    <button 
+                                        onClick={() => setActiveTab('Marketplace')}
+                                        className="btn-outline-white w-full flex items-center justify-center gap-3"
+                                    >
                                         Explore Ecosystem <ArrowRight size={20} />
                                     </button>
                                 </div>
@@ -889,13 +840,14 @@ const Dashboard = () => {
                     </div>
                 )}
 
+                {activeTab === 'Marketplace' && <MarketplacePanel />}
                 {activeTab === 'User Mgmt' && <UserList />}
                 {activeTab === 'Documents' && <DocumentLibrary />}
-                {activeTab === 'Quotes' && <QuotesPanel role={user?.role} onView={(item) => setViewItem({ item, type: 'quote' })} />}
+                {activeTab === 'Quotes' && <QuoteDashboard />}
                 {activeTab === 'Orders' && <OrdersPanel role={user?.role} />}
-                {activeTab === 'Invoices' && <InvoicesPanel onView={(item) => setViewItem({ item, type: 'invoice' })} />}
+                {activeTab === 'Financials' && <Financials />}
                 {activeTab === 'Products' && <ProductsPanel />}
-                {activeTab === 'Access Logs' && <AccessLogsPanel />}
+                {activeTab === 'Analytics' && <ConsultationHistoryAnalytics />}
                 {activeTab === 'Settings' && <SettingsPanel user={user} />}
                 {activeTab === 'Preferences' && <SettingsPanel user={user} />}
             </div>
@@ -912,5 +864,141 @@ const Dashboard = () => {
     );
 };
 
+/* FINANCIAL LEDGER – manufacturer only */
+const FinancialLedger = () => {
+    const { orders, fetchMyOrders } = useOrderStore();
+    useEffect(() => { fetchMyOrders(); }, [fetchMyOrders]);
+
+    const stats = orders.reduce((acc, o) => {
+        acc.total += o.totalAmount || 0;
+        if (o.paymentStatus === 'Paid') acc.paid += o.totalAmount || 0;
+        else acc.pending += o.totalAmount || 0;
+        return acc;
+    }, { total: 0, paid: 0, pending: 0 });
+
+    return (
+        <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
+            <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Livre de Caisse Industriel</h3>
+                <div className="bg-brand-teal text-white p-4 border-l-4 border-brand-orange">
+                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60 text-center mb-1">Solde de Compte</p>
+                    <p className="text-2xl font-black">{stats.paid.toLocaleString()} DT</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-0 border-4 border-brand-teal">
+                <div className="bg-white p-6 border-r border-brand-teal/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Volume d'Affaire</p>
+                    <p className="text-2xl font-black text-brand-teal">{stats.total.toLocaleString()} DT</p>
+                </div>
+                <div className="bg-white p-6 border-r border-brand-teal/10">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Total Encaissé</p>
+                    <p className="text-2xl font-black text-brand-green">{stats.paid.toLocaleString()} DT</p>
+                </div>
+                <div className="bg-white p-6">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Créances Clients</p>
+                    <p className="text-2xl font-black text-brand-orange">{stats.pending.toLocaleString()} DT</p>
+                </div>
+            </div>
+
+            <div className="space-y-0 border-4 border-brand-teal overflow-hidden">
+                <div className="bg-brand-teal text-white p-4 grid grid-cols-5 text-[9px] font-black uppercase tracking-widest">
+                    <span>Date</span>
+                    <span>Référence</span>
+                    <span className="col-span-2">Opération</span>
+                    <span className="text-right">Montant</span>
+                </div>
+                {orders.length === 0 ? (
+                    <div className="p-12 text-center bg-white italic text-brand-teal/30 text-[9px] font-black uppercase">Aucune transaction répertoriée</div>
+                ) : (
+                    orders.map((o) => (
+                        <div key={o._id} className={`p-4 grid grid-cols-5 items-center border-b border-brand-teal/10 text-xs font-bold ${o.paymentStatus === 'Paid' ? 'bg-white' : 'bg-red-50/30'}`}>
+                            <span className="text-brand-slate/40">{new Date(o.createdAt).toLocaleDateString()}</span>
+                            <span className="font-black text-brand-teal">{String(o._id).slice(-6).toUpperCase()}</span>
+                            <span className="col-span-2 flex items-center gap-2">
+                                <div className={`w-1.5 h-1.5 rounded-full ${o.paymentStatus === 'Paid' ? 'bg-brand-green' : 'bg-brand-orange'}`} />
+                                {o.items?.[0]?.product?.name || 'Vente Produit'}
+                            </span>
+                            <span className="text-right font-black text-brand-teal">{o.totalAmount?.toLocaleString()} DT</span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
+/* MARKETPLACE – industrial procurement */
+const MarketplacePanel = () => {
+    const [search, setSearch] = useState("");
+    const [isListening, setIsListening] = useState(false);
+
+    const startVoiceSearch = () => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+        const rec = new SpeechRecognition();
+        rec.lang = 'fr-FR';
+        rec.onstart = () => setIsListening(true);
+        rec.onend = () => setIsListening(false);
+        rec.onresult = (e) => setSearch(e.results[0][0].transcript);
+        rec.start();
+    };
+
+    return (
+        <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Central d'Achat Industriel</h3>
+                <div className="flex items-center gap-2 bg-white border-4 border-brand-teal px-4 py-2 w-full max-w-md">
+                    <Search className="text-brand-teal" size={18} />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Rechercher des matériaux (Ciment, Acier...)"
+                        className="flex-1 bg-transparent text-xs font-bold outline-none uppercase placeholder:text-brand-teal/20"
+                    />
+                    <button
+                        onClick={startVoiceSearch}
+                        className={`p-1.5 transition-colors ${isListening ? 'text-brand-orange animate-pulse' : 'text-brand-teal/30 hover:text-brand-teal'}`}
+                    >
+                        <Mic size={18} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {PRODUCTS.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase())).map(p => (
+                    <div key={p.id} className="bg-white border-4 border-brand-teal group hover:border-brand-orange transition-colors">
+                        <div className="h-48 bg-brand-cream relative overflow-hidden flex items-center justify-center">
+                            {/* In a real app, use p.image. Here we use an icon as placeholder but with descriptive alt if it were an img */}
+                            <Package className="text-brand-teal/10 group-hover:scale-110 transition-transform duration-500" size={80} />
+                            <div className="absolute top-2 right-2 bg-brand-teal text-white text-[8px] font-black uppercase px-2 py-1">
+                                {p.category}
+                            </div>
+                        </div>
+                        <div className="p-4 border-t-2 border-brand-teal/5">
+                            <h4 className="font-black text-brand-teal uppercase text-sm mb-1">{p.name}</h4>
+                            <div className="flex justify-between items-end">
+                                <div>
+                                    <p className="text-[10px] font-bold text-brand-slate/40 uppercase">Prix Unitaire</p>
+                                    <p className="text-lg font-black text-brand-orange">{p.price.toLocaleString()} DT</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 ${p.status === 'disponible' ? 'bg-brand-green/10 text-brand-green' : 'bg-red-100 text-red-600'}`}>
+                                        {p.status}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-brand-teal/20 mt-1">{p.stock} en stock</p>
+                                </div>
+                            </div>
+                            <button className="w-full mt-4 btn-primary py-2 text-[10px] flex items-center justify-center gap-2 group-hover:bg-brand-orange">
+                                <Plus size={14} /> Ajouter au Panier
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 export default Dashboard;

@@ -8,8 +8,13 @@ import {
     FolderOpen, ClipboardList, Receipt, BarChart2, Shield, ChevronRight, Package,
 } from 'lucide-react';
 import VoiceAssistant from '../VoiceAssistant';
+import { toast } from 'react-hot-toast';
+
 
 const NAV_BY_ROLE = {
+    guest: [
+        { name: 'Marketplace', icon: ShoppingBag },
+    ],
     artisan: [
         { name: 'Overview', icon: LayoutDashboard },
         { name: 'Marketplace', icon: ShoppingBag },
@@ -34,7 +39,7 @@ const NAV_BY_ROLE = {
         { name: 'Documents', icon: FolderOpen },
         { name: 'Quotes', icon: ClipboardList },
         { name: 'Invoices', icon: Receipt },
-        { name: 'Access Logs', icon: BarChart2 },
+        { name: 'Analytics', icon: BarChart2 },
         { name: 'Settings', icon: Settings },
     ],
     admin: [
@@ -47,12 +52,12 @@ const NAV_BY_ROLE = {
 };
 
 export default function DashboardLayout({ children, currentTab, onTabChange }) {
-    const { user, logout } = useAuthStore();
+    const { user, logout, isAuthenticated } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    const navigation = NAV_BY_ROLE[user?.role] || NAV_BY_ROLE.artisan;
+    const navigation = NAV_BY_ROLE[user?.role] || (isAuthenticated ? NAV_BY_ROLE.artisan : NAV_BY_ROLE.guest);
 
     return (
         <div className="h-screen w-full bg-brand-cream flex overflow-hidden font-outfit">
@@ -109,36 +114,51 @@ export default function DashboardLayout({ children, currentTab, onTabChange }) {
                     ))}
                 </nav>
 
-                {/* User + logout */}
+                {/* User + logout / Login for guests */}
                 <div className="p-4 border-t-4 border-white/10 bg-black/10">
-                    {sidebarOpen ? (
-                        <div
-                            onClick={() => navigate('/profile')}
-                            className="flex items-center gap-3 mb-4 cursor-pointer hover:bg-white/5 p-2 -m-2 transition-all group/user"
-                        >
-                            <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black text-sm shrink-0">
-                                {user?.companyName?.charAt(0)}
-                            </div>
-                            <div>
-                                <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1 group-hover/user:text-brand-orange transition-colors">{user?.companyName}</p>
-                                <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{user?.role}</p>
-                            </div>
-                            <ChevronRight size={14} className="text-white/20 group-hover/user:text-white/60 group-hover/user:translate-x-0.5 transition-all ml-auto" />
-                        </div>
+                    {isAuthenticated ? (
+                        <>
+                            {sidebarOpen ? (
+                                <div
+                                    onClick={() => navigate('/profile')}
+                                    className="flex items-center gap-3 mb-4 cursor-pointer hover:bg-white/5 p-2 -m-2 transition-all group/user"
+                                >
+                                    <div className="w-10 h-10 bg-brand-orange text-white flex items-center justify-center font-black text-sm shrink-0">
+                                        {user?.companyName?.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <p className="font-black uppercase text-[10px] tracking-widest leading-none mb-1 group-hover/user:text-brand-orange transition-colors">{user?.companyName}</p>
+                                        <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest">{user?.role}</p>
+                                    </div>
+                                    <ChevronRight size={14} className="text-white/20 group-hover/user:text-white/60 group-hover/user:translate-x-0.5 transition-all ml-auto" />
+                                </div>
+                            ) : (
+                                <div className="flex justify-center mb-4">
+                                    <div className="w-9 h-9 bg-brand-orange text-white flex items-center justify-center font-black text-sm">
+                                        {user?.companyName?.charAt(0)}
+                                    </div>
+                                </div>
+                            )}
+                            <button
+                                onClick={() => {
+                                    logout();
+                                    navigate('/login');
+                                }}
+                                className={`w-full flex items-center justify-center gap-2 p-3 bg-white/5 border-2 border-white/20 text-white hover:bg-white hover:text-brand-teal transition-all font-black uppercase text-[9px] tracking-widest ${!sidebarOpen && 'px-0'}`}
+                            >
+                                <LogOut size={14} />
+                                {sidebarOpen && <span>Déconnexion</span>}
+                            </button>
+                        </>
                     ) : (
-                        <div className="flex justify-center mb-4">
-                            <div className="w-9 h-9 bg-brand-orange text-white flex items-center justify-center font-black text-sm">
-                                {user?.companyName?.charAt(0)}
-                            </div>
-                        </div>
+                        <button
+                            onClick={() => navigate('/login')}
+                            className={`w-full flex items-center justify-center gap-2 p-3 bg-brand-orange border-2 border-brand-orange text-white hover:bg-white hover:text-brand-orange transition-all font-black uppercase text-[9px] tracking-widest ${!sidebarOpen && 'px-0'}`}
+                        >
+                            <LogOut size={14} />
+                            {sidebarOpen && <span>Connexion</span>}
+                        </button>
                     )}
-                    <button
-                        onClick={logout}
-                        className={`w-full flex items-center justify-center gap-2 p-3 bg-white/5 border-2 border-white/20 text-white hover:bg-white hover:text-brand-teal transition-all font-black uppercase text-[9px] tracking-widest ${!sidebarOpen && 'px-0'}`}
-                    >
-                        <LogOut size={14} />
-                        {sidebarOpen && <span>Déconnexion</span>}
-                    </button>
                 </div>
             </aside>
 
@@ -171,9 +191,11 @@ export default function DashboardLayout({ children, currentTab, onTabChange }) {
                             />
                         </div>
                         <button
+                            onClick={() => toast('Secure notification relay active: 0 new alerts', { icon: '🔔' })}
                             aria-label="View Notifications"
                             className="relative w-10 h-10 border-4 border-brand-teal flex items-center justify-center text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
+
                             <Bell size={20} />
                             <span className="absolute top-1 right-1 w-2 h-2 bg-brand-orange"></span>
                         </button>
@@ -186,13 +208,15 @@ export default function DashboardLayout({ children, currentTab, onTabChange }) {
                 </section>
 
                 {/* Include global voice assistant everywhere */}
-                <VoiceAssistant onNavigate={(tab) => {
-                    if (tab === 'Marketplace') navigate('/marketplace');
-                    else if (tab === 'Orders') navigate('/orders/history');
-                    else if (tab === 'Products') navigate('/manage-products');
-                    else if (onTabChange) onTabChange(tab);
-                    else navigate('/dashboard', { state: { tab } });
-                }} role={user?.role} />
+                {isAuthenticated && (
+                    <VoiceAssistant onNavigate={(tab) => {
+                        if (tab === 'Marketplace') navigate('/marketplace');
+                        else if (tab === 'Orders') navigate('/orders/history');
+                        else if (tab === 'Products') navigate('/manage-products');
+                        else if (onTabChange) onTabChange(tab);
+                        else navigate('/dashboard', { state: { tab } });
+                    }} role={user?.role} />
+                )}
             </main>
         </div>
     );

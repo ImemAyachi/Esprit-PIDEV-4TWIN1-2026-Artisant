@@ -1,69 +1,75 @@
 import { create } from 'zustand';
 import api from '../api/axios';
 
-const useProductStore = create((set) => ({
+const useProductStore = create((set, get) => ({
     products: [],
-    product: null,
-    pagination: {},
+    lowStock: [],
     loading: false,
     error: null,
 
-    fetchProducts: async (filters = {}) => {
-        set({ loading: true, error: null });
+    fetchProducts: async (params = {}) => {
+        set({ loading: true });
         try {
-            const params = new URLSearchParams(
-                Object.entries(filters).filter(([, v]) => v !== '' && v !== undefined)
-            ).toString();
-            const res = await api.get(`/products?${params}`);
-            set({ products: res.data.data, pagination: res.data.pagination });
+            const res = await api.get('/products', { params });
+            set({ products: res.data.data, loading: false });
         } catch (err) {
-            set({ error: err.response?.data?.message || 'Erreur de chargement' });
-        } finally {
-            set({ loading: false });
+            set({ error: err.message, loading: false });
         }
     },
 
-    fetchProductById: async (id) => {
-        set({ loading: true, error: null });
+    fetchLowStock: async () => {
+        set({ loading: true });
         try {
-            const res = await api.get(`/products/${id}`);
-            set({ product: res.data.data });
+            const res = await api.get('/products/low-stock');
+            set({ lowStock: res.data.data, loading: false });
         } catch (err) {
-            set({ error: err.response?.data?.message || 'Produit introuvable' });
-        } finally {
-            set({ loading: false });
+            set({ error: err.message, loading: false });
         }
     },
 
     createProduct: async (data) => {
-        const res = await api.post('/products', data);
-        set((s) => ({ products: [res.data.data, ...s.products] }));
-        return res.data.data;
+        try {
+            const res = await api.post('/products', data);
+            set(s => ({ products: [res.data.data, ...s.products] }));
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.response?.data?.message || err.message };
+        }
     },
 
     updateProduct: async (id, data) => {
-        const res = await api.put(`/products/${id}`, data);
-        set((s) => ({
-            products: s.products.map((p) => (p._id === id ? res.data.data : p)),
-        }));
-        return res.data.data;
+        try {
+            const res = await api.put(`/products/${id}`, data);
+            set(s => ({
+                products: s.products.map(p => p._id === id ? res.data.data : p)
+            }));
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
     },
 
-    deleteProduct: async (id) => {
-        await api.delete(`/products/${id}`);
-        set((s) => ({ products: s.products.filter((p) => p._id !== id) }));
+    bulkUpdate: async (ids, updates) => {
+        try {
+            await api.patch('/products/bulk', { ids, updates });
+            get().fetchProducts();
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
     },
 
-    generateAIDescription: async (data) => {
-        const res = await api.post('/products/ai-description', data);
-        return res.data.description;
-    },
-    uploadImage: async (formData) => {
-        const res = await api.post('/upload', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        return res.data.url;
-    },
+    addReview: async (id, review) => {
+        try {
+            const res = await api.post(`/products/${id}/review`, review);
+            set(s => ({
+                products: s.products.map(p => p._id === id ? res.data.data : p)
+            }));
+            return { success: true };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    }
 }));
 
 export default useProductStore;

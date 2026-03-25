@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        required: [true, 'Please provide a password'],
+        required: true,
         minlength: 8,
         select: false,
     },
@@ -22,24 +22,26 @@ const userSchema = new mongoose.Schema({
     },
     companyName: {
         type: String,
-        required: [true, 'Please provide company name'],
         trim: true,
     },
     phone: {
         type: String,
-        required: [true, 'Please provide phone number'],
     },
     avatarUrl: {
         type: String,
     },
-    facialFingerprint: {
-        type: Buffer, // Storing BYTEA as Buffer in Mongoose
+    // Facial recognition biometric (stored as number array/embedding)
+    faceEmbedding: {
+        type: [Number],
         select: false,
     },
     isActive: {
         type: Boolean,
         default: true,
     },
+    // Management Features
+    lastLogin: Date,
+    lastIP: String,
 }, {
     timestamps: true,
 });
@@ -50,9 +52,25 @@ userSchema.pre('save', async function () {
     this.password = await bcrypt.hash(this.password, 12);
 });
 
+
 // Method to check password
 userSchema.methods.comparePassword = async function (candidatePassword, userPassword) {
     return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+// Cosine similarity for face authentication
+userSchema.methods.compareFaceEmbedding = function (candidateEmbedding) {
+    const stored = this.faceEmbedding;
+    if (!stored || stored.length === 0) return 0;
+
+    let dot = 0, normA = 0, normB = 0;
+    for (let i = 0; i < stored.length; i++) {
+        dot += stored[i] * candidateEmbedding[i];
+        normA += stored[i] * stored[i];
+        normB += candidateEmbedding[i] * candidateEmbedding[i];
+    }
+    if (normA === 0 || normB === 0) return 0;
+    return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
 const User = mongoose.model('User', userSchema);

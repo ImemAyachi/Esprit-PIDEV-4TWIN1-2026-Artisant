@@ -1,18 +1,23 @@
 const Document = require('../models/Document');
+const Consultation = require('../models/Consultation');
+
 
 // @desc    Get all documents
 // @route   GET /api/documents
-// @access  Public
 exports.getAllDocuments = async (req, res) => {
     try {
-        const documents = await Document.find();
-        res.status(200).json({
-            status: 'success',
-            results: documents.length,
-            data: {
-                documents,
-            },
-        });
+        const { search, type, project, product } = req.query;
+        let query = {};
+
+        if (search) {
+            query.title = { $regex: search, $options: 'i' };
+        }
+        if (type) query.type = type;
+        if (project) query.project = project;
+        if (product) query.product = product;
+
+        const documents = await Document.find(query).populate('project product');
+        res.status(200).json({ status: 'success', results: documents.length, data: { documents } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -20,19 +25,11 @@ exports.getAllDocuments = async (req, res) => {
 
 // @desc    Get single document
 // @route   GET /api/documents/:id
-// @access  Public
 exports.getDocument = async (req, res) => {
     try {
-        const document = await Document.findById(req.params.id);
-        if (!document) {
-            return res.status(404).json({ message: 'Document not found' });
-        }
-        res.status(200).json({
-            status: 'success',
-            data: {
-                document,
-            },
-        });
+        const document = await Document.findById(req.params.id).populate('project product');
+        if (!document) return res.status(404).json({ message: 'Document not found' });
+        res.status(200).json({ status: 'success', data: { document } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -40,51 +37,45 @@ exports.getDocument = async (req, res) => {
 
 // @desc    Create new document
 // @route   POST /api/documents
-// @access  Private/Admin/Expert
 exports.createDocument = async (req, res) => {
     try {
-        // Add user to req.body
-        req.body.uploadedBy = req.user.id;
+        const { title, name, fileUrl, type } = req.body;
+        
+        // Map types for frontend compatibility
+        const typeMapping = {
+            'Technical Sheet': 'fiche technique',
+            'fiche technique': 'fiche technique',
+            'Certification': 'certification',
+            'Manual': 'manuel',
+            'autre': 'autre'
+        };
 
-        const document = await Document.create(req.body);
-        res.status(201).json({
-            status: 'success',
-            data: {
-                document,
-            },
+        const document = await Document.create({
+            ...req.body,
+            name: name || title || 'Sans titre', // Frontend uses 'title'
+            type: typeMapping[type] || 'autre',
+            fileUrl: fileUrl || 'https://placeholder.com/asset.pdf',
+            uploadedBy: req.user.id
         });
+
+        res.status(201).json({ status: 'success', data: { document } });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Document Ingestion Failure:', err);
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
+
 // @desc    Update document
 // @route   PUT /api/documents/:id
-// @access  Private/Admin/Expert
 exports.updateDocument = async (req, res) => {
     try {
-        let document = await Document.findById(req.params.id);
-
-        if (!document) {
-            return res.status(404).json({ message: 'Document not found' });
-        }
-
-        // Make sure user is document owner or admin
-        if (document.uploadedBy.toString() !== req.user.id && req.user.role !== 'Admin') {
-            return res.status(401).json({ message: 'Not authorized to update this document' });
-        }
-
-        document = await Document.findByIdAndUpdate(req.params.id, req.body, {
+        const document = await Document.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
-            runValidators: true,
+            runValidators: true
         });
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                document,
-            },
-        });
+        if (!document) return res.status(404).json({ message: 'Document not found' });
+        res.status(200).json({ status: 'success', data: { document } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -92,62 +83,74 @@ exports.updateDocument = async (req, res) => {
 
 // @desc    Delete document
 // @route   DELETE /api/documents/:id
-// @access  Private/Admin/Expert
 exports.deleteDocument = async (req, res) => {
     try {
+        const document = await Document.findByIdAndDelete(req.params.id);
+        if (!document) return res.status(404).json({ message: 'Document not found' });
+        res.status(200).json({ status: 'success', data: {} });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+// @desc    Toggle document favorite
+// @route   PUT /api/documents/:id/favorite
+exports.toggleFavorite = async (req, res) => {
+    try {
         const document = await Document.findById(req.params.id);
+        if (!document) return res.status(404).json({ message: 'Document not found' });
 
-        if (!document) {
-            return res.status(404).json({ message: 'Document not found' });
+        const isFavorited = document.favoritedBy.includes(req.user.id);
+        
+        if (isFavorited) {
+            document.favoritedBy = document.favoritedBy.filter(id => id.toString() !== req.user.id.toString());
+        } else {
+            document.favoritedBy.push(req.user.id);
         }
 
-        // Make sure user is document owner or admin
-        if (document.uploadedBy.toString() !== req.user.id && req.user.role !== 'Admin') {
-            return res.status(401).json({ message: 'Not authorized to delete this document' });
-        }
-
-        await document.deleteOne();
-
-        res.status(200).json({
-            status: 'success',
-            data: {},
-        });
+        await document.save();
+        res.status(200).json({ status: 'success', data: { document } });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// @desc    Toggle favorite document
-// @route   PUT /api/documents/:id/favorite
-// @access  Private
-exports.favoriteDocument = async (req, res) => {
+// @desc    Get document consultation history
+// @route   GET /api/documents/history
+exports.getDocumentHistory = async (req, res) => {
     try {
-        const Profile = require('../models/Profile');
-        let profile = await Profile.findOne({ user: req.user.id });
+        const history = await Consultation.find({ user: req.user.id })
+            .populate('document')
+            .sort({ createdAt: -1 });
 
-        if (!profile) {
-            return res.status(404).json({ message: 'Profile not found' });
-        }
+        // Map for frontend compatibility if needed
+        const formattedHistory = history.map(h => ({
+            _id: h._id,
+            item: h.document,
+            lastViewed: h.createdAt,
+            timeSpent: h.timeSpent,
+            action: h.action,
+            interactions: [{ type: h.action }]
+        }));
 
-        const isFavorited = profile.favoriteDocuments.includes(req.params.id);
-
-        if (isFavorited) {
-            profile.favoriteDocuments = profile.favoriteDocuments.filter(
-                (docId) => docId.toString() !== req.params.id
-            );
-        } else {
-            profile.favoriteDocuments.push(req.params.id);
-        }
-
-        await profile.save();
-
-        res.status(200).json({
-            status: 'success',
-            data: {
-                favorites: profile.favoriteDocuments,
-            },
-        });
+        res.status(200).json({ success: true, data: formattedHistory });
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc    Log document consultation
+// @route   POST /api/documents/:id/consult
+exports.logConsultation = async (req, res) => {
+    try {
+        const { action, timeSpent } = req.body;
+        const consultation = await Consultation.create({
+            user: req.user.id,
+            document: req.params.id,
+            action: action || 'view',
+            timeSpent: timeSpent || 30 // Default time if viewed
+        });
+        res.status(201).json({ success: true, data: consultation });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
 };
