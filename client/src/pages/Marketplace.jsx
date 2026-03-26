@@ -57,6 +57,7 @@ export default function Marketplace() {
     
     const [isListening, setIsListening] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
 
     useEffect(() => {
         const timeoutId = setTimeout(() => {
@@ -80,20 +81,41 @@ export default function Marketplace() {
 
     return (
         <DashboardLayout currentTab="Marketplace">
-            <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-brand-cream">
+            <div className="flex h-[calc(100vh-80px)] overflow-hidden bg-brand-cream relative">
                 
+                {/* ── Mobile Filter Overlay ── */}
+                {mobileFilterOpen && (
+                    <div 
+                        className="fixed inset-0 bg-brand-teal/60 backdrop-blur-sm z-40 lg:hidden animate-in fade-in"
+                        onClick={() => setMobileFilterOpen(false)}
+                    />
+                )}
+
                 {/* ── Sidebar Filters ── */}
-                <aside className={`bg-white border-r-4 border-brand-teal transition-all duration-500 overflow-y-auto ${sidebarOpen ? 'w-80' : 'w-0 border-r-0'}`}>
+                <aside className={`
+                    fixed inset-y-0 left-0 lg:static bg-white border-r-4 border-brand-teal transition-all duration-500 overflow-y-auto z-50
+                    ${sidebarOpen ? 'w-80' : 'w-0 border-r-0'}
+                    ${mobileFilterOpen ? 'translate-x-0 w-80 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+                `}>
                     <div className="p-8 space-y-12 w-80">
+                        <div className="flex items-center justify-between lg:hidden mb-8 border-b-2 border-brand-teal pb-4">
+                            <span className="text-sm font-black uppercase tracking-widest text-brand-teal">Paramètres Gisement</span>
+                            <button onClick={() => setMobileFilterOpen(false)} className="text-brand-orange">
+                                <X size={24} />
+                            </button>
+                        </div>
                         <div>
                             <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal opacity-40 mb-6 flex items-center gap-2">
-                                <Filter size={14} /> Paramètres de Flux
+                                <Filter size={14} /> Filtres Catégories
                             </h3>
                             <div className="space-y-2">
                                 {CATEGORIES.map(cat => (
                                     <button 
                                         key={cat.id}
-                                        onClick={() => setFilters({ ...filters, category: cat.id })}
+                                        onClick={() => {
+                                            setFilters({ ...filters, category: cat.id });
+                                            if (window.innerWidth < 1024) setMobileFilterOpen(false);
+                                        }}
                                         className={`w-full text-left p-4 text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
                                             filters.category === cat.id ? 'bg-brand-teal text-white border-brand-teal shadow-[4px_4px_0px_0px_rgba(255,120,80,1)]' : 'bg-transparent text-brand-teal border-transparent hover:bg-brand-cream'
                                         }`}
@@ -125,9 +147,9 @@ export default function Marketplace() {
                         </div>
 
                         <div>
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal opacity-40 mb-6">Tri des Ressources</h3>
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal opacity-40 mb-6 font-black">Tri des Ressources</h3>
                             <select 
-                                className="w-full bg-brand-cream border-2 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal"
+                                className="w-full bg-brand-cream border-2 border-brand-teal/10 p-4 text-xs font-black uppercase outline-none focus:border-brand-teal cursor-pointer"
                                 value={filters.sort}
                                 onChange={e => setFilters({...filters, sort: e.target.value})}
                             >
@@ -143,14 +165,18 @@ export default function Marketplace() {
                 {/* ── Main Content ── */}
                 <main className="flex-1 flex flex-col min-w-0">
                     {/* Toolbar */}
-                    <div className="bg-white border-b-4 border-brand-teal p-6 flex items-center justify-between gap-6 shrink-0 z-20">
-                        <div className="flex items-center gap-6 flex-1">
+                    <div className="bg-white border-b-4 border-brand-teal p-4 md:p-6 flex items-center justify-between gap-4 md:gap-6 shrink-0 z-20">
+                        <div className="flex items-center gap-3 md:gap-6 flex-1">
                             <button 
-                                onClick={() => setSidebarOpen(!sidebarOpen)}
-                                className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center hover:bg-brand-orange transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)]"
+                                onClick={() => {
+                                    if (window.innerWidth < 1024) setMobileFilterOpen(true);
+                                    else setSidebarOpen(!sidebarOpen);
+                                }}
+                                className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center hover:bg-brand-orange transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,0.1)] shrink-0"
                             >
                                 <SlidersHorizontal size={20} />
                             </button>
+
                             <div className="flex-1 relative max-w-2xl group">
                                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-brand-teal/30 group-focus-within:text-brand-orange transition-colors" size={20} />
                                 <input 

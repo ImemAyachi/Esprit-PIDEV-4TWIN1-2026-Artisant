@@ -59,48 +59,48 @@ const Checkout = () => {
     }
 
     return (
-        <div className="min-h-screen bg-brand-cream p-8 md:p-16 font-bold flex items-center justify-center">
-            <div className="max-w-6xl w-full bg-white border-8 border-brand-teal shadow-[24px_24px_0px_0px_rgba(45,90,90,0.1)] overflow-hidden animate-in zoom-in-95 duration-500">
+        <div className="min-h-screen bg-brand-cream p-4 md:p-8 lg:p-16 font-bold flex flex-col items-center justify-center">
+            <div className="max-w-6xl w-full bg-white border-4 md:border-8 border-brand-teal shadow-[12px_12px_0px_0px_rgba(45,90,90,0.1)] md:shadow-[24px_24px_0px_0px_rgba(45,90,90,0.1)] overflow-hidden animate-in zoom-in-95 duration-500">
                 
                 {/* Stepper Header */}
-                <div className="grid grid-cols-4 bg-brand-teal text-white border-b-8 border-brand-teal">
+                <div className="grid grid-cols-4 bg-brand-teal text-white border-b-4 md:border-b-8 border-brand-teal">
                     {[
                         { id: 1, label: 'Panier', icon: ShoppingCart },
                         { id: 2, label: 'Logistique', icon: MapPin },
                         { id: 3, label: 'Paiement', icon: CreditCard },
                         { id: 4, label: 'Protocole', icon: CheckCircle2 }
                     ].map(s => (
-                        <div key={s.id} className={`p-6 flex items-center justify-center gap-3 transition-colors ${step === s.id ? 'bg-brand-orange' : 'opacity-40'}`}>
-                            <s.icon size={20} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] hidden md:inline">{s.label}</span>
+                        <div key={s.id} className={`p-4 md:p-6 flex flex-col md:flex-row items-center justify-center gap-2 md:gap-3 transition-colors ${step === s.id ? 'bg-brand-orange' : 'opacity-40'}`}>
+                            <s.icon size={20} className="shrink-0" />
+                            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] hidden sm:inline text-center">{s.label}</span>
                         </div>
                     ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 min-h-[600px]">
+                <div className="flex flex-col lg:flex-row min-h-[600px]">
                     {/* Content Section */}
-                    <div className="lg:col-span-2 p-12 border-r-4 border-brand-teal/5">
+                    <div className="lg:w-2/3 p-6 md:p-12 border-b-4 lg:border-b-0 lg:border-r-4 border-brand-teal/5 order-2 lg:order-1">
                         {step === 1 && (
-                            <div className="space-y-12 animate-in slide-in-from-left-4">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter text-brand-teal">Révision des Ressources</h2>
+                            <div className="space-y-8 md:space-y-12 animate-in slide-in-from-left-4">
+                                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-brand-teal">Révision des Ressources</h2>
                                 <div className="space-y-6">
                                     {items.map(item => (
-                                        <div key={item.product._id} className="flex items-center gap-8 p-6 bg-brand-cream border-2 border-brand-teal/5 group hover:border-brand-teal transition-all">
-                                            <div className="w-24 h-24 bg-white border-2 border-brand-teal p-1 shrink-0">
-                                                <img src={item.product.images?.[0]?.url} alt="" className="w-full h-full object-cover" />
+                                        <div key={item.product._id} className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 p-4 sm:p-6 bg-brand-cream border-2 border-brand-teal/5 group hover:border-brand-teal transition-all text-center sm:text-left relative">
+                                            <div className="w-full sm:w-24 h-48 sm:h-24 bg-white border-2 border-brand-teal p-1 shrink-0">
+                                                <img src={item.product.images?.[0]?.url || item.product.images?.[0]} alt="" className="w-full h-full object-cover" />
                                             </div>
-                                            <div className="flex-1">
+                                            <div className="flex-1 w-full text-center sm:text-left">
                                                 <p className="text-[8px] font-black uppercase opacity-40 mb-1">{item.product.category}</p>
-                                                <h3 className="text-xl font-black uppercase tracking-tighter text-brand-teal">{item.product.name}</h3>
-                                                <p className="text-xs font-bold text-brand-teal opacity-60">P.U: {(item.product.price || 0).toLocaleString()} DT</p>
+                                                <h3 className="text-lg sm:text-xl font-black uppercase tracking-tighter text-brand-teal leading-tight">{item.product.name}</h3>
+                                                <p className="text-xs font-bold text-brand-teal opacity-60 mt-1 sm:mt-0">P.U: {(item.product.price || 0).toLocaleString()} DT</p>
 
                                             </div>
-                                            <div className="flex items-center gap-4 bg-white border-4 border-brand-teal p-1 scale-90">
+                                            <div className="flex items-center gap-4 bg-white border-4 border-brand-teal p-1 scale-90 w-full sm:w-auto justify-center sm:justify-start">
                                                 <button onClick={() => updateQuantity(item.product._id, item.quantity - 1)} className="p-2 hover:bg-brand-teal hover:text-white transition-all"><Minus size={16} /></button>
                                                 <span className="w-12 text-center text-lg font-black">{item.quantity}</span>
                                                 <button onClick={() => updateQuantity(item.product._id, item.quantity + 1)} className="p-2 hover:bg-brand-teal hover:text-white transition-all"><Plus size={16} /></button>
                                             </div>
-                                            <button onClick={() => removeItem(item.product._id)} className="text-red-500 hover:scale-110 transition-transform"><Trash2 size={24} /></button>
+                                            <button onClick={() => removeItem(item.product._id)} className="absolute sm:relative top-2 right-2 sm:top-auto sm:right-auto text-red-500 hover:scale-110 transition-transform bg-white/80 p-1 sm:p-0"><Trash2 size={24} /></button>
                                         </div>
                                     ))}
                                 </div>
@@ -108,10 +108,10 @@ const Checkout = () => {
                         )}
 
                         {step === 2 && (
-                            <div className="space-y-12 animate-in slide-in-from-right-4">
-                                <h2 className="text-3xl font-black uppercase tracking-tighter text-brand-teal">Protocole Logistique</h2>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div className="col-span-2 space-y-2">
+                            <div className="space-y-8 md:space-y-12 animate-in slide-in-from-right-4">
+                                <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-brand-teal">Protocole Logistique</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                    <div className="col-span-1 md:col-span-2 space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Responsable Réception</label>
                                         <div className="relative">
                                             <User className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-teal/20" size={18} />
@@ -123,7 +123,7 @@ const Checkout = () => {
                                             />
                                         </div>
                                     </div>
-                                    <div className="col-span-2 space-y-2">
+                                    <div className="col-span-1 md:col-span-2 space-y-2">
                                         <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Adresse de Débarquement</label>
                                         <div className="relative">
                                             <MapPin className="absolute left-4 top-5 text-brand-teal/20" size={18} />
@@ -207,8 +207,8 @@ const Checkout = () => {
                     </div>
 
                     {/* Summary Sidebar */}
-                    <div className="bg-brand-teal p-12 text-white flex flex-col justify-between">
-                        <div className="space-y-12">
+                    <div className="lg:w-1/3 bg-brand-teal p-8 md:p-12 text-white flex flex-col justify-between order-1 lg:order-2 shrink-0">
+                        <div className="space-y-8 md:space-y-12">
                             <h3 className="text-xs font-black uppercase tracking-[0.3em] opacity-40 flex items-center gap-3">
                                 <Package size={16} className="text-brand-orange" /> Synthèse Documentaire
                             </h3>

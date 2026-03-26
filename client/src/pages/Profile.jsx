@@ -125,45 +125,45 @@ const Profile = () => {
         <DashboardLayout currentTab="Profile">
             <div className="font-outfit pb-20 animate-in fade-in duration-500">
                 {/* Header Strip */}
-                <div className="bg-white border-b-8 border-brand-teal px-8 py-6 sticky top-0 z-30 shadow-sm flex justify-between items-center">
+                <div className="bg-white border-b-8 border-brand-teal px-4 md:px-8 py-4 md:py-6 sticky top-0 z-30 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-0">
                     <div>
-                        <h2 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Personnel Node</h2>
+                        <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-brand-teal">Personnel Node</h2>
                         <p className="text-[10px] font-black uppercase tracking-widest text-brand-teal/40">Identity Management // Level 4 Authorization</p>
                     </div>
-                    <div className="flex gap-4">
+                    <div className="flex gap-4 w-full md:w-auto">
                         {!editing ? (
-                            <button onClick={() => setEditing(true)} className="btn-primary flex items-center gap-2 px-8 py-3 bg-brand-teal text-white font-black"><Edit3 size={16} /> MODIFY RECORD</button>
+                            <button onClick={() => setEditing(true)} className="btn-primary w-full md:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-brand-teal text-white font-black"><Edit3 size={16} /> MODIFY RECORD</button>
                         ) : (
-                            <div className="flex gap-2">
-                                <button onClick={() => setEditing(false)} className="px-4 py-3 border-2 border-brand-teal text-brand-teal font-black"><X size={16} /></button>
-                                <button onClick={handleSave} className="px-8 py-3 bg-brand-orange text-white font-black flex items-center gap-2"><Save size={16} /> COMMIT PROTOCOL</button>
+                            <div className="flex gap-2 w-full md:w-auto">
+                                <button onClick={() => setEditing(false)} className="px-4 py-3 border-2 border-brand-teal text-brand-teal font-black shrink-0"><X size={16} /></button>
+                                <button onClick={handleSave} className="flex-1 px-8 py-3 bg-brand-orange text-white font-black flex items-center justify-center gap-2"><Save size={16} /> <span className="hidden sm:inline">COMMIT PROTOCOL</span><span className="sm:hidden">SAVE</span></button>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto p-12">
+                <div className="max-w-7xl mx-auto p-4 md:p-8 lg:p-12">
                     {/* Top Row: Core Info & Completion */}
-                    <div className="grid lg:grid-cols-4 gap-12 mb-12">
-                        <div className="lg:col-span-3 bg-white border-8 border-brand-teal p-12 relative overflow-hidden group">
+                    <div className="grid lg:grid-cols-4 gap-8 lg:gap-12 mb-12">
+                        <div className="lg:col-span-3 bg-white border-8 border-brand-teal p-6 md:p-12 relative overflow-hidden group">
                            <div className="absolute top-0 right-0 w-48 h-1 bg-brand-orange animate-pulse"></div>
-                           <div className="flex items-start gap-12">
+                           <div className="flex flex-col md:flex-row items-center md:items-start gap-8 lg:gap-12">
                                <div className="relative shrink-0">
                                    {user.avatarUrl ? (
-                                       <img src={user.avatarUrl} className="w-48 h-48 object-cover border-4 border-brand-teal" alt="Avatar" />
+                                       <img src={user.avatarUrl} className="w-32 h-32 md:w-48 md:h-48 object-cover border-4 border-brand-teal" alt="Avatar" />
                                    ) : (
-                                       <div className="w-48 h-48 bg-brand-orange text-white flex items-center justify-center font-black text-7xl border-4 border-brand-teal uppercase">
+                                       <div className="w-32 h-32 md:w-48 md:h-48 bg-brand-orange text-white flex items-center justify-center font-black text-5xl md:text-7xl border-4 border-brand-teal uppercase">
                                            {user.companyName?.[0]}
                                        </div>
                                    )}
-                                   <div className="absolute -bottom-3 -right-3 bg-brand-teal text-white px-4 py-2 font-black uppercase text-[10px] tracking-widest">{user.role}</div>
+                                   <div className="absolute -bottom-3 -right-3 bg-brand-teal text-white px-4 py-2 font-black uppercase text-[10px] tracking-widest border-2 md:border-0 border-white md:border-transparent">{user.role}</div>
                                </div>
-                               <div className="flex-1">
-                                   <div className="flex items-center gap-4 mb-2">
-                                       <h1 className="text-6xl font-black uppercase tracking-tighter text-brand-teal leading-none">{user.companyName}</h1>
-                                       {user.isEmailVerified && <CheckCircle2 size={32} className="text-brand-green" />}
+                               <div className="flex-1 w-full text-center md:text-left">
+                                   <div className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-4 mb-2">
+                                       <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter text-brand-teal leading-none text-balance">{user.companyName}</h1>
+                                       {user.isEmailVerified && <CheckCircle2 size={24} className="text-brand-green hidden md:block" />}
                                    </div>
-                                   <div className="grid grid-cols-2 gap-8 mt-10">
+                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 mt-8 md:mt-10 text-left">
                                        <div className="space-y-4">
                                            <div className="group/item">
                                                <p className="text-[10px] font-black uppercase text-brand-teal/40 mb-1">Electronic Mail</p>
@@ -234,8 +234,8 @@ const Profile = () => {
                                 <h3 className="text-xl font-black uppercase tracking-tight text-brand-teal flex items-center gap-3"><MapPin className="text-brand-orange" /> Geography & Contact</h3>
                                 
                                 {editing ? (
-                                    <div className="grid grid-cols-2 gap-6 animate-in slide-in-from-right-4">
-                                        <div className="col-span-2 space-y-2">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4">
+                                        <div className="col-span-1 md:col-span-2 space-y-2">
                                             <label className="text-[10px] font-black uppercase opacity-40">Street Protocol</label>
                                             <input className="input-field" value={form.address.street} onChange={(e) => setForm({...form, address: {...form.address, street: e.target.value}})} />
                                         </div>
@@ -257,7 +257,7 @@ const Profile = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-8 bg-brand-cream/30 p-8 border-2 border-transparent hover:border-brand-teal/10 transition-all">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 bg-brand-cream/30 p-8 border-2 border-transparent hover:border-brand-teal/10 transition-all">
                                         <div>
                                             <p className="text-[9px] font-black uppercase opacity-40 mb-1">Postal Address</p>
                                             <p className="font-bold text-brand-teal uppercase">{form.address.street || 'EMPTY'}</p>
@@ -277,7 +277,7 @@ const Profile = () => {
                                 <h3 className="text-xl font-black uppercase tracking-tight text-brand-teal flex items-center gap-3"><Briefcase className="text-brand-orange" /> Operational Sector</h3>
                                 
                                 {editing ? (
-                                    <div className="grid grid-cols-2 gap-6 animate-in slide-in-from-right-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-right-4">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black uppercase opacity-40">Specialization</label>
                                             <input className="input-field" value={form.professionalDetails.specialization} onChange={(e) => setForm({...form, professionalDetails: {...form.professionalDetails, specialization: e.target.value}})} />
@@ -286,7 +286,7 @@ const Profile = () => {
                                             <label className="text-[10px] font-black uppercase opacity-40">Experience (Years)</label>
                                             <input type="number" className="input-field" value={form.professionalDetails.yearsOfExperience} onChange={(e) => setForm({...form, professionalDetails: {...form.professionalDetails, yearsOfExperience: e.target.value}})} />
                                         </div>
-                                        <div className="col-span-2 space-y-2">
+                                        <div className="col-span-1 md:col-span-2 space-y-2">
                                             <label className="text-[10px] font-black uppercase opacity-40">Operational Bio</label>
                                             <textarea className="input-field h-32 resize-none" value={form.professionalDetails.bio} onChange={(e) => setForm({...form, professionalDetails: {...form.professionalDetails, bio: e.target.value}})} />
                                         </div>

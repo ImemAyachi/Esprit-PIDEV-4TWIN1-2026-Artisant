@@ -70,21 +70,21 @@ const Register = () => {
     };
 
     return (
-        <div className="h-screen w-full flex items-stretch bg-brand-cream overflow-hidden no-scrollbar relative">
-            <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-brand-teal/5 transform translate-x-1/2 -translate-y-1/2 -z-10 opacity-20" />
+        <div className="min-h-screen w-full flex items-stretch bg-brand-cream overflow-x-hidden relative">
+            <div className="absolute top-0 right-0 w-[20rem] h-[20rem] lg:w-[40rem] lg:h-[40rem] bg-brand-teal/5 transform translate-x-1/2 -translate-y-1/2 -z-10 opacity-20" />
 
-            <div className="w-full flex flex-col lg:flex-row bg-white relative z-10 border-r-8 border-brand-teal overflow-hidden">
+            <div className="w-full flex flex-col lg:flex-row bg-white relative z-10 lg:border-r-8 lg:border-brand-teal">
                 {/* Sidebar */}
-                <div className="lg:w-1/3 bg-brand-teal text-white p-12 flex flex-col justify-between shrink-0">
+                <div className="lg:w-1/3 bg-brand-teal text-white p-8 lg:p-12 flex flex-col justify-between shrink-0">
                     <div className="relative z-10">
-                        <Link to="/" className="inline-flex items-center gap-2 mb-16 group">
+                        <Link to="/" className="inline-flex items-center gap-2 mb-8 lg:mb-16 group">
                             <img src={logo} alt="" className="w-8 h-8 object-contain bg-white" />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] group-hover:pl-2 transition-all">
                                 Artisanat / Home
                             </span>
                         </Link>
 
-                        <h1 className="text-6xl font-black uppercase tracking-tighter leading-none mb-8">
+                        <h1 className="text-4xl lg:text-6xl font-black uppercase tracking-tighter leading-none mb-6 lg:mb-8">
                             Account <br />
                             <span className="text-brand-orange">Protocol</span> <br />
                             Init.
@@ -109,7 +109,7 @@ const Register = () => {
                         </div>
                     </div>
 
-                    <div className="relative z-10 space-y-4">
+                    <div className="relative z-10 space-y-4 hidden lg:block">
                         <div className="flex items-center gap-3">
                             <div className="w-2 h-2 bg-brand-orange" />
                             <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Industrial Integrity</span>
@@ -126,7 +126,7 @@ const Register = () => {
                 </div>
 
                 {/* Form Area */}
-                <div className="flex-1 p-8 md:p-14 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center">
+                <div className="flex-1 p-6 md:p-8 lg:p-14 lg:overflow-y-auto custom-scrollbar flex flex-col items-center justify-center">
                     <div className="max-w-4xl w-full my-auto">
                         <AnimatePresence mode="wait">
 
@@ -149,7 +149,7 @@ const Register = () => {
                                     {/* Role Selection */}
                                     <div className="space-y-3">
                                         <label className="label">Operational Sector</label>
-                                        <div className="grid grid-cols-3 border-4 border-brand-teal">
+                                        <div className="grid grid-cols-1 md:grid-cols-3 border-4 border-brand-teal divide-y-4 md:divide-y-0 md:divide-x-4 divide-brand-teal/10">
                                             {roles.map((role) => (
                                                 <button
                                                     key={role.id}

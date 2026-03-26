@@ -70,14 +70,14 @@ const Login = () => {
     };
 
     return (
-        <div className="h-screen flex items-stretch bg-brand-cream overflow-hidden">
-            {/* Visual Side */}
-            <div className="hidden lg:flex w-1/2 bg-brand-teal relative items-center justify-center p-20 border-r-8 border-brand-teal">
+        <div className="min-h-screen flex flex-col lg:flex-row items-stretch bg-brand-cream overflow-x-hidden">
+            {/* Visual Side - Hidden on mobile */}
+            <div className="hidden lg:flex lg:w-1/2 bg-brand-teal relative items-center justify-center p-20 border-r-8 border-brand-teal">
                 <div className="absolute inset-0 opacity-10 flex items-center justify-center pointer-events-none">
                     <img src={logo} alt="" className="w-[30rem] h-[30rem] object-contain invert grayscale" />
                 </div>
                 <div className="relative z-10">
-                    <h1 className="text-8xl font-black text-white uppercase tracking-tighter leading-[0.8] mb-8">
+                    <h1 className="text-6xl lg:text-8xl font-black text-white uppercase tracking-tighter leading-[0.8] mb-8">
                         The <br />
                         <span className="text-brand-orange">Platform</span> <br />
                         Standard.
@@ -94,21 +94,28 @@ const Login = () => {
             </div>
 
             {/* Form Side */}
-            <div className="flex-1 flex flex-col justify-center items-center p-8 md:p-12 relative overflow-y-auto custom-scrollbar">
+            <div className="flex-1 flex flex-col justify-center items-center p-6 md:p-12 relative overflow-y-auto custom-scrollbar">
+                {/* Mobile Header */}
+                <div className="lg:hidden w-full flex justify-center mb-12">
+                    <div className="flex items-center gap-3">
+                        <img src={logo} alt="" className="w-10 h-10 object-contain" />
+                        <span className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Artisanat</span>
+                    </div>
+                </div>
+
                 <div className="max-w-md w-full my-auto">
                     {/* Back link */}
                     <Link to="/" className="inline-flex items-center gap-2 mb-8 group overflow-hidden">
-                        <img src={logo} alt="" className="w-8 h-8 object-contain" />
-                        <span className="text-xs font-black uppercase tracking-widest text-brand-teal group-hover:pl-2 transition-all">
-                            Back to overview
+                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-teal group-hover:pl-2 transition-all">
+                            ← Back to landing
                         </span>
                     </Link>
 
-                    <div className="mb-8">
-                        <h2 className="text-5xl font-black text-brand-teal uppercase tracking-tighter mb-2">
+                    <div className="mb-8 text-center md:text-left">
+                        <h2 className="text-4xl md:text-5xl font-black text-brand-teal uppercase tracking-tighter mb-2">
                             Secure Access
                         </h2>
-                        <p className="font-bold text-brand-teal opacity-60 uppercase text-[10px] tracking-[0.2em]">
+                        <p className="font-bold text-brand-teal opacity-60 uppercase text-[9px] md:text-[10px] tracking-[0.2em]">
                             Choose your authentication method
                         </p>
                     </div>
