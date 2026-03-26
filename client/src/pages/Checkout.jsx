@@ -92,7 +92,8 @@ const Checkout = () => {
                                             <div className="flex-1">
                                                 <p className="text-[8px] font-black uppercase opacity-40 mb-1">{item.product.category}</p>
                                                 <h3 className="text-xl font-black uppercase tracking-tighter text-brand-teal">{item.product.name}</h3>
-                                                <p className="text-xs font-bold text-brand-teal opacity-60">P.U: {item.product.price.toLocaleString()} DT</p>
+                                                <p className="text-xs font-bold text-brand-teal opacity-60">P.U: {(item.product.price || 0).toLocaleString()} DT</p>
+
                                             </div>
                                             <div className="flex items-center gap-4 bg-white border-4 border-brand-teal p-1 scale-90">
                                                 <button onClick={() => updateQuantity(item.product._id, item.quantity - 1)} className="p-2 hover:bg-brand-teal hover:text-white transition-all"><Minus size={16} /></button>

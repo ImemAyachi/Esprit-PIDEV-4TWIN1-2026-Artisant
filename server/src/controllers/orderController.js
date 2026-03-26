@@ -2,6 +2,21 @@ const Order = require('../models/Order');
 const OrderItem = require('../models/OrderItem');
 const Product = require('../models/Product');
 
+// Helper to map order for frontend
+const mapOrder = (order, artisan) => ({
+    ...order.toObject(),
+    orderNumber: order.orderNumber || `ORD-${order._id.toString().slice(-6).toUpperCase()}`,
+    financials: { total: order.totalPrice },
+    status: order.status === 'en_attente' ? 'pending' : 
+            order.status === 'expédié' ? 'shipped' : 
+            order.status === 'livré' ? 'delivered' : 
+            order.status === 'annulé' ? 'cancelled' : order.status,
+    shipping: { 
+        address: order.shippingAddress, 
+        contactName: artisan?.companyName || 'Artisant Expert' 
+    }
+});
+
 // @desc    Create new order
 // @route   POST /api/orders
 exports.createOrder = async (req, res) => {
@@ -59,12 +74,14 @@ exports.createOrder = async (req, res) => {
             });
         }
 
-        res.status(201).json({ success: true, data: order });
+        const mapped = mapOrder(order, req.user);
+        res.status(201).json({ success: true, data: mapped });
     } catch (err) {
         console.error('CRITICAL Order Creation Failure:', err);
         res.status(400).json({ success: false, message: `System Error: ${err.message}` });
     }
 };
+
 
 
 
@@ -80,20 +97,14 @@ exports.getMyOrders = async (req, res) => {
         const mappedOrders = [];
         for (const order of orders) {
             const items = await OrderItem.find({ order: order._id }).populate('product');
+            const mapped = mapOrder(order, req.user);
             mappedOrders.push({
-                ...order.toObject(),
-                orderNumber: order.orderNumber || `ORD-${order._id.toString().slice(-6).toUpperCase()}`,
-                financials: { total: order.totalPrice },
-                status: order.status === 'en_attente' ? 'pending' : 
-                        order.status === 'expédié' ? 'shipped' : 
-                        order.status === 'livré' ? 'delivered' : 
-                        order.status === 'annulé' ? 'cancelled' : order.status,
+                ...mapped,
                 items: items.map(i => ({
                     ...i.toObject(),
                     name: i.product?.name || 'N/A',
                     total: i.quantity * i.unitPrice
-                })),
-                shipping: { address: order.shippingAddress, contactName: req.user.companyName }
+                }))
             });
         }
 
@@ -114,20 +125,14 @@ exports.getManufacturerOrders = async (req, res) => {
         const mappedOrders = [];
         for (const order of orders) {
             const items = await OrderItem.find({ order: order._id }).populate('product');
+            const mapped = mapOrder(order, order.artisan);
             mappedOrders.push({
-                ...order.toObject(),
-                orderNumber: order.orderNumber || `ORD-${order._id.toString().slice(-6).toUpperCase()}`,
-                financials: { total: order.totalPrice },
-                status: order.status === 'en_attente' ? 'pending' : 
-                        order.status === 'expédié' ? 'shipped' : 
-                        order.status === 'livré' ? 'delivered' : 
-                        order.status === 'annulé' ? 'cancelled' : order.status,
+                ...mapped,
                 items: items.map(i => ({
                     ...i.toObject(),
                     name: i.product?.name || 'N/A',
                     total: i.quantity * i.unitPrice
-                })),
-                shipping: { address: order.shippingAddress, contactName: order.artisan?.companyName }
+                }))
             });
         }
         res.status(200).json({ success: true, count: orders.length, data: mappedOrders });
@@ -135,6 +140,7 @@ exports.getManufacturerOrders = async (req, res) => {
         res.status(400).json({ success: false, message: err.message });
     }
 };
+
 
 // @desc    Update order status
 // @route   PATCH /api/orders/:id/status

@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import useCartStore from '../../store/cartStore';
 import logo from '../../assets/logo.png';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X,
     FolderOpen, ClipboardList, Receipt, BarChart2, Shield, ChevronRight, Package,
+    ShoppingCart,
 } from 'lucide-react';
+
 import VoiceAssistant from '../VoiceAssistant';
 import { toast } from 'react-hot-toast';
 
@@ -53,7 +56,9 @@ const NAV_BY_ROLE = {
 
 export default function DashboardLayout({ children, currentTab, onTabChange }) {
     const { user, logout, isAuthenticated } = useAuthStore();
+    const { items: cartItems } = useCartStore();
     const navigate = useNavigate();
+
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
@@ -181,7 +186,20 @@ export default function DashboardLayout({ children, currentTab, onTabChange }) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {cartItems.length > 0 && (
+                            <button
+                                onClick={() => navigate('/checkout')}
+                                aria-label={`View Cart with ${cartItems.length} items`}
+                                className="relative w-10 h-10 border-4 border-brand-orange flex items-center justify-center text-brand-orange hover:bg-brand-orange hover:text-white transition-all focus:z-10"
+                            >
+                                <ShoppingCart size={20} />
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-teal text-white text-[9px] font-black flex items-center justify-center border-2 border-white">
+                                    {cartItems.length}
+                                </span>
+                            </button>
+                        )}
                         <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-brand-cream border-2 border-brand-teal">
+
                             <Search size={14} className="text-brand-teal/40" />
                             <input
                                 type="text"
