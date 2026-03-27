@@ -11,7 +11,6 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Profile from './pages/Profile';
-import Profile from './pages/Profile';
 import Marketplace from './pages/Marketplace';
 import ManageProducts from './pages/ManageProducts';
 import OrderForm from './pages/OrderForm';

@@ -22,6 +22,7 @@ app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/projects', require('./routes/projectRoutes'));
 app.use('/api/quotes', require('./routes/quoteRoutes'));
 app.use('/api/invoices', require('./routes/invoiceRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
 
 // Global Error Handler
 app.use((err, req, res, next) => {
