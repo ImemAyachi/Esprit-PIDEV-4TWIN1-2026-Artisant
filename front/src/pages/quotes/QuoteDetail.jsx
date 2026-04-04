@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { acceptQuote, refuseQuote, submitQuote } from '../../store/slices/quoteSlice';
 import api from '../../services/api';
 
-const STATUS_LABELS = { open: 'Ouvert', pending: 'En attente', accepted: '✅ Accepté', refused: '❌ Refusé', completed: 'Terminé', cancelled: 'Annulé' };
+const STATUS_LABELS = { open: 'Ouvert', pending: 'En attente', accepted: 'Accepter Accepté', refused: 'Refuser Refusé', completed: 'Terminé', cancelled: 'Annulé' };
 const STATUS_CLASS  = { open: 'badge-info', pending: 'badge-primary', accepted: 'badge-success', refused: 'badge-danger', completed: 'badge-success', cancelled: 'badge-muted' };
 
 const QuoteDetail = () => {
@@ -68,7 +68,7 @@ const QuoteDetail = () => {
               {STATUS_LABELS[quote.status]}
             </span>
             <h2>{quote.title}</h2>
-            {quote.location && <p style={{ color: 'var(--clr-text-muted)', marginTop: '0.25rem' }}>📍 {quote.location}</p>}
+            {quote.location && <p style={{ color: 'var(--clr-text-muted)', marginTop: '0.25rem' }}>Lieu:  {quote.location}</p>}
           </div>
           {quote.totalAmount > 0 && (
             <div style={{ textAlign: 'right' }}>
@@ -82,18 +82,18 @@ const QuoteDetail = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
         {/* Description */}
         <div className="card">
-          <h3 style={{ marginBottom: '0.875rem' }}>📝 Description</h3>
+          <h3 style={{ marginBottom: '0.875rem' }}> Description</h3>
           <p style={{ color: 'var(--clr-text-muted)', lineHeight: 1.7, fontSize: '0.95rem' }}>{quote.description}</p>
           {quote.desiredDeadline && (
             <p style={{ marginTop: '1rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>
-              🗓️ Deadline souhaitée : <strong style={{ color: 'var(--clr-text)' }}>{new Date(quote.desiredDeadline).toLocaleDateString('fr-FR')}</strong>
+              Date:  Deadline souhaitée : <strong style={{ color: 'var(--clr-text)' }}>{new Date(quote.desiredDeadline).toLocaleDateString('fr-FR')}</strong>
             </p>
           )}
         </div>
 
         {/* Interlocuteur */}
         <div className="card">
-          <h3 style={{ marginBottom: '0.875rem' }}>{isRequester ? '🔨 Artisan' : '🏛️ Demandeur'}</h3>
+          <h3 style={{ marginBottom: '0.875rem' }}>{isRequester ? ' Artisan' : ' Demandeur'}</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
             <div style={{ width: 52, height: 52, borderRadius: 'var(--radius-md)', background: 'var(--grad-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '1.1rem', flexShrink: 0 }}>
               {other?.firstName?.[0]}{other?.lastName?.[0]}
@@ -101,8 +101,8 @@ const QuoteDetail = () => {
             <div>
               <div style={{ fontWeight: 700 }}>{other?.firstName} {other?.lastName}</div>
               {other?.craft && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>{other.craft}</div>}
-              {other?.phone && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>📞 {other.phone}</div>}
-              {other?.location?.city && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>📍 {other.location.city}</div>}
+              {other?.phone && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Tel:  {other.phone}</div>}
+              {other?.location?.city && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Lieu:  {other.location.city}</div>}
             </div>
           </div>
         </div>
@@ -111,7 +111,7 @@ const QuoteDetail = () => {
       {/* Détail du devis soumis */}
       {quote.items?.length > 0 && (
         <div className="card">
-          <h3 style={{ marginBottom: '1rem' }}>💰 Détail du devis</h3>
+          <h3 style={{ marginBottom: '1rem' }}> Détail du devis</h3>
           <div className="table-wrap">
             <table>
               <thead><tr><th>Description</th><th>Qté</th><th>Unité</th><th>Prix unit.</th><th>Total</th></tr></thead>
@@ -132,8 +132,8 @@ const QuoteDetail = () => {
               </tbody>
             </table>
           </div>
-          {quote.notes && <p style={{ marginTop: '1rem', padding: '0.875rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)', color: 'var(--clr-text-muted)', fontSize: '0.9rem' }}>💬 {quote.notes}</p>}
-          {quote.proposedDeadline && <p style={{ marginTop: '0.75rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>🗓️ Délai proposé : {new Date(quote.proposedDeadline).toLocaleDateString('fr-FR')}</p>}
+          {quote.notes && <p style={{ marginTop: '1rem', padding: '0.875rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)', color: 'var(--clr-text-muted)', fontSize: '0.9rem' }}> {quote.notes}</p>}
+          {quote.proposedDeadline && <p style={{ marginTop: '0.75rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Date:  Délai proposé : {new Date(quote.proposedDeadline).toLocaleDateString('fr-FR')}</p>}
         </div>
       )}
 
@@ -142,13 +142,13 @@ const QuoteDetail = () => {
         {/* Architecte : accepter / refuser si pending */}
         {isRequester && quote.status === 'pending' && (
           <>
-            <button className="btn btn-primary" onClick={handleAccept}>✅ Accepter le devis</button>
-            <button className="btn btn-danger"   onClick={handleRefuse}>❌ Refuser</button>
+            <button className="btn btn-primary" onClick={handleAccept}>Accepter Accepter le devis</button>
+            <button className="btn btn-danger"   onClick={handleRefuse}>Refuser Refuser</button>
           </>
         )}
         {/* Artisan : soumettre si open */}
         {isArtisan && quote.status === 'open' && (
-          <button className="btn btn-primary" onClick={() => setShowSubmit(true)}>📤 Soumettre mon devis</button>
+          <button className="btn btn-primary" onClick={() => setShowSubmit(true)}> Soumettre mon devis</button>
         )}
       </div>
 
@@ -157,8 +157,8 @@ const QuoteDetail = () => {
         <div className="modal-overlay" onClick={() => setShowSubmit(false)}>
           <div className="modal" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <div className="modal-title">📤 Soumettre mon devis</div>
-              <button className="btn-ghost" onClick={() => setShowSubmit(false)}>✕</button>
+              <div className="modal-title"> Soumettre mon devis</div>
+              <button className="btn-ghost" onClick={() => setShowSubmit(false)}>X</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <h4>Lignes de devis</h4>
@@ -181,7 +181,7 @@ const QuoteDetail = () => {
                     <input className="form-input" type="number" min="0" value={item.unitPrice} onChange={(e) => updateItem(i, 'unitPrice', e.target.value)} />
                   </div>
                   {submitData.items.length > 1 && (
-                    <button className="btn btn-danger btn-sm" style={{ marginBottom: i === 0 ? '1px' : 0 }} onClick={() => removeItem(i)}>✕</button>
+                    <button className="btn btn-danger btn-sm" style={{ marginBottom: i === 0 ? '1px' : 0 }} onClick={() => removeItem(i)}>X</button>
                   )}
                 </div>
               ))}

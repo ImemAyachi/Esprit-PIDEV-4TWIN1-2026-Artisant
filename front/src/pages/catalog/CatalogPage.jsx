@@ -4,12 +4,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, setFilters } from '../../store/slices/productSlice';
 
 const CATEGORIES = ['', 'marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'peinture', 'plomberie', 'électricité', 'autre'];
-const CAT_ICONS  = { marbre: '🪨', granit: '🪨', ciment: '🧱', sable: '⛱️', carrelage: '🔲', brique: '🧱', bois: '🌲', acier: '⚙️', peinture: '🎨', plomberie: '🔧', électricité: '⚡', autre: '📦' };
+const CAT_ICONS  = { marbre: '', granit: '', ciment: '', sable: '', carrelage: '', brique: '', bois: '', acier: '', peinture: '', plomberie: '', électricité: '', autre: '' };
 
 const StarRating = ({ value }) => (
   <div className="stars">
     {[1,2,3,4,5].map(n => (
-      <span key={n} style={{ color: n <= Math.round(value) ? 'var(--clr-primary)' : 'var(--clr-surface3)', fontSize: '0.8rem' }}>★</span>
+      <span key={n} style={{ color: n <= Math.round(value) ? 'var(--clr-primary)' : 'var(--clr-surface3)', fontSize: '0.8rem' }}></span>
     ))}
   </div>
 );
@@ -36,7 +36,7 @@ const CatalogPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2>📦 Catalogue de produits</h2>
+          <h2> Catalogue de produits</h2>
           <p style={{ color: 'var(--clr-text-muted)', marginTop: '0.25rem' }}>{pagination.total} produits disponibles</p>
         </div>
       </div>
@@ -45,7 +45,7 @@ const CatalogPage = () => {
       <div className="card" style={{ padding: '1.25rem' }}>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
-            <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }}>🔍</span>
+            <span style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--clr-text-muted)' }}></span>
             <input
               className="form-input" placeholder="Rechercher un produit..."
               style={{ paddingLeft: '2.5rem' }}
@@ -93,7 +93,7 @@ const CatalogPage = () => {
         </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
           <div style={{ fontWeight: 600 }}>Aucun produit trouvé</div>
         </div>
       ) : (
@@ -105,7 +105,7 @@ const CatalogPage = () => {
                   {p.mainImage || (p.media?.find(m => m.type === 'image')?.url) ? (
                     <img src={p.mainImage || p.media?.find(m => m.type === 'image')?.url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
-                    <span style={{ fontSize: '3rem' }}>{CAT_ICONS[p.category] || '📦'}</span>
+                    <span style={{ fontSize: '3rem' }}>{CAT_ICONS[p.category] || ''}</span>
                   )}
                 </div>
                 <div className="product-card-body">
@@ -126,7 +126,7 @@ const CatalogPage = () => {
                   </div>
                   {p.supplier && (
                     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--clr-border)', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
-                      🏭 {p.supplier.companyName || `${p.supplier.firstName} ${p.supplier.lastName}`}
+                       {p.supplier.companyName || `${p.supplier.firstName} ${p.supplier.lastName}`}
                     </div>
                   )}
                 </div>

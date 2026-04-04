@@ -40,7 +40,7 @@ const AdminUsers = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <h2>👥 Gestion des utilisateurs</h2>
+        <h2> Gestion des utilisateurs</h2>
         <span className="badge badge-muted">{pagination.total} utilisateurs</span>
       </div>
 
@@ -121,7 +121,7 @@ const AdminUsers = () => {
                       {u.isActive ? 'Actif' : 'Inactif'}
                     </span>
                     <span className={`badge ${u.isVerified ? 'badge-info' : 'badge-muted'}`} style={{ width: 'fit-content', fontSize: '0.7rem' }}>
-                      {u.isVerified ? '✓ Vérifié' : '⏳ En attente'}
+                      {u.isVerified ? ' Vérifié' : ' En attente'}
                     </span>
                   </div>
                 </td>
@@ -132,14 +132,14 @@ const AdminUsers = () => {
                   <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {!u.isVerified && u.role !== 'SuperAdmin' && (
                       <button className="btn btn-sm" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }} onClick={() => handleVerify(u._id)}>
-                        ✓ Valider
+                         Valider
                       </button>
                     )}
                     <button className="btn btn-sm btn-secondary" onClick={() => handleToggle(u._id)}>
-                      {u.isActive ? '🚫 Désactiver' : '✅ Activer'}
+                      {u.isActive ? ' Désactiver' : 'Accepter Activer'}
                     </button>
                     {u.role !== 'SuperAdmin' && (
-                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(u._id)}>🗑</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => handleDelete(u._id)}>Supprimer</button>
                     )}
                   </div>
                 </td>

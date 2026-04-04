@@ -23,7 +23,7 @@ const ProjectsPage = () => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <h2>🏗️ Mes chantiers</h2>
+        <h2> Mes chantiers</h2>
         {['Ingenieur', 'Architecte'].includes(user?.role) && (
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}>+ Nouveau chantier</button>
         )}
@@ -33,30 +33,43 @@ const ProjectsPage = () => {
         <div className="grid-auto">{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 200, borderRadius: 'var(--radius-xl)' }} />)}</div>
       ) : projects.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏗️</div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
           <div>Aucun chantier</div>
         </div>
       ) : (
         <div className="grid-auto">
           {projects.map(p => {
+            const isArtisan = user?.role === 'Artisan';
+            const myContract = isArtisan 
+              ? p.artisans?.find(a => a.artisan?._id === user._id || a.artisan === user._id)?.totalAmount 
+              : null;
             const prof = p.financials?.profit || 0;
+
             return (
               <Link to={`/dashboard/projects/${p._id}`} key={p._id} style={{ textDecoration: 'none' }}>
                 <div className="card card-hover">
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                     <span className={`badge ${STATUS_CLASS[p.status]}`}>{STATUS_LABEL[p.status]}</span>
-                    {p.financials?.totalRevenue > 0 && (
+                    {!isArtisan && p.financials?.totalRevenue > 0 && (
                       <span className={`profit-pill ${prof >= 0 ? 'positive' : 'negative'}`}>
-                        {prof >= 0 ? '▲' : '▼'} {Math.abs(prof).toLocaleString()} DT
+                        {prof >= 0 ? 'Bénéfice' : 'Perte'} : {Math.abs(prof).toLocaleString()} DT
+                      </span>
+                    )}
+                    {isArtisan && myContract !== undefined && (
+                      <span className="badge badge-success" style={{ fontWeight: 700, fontSize: '0.9rem' }}>
+                        Mon contrat : {myContract.toLocaleString()} DT
                       </span>
                     )}
                   </div>
                   <h3 style={{ marginBottom: '0.5rem' }}>{p.title}</h3>
-                  {p.location?.city && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>📍 {p.location.city}</div>}
-                  {p.description && <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.description}</p>}
+                  {p.location?.city && <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>Lieu: {p.location.city}</div>}
+                  <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', lineHeight: 1.6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    {p.description || 'Projet de construction / rénovation'}
+                  </p>
                   <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--clr-border)', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
-                    <span>👥 {p.artisans?.length || 0} artisans</span>
-                    {p.budget > 0 && <span>💰 Budget : {p.budget.toLocaleString()} DT</span>}
+                    {!isArtisan && <span> {p.artisans?.length || 0} artisans</span>}
+                    {!isArtisan && p.budget > 0 && <span> Budget : {p.budget.toLocaleString()} DT</span>}
+                    {isArtisan && <span>Cliquez pour voir les détails de votre travail</span>}
                   </div>
                 </div>
               </Link>
@@ -70,7 +83,7 @@ const ProjectsPage = () => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">+ Nouveau chantier</div>
-              <button className="btn-ghost" onClick={() => setShowCreate(false)}>✕</button>
+              <button className="btn-ghost" onClick={() => setShowCreate(false)}>X</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="form-group"><label className="form-label">Titre *</label><input className="form-input" placeholder="Ex: Construction villa Tunis" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>

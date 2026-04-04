@@ -1,3 +1,4 @@
+import fs from 'fs';
 /**
  * Middleware centralisé de gestion des erreurs
  * Intercepte toutes les erreurs non gérées et retourne une réponse JSON cohérente
@@ -38,9 +39,16 @@ export const errorHandler = (err, req, res, next) => {
     message = `ID invalide : ${err.value}`;
   }
 
-  // Log en développement
+  // Log en développement et dans un fichier pour debug
   if (process.env.NODE_ENV === 'development') {
     console.error('❌ Error:', err);
+    try {
+      const timestamp = new Date().toISOString();
+      const logMsg = `[${timestamp}] ${req.method} ${req.url} - ${err.stack || err.message}\n`;
+      fs.appendFileSync('server_errors.log', logMsg);
+    } catch (e) {
+      console.error('Impossible d\'écrire dans le log:', e);
+    }
   }
 
   res.status(statusCode).json({

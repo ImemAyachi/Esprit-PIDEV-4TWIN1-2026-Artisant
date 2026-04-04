@@ -4,49 +4,49 @@ import { useSelector } from 'react-redux';
 
 const FEATURES = [
   {
-    icon: '🏗️', title: 'Gestion de Chantiers',
+    icon: '', title: 'Gestion de Chantiers',
     desc: 'Planifiez vos projets, gérez les équipes et suivez l\'avancement en temps réel.',
     color: '#f59e0b',
   },
   {
-    icon: '📦', title: 'Catalogue Matériaux',
+    icon: '', title: 'Catalogue Matériaux',
     desc: 'Accédez à une large gamme de matériaux : marbre, ciment, carrelage, et plus encore.',
     color: '#3b82f6',
   },
   {
-    icon: '🔨', title: 'Réseau d\'Artisans',
+    icon: '', title: 'Réseau d\'Artisans',
     desc: 'Trouvez des artisans qualifiés par métier, localisation et note client.',
     color: '#10b981',
   },
   {
-    icon: '📋', title: 'Gestion des Devis',
+    icon: '', title: 'Gestion des Devis',
     desc: 'Envoyez et recevez des devis détaillés. Acceptez ou refusez en un clic.',
     color: '#8b5cf6',
   },
   {
-    icon: '💰', title: 'Suivi Financier',
+    icon: '', title: 'Suivi Financier',
     desc: 'Les artisans suivent leurs dépenses et calculent automatiquement leur rentabilité par chantier.',
     color: '#ef4444',
   },
   {
-    icon: '⭐', title: 'Avis & Notes',
+    icon: '', title: 'Avis & Notes',
     desc: 'Consultez et partagez des avis qualifiés sur les produits et les prestations.',
     color: '#f59e0b',
   },
 ];
 
 const ROLES = [
-  { emoji: '🏛️', name: 'Architecte',   desc: 'Recherche artisans & catalogue produits', color: '#f59e0b' },
-  { emoji: '⚙️', name: 'Ingénieur',    desc: 'Gestion de chantiers & main d\'œuvre',   color: '#3b82f6' },
-  { emoji: '🔨', name: 'Artisan',       desc: 'Devis, commandes & suivi financier',      color: '#10b981' },
-  { emoji: '🏭', name: 'Fournisseur',   desc: 'Catalogue produits & gestion stocks',     color: '#8b5cf6' },
+  { emoji: '', name: 'Architecte', desc: 'Recherche artisans & catalogue produits', color: '#f59e0b' },
+  { emoji: '', name: 'Ingénieur', desc: 'Gestion de chantiers & main d\'œuvre', color: '#3b82f6' },
+  { emoji: '', name: 'Artisan', desc: 'Devis, commandes & suivi financier', color: '#10b981' },
+  { emoji: '', name: 'Fournisseur', desc: 'Catalogue produits & gestion stocks', color: '#8b5cf6' },
 ];
 
 const STATS = [
   { value: '500+', label: 'Artisans certifiés' },
-  { value: '50+',  label: 'Fournisseurs partenaires' },
+  { value: '50+', label: 'Fournisseurs partenaires' },
   { value: '200+', label: 'Chantiers actifs' },
-  { value: '98%',  label: 'Satisfaction client' },
+  { value: '98%', label: 'Satisfaction client' },
 ];
 
 const LandingPage = () => {
@@ -61,13 +61,16 @@ const LandingPage = () => {
 
         {/* Navbar */}
         <nav className="nav-landing">
-          <div className="nav-logo">🏛️ BuildMarket</div>
+          <div className="nav-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '40px' }} />
+            <span>Artisanet</span>
+          </div>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             {isAuthenticated ? (
               <Link to="/dashboard/home" className="btn btn-primary">Mon espace</Link>
             ) : (
               <>
-                <Link to="/login"    className="btn btn-secondary">Connexion</Link>
+                <Link to="/login" className="btn btn-secondary">Connexion</Link>
                 <Link to="/register" className="btn btn-primary">S'inscrire</Link>
               </>
             )}
@@ -76,14 +79,14 @@ const LandingPage = () => {
 
         {/* Hero content */}
         <div className="hero-content">
-          <div className="hero-badge">🚀 La marketplace du BTP en Tunisie</div>
+          <div className="hero-badge">La marketplace du BTP en Tunisie</div>
           <h1 className="hero-title">
             Connectez{' '}
             <span className="gradient-text">Architectes, Artisans</span>
             {' '}& Fournisseurs
           </h1>
           <p className="hero-desc">
-            BuildMarket est la plateforme tout-en-un pour les professionnels du bâtiment.
+            Artisanet est la plateforme tout-en-un pour les professionnels du bâtiment.
             Trouvez les bons artisans, les meilleurs matériaux et gérez vos chantiers en temps réel.
           </p>
           <div className="hero-actions">
@@ -128,13 +131,12 @@ const LandingPage = () => {
           <div className="roles-grid" style={{ marginTop: '3rem' }}>
             {ROLES.map((r) => (
               <div key={r.name} className="role-card">
-                <div className="role-emoji">{r.emoji}</div>
                 <div className="role-name">{r.name}</div>
                 <div className="role-desc">{r.desc}</div>
                 <Link
                   to="/register"
-                  className="btn btn-outline btn-sm"
-                  style={{ marginTop: '1rem', borderColor: r.color, color: r.color }}
+                  className="btn btn-outline"
+                  style={{ width: '100%', marginTop: 'auto', borderColor: r.color, color: r.color }}
                 >
                   Rejoindre
                 </Link>
@@ -152,11 +154,8 @@ const LandingPage = () => {
           <div className="features-grid">
             {FEATURES.map((f) => (
               <div key={f.title} className="feature-card">
-                <div className="feature-icon" style={{ background: `${f.color}20`, color: f.color }}>
-                  {f.icon}
-                </div>
-                <h3 style={{ marginBottom: '0.5rem' }}>{f.title}</h3>
-                <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.9rem', lineHeight: 1.6 }}>{f.desc}</p>
+                <h3 className="feature-title">{f.title}</h3>
+                <p className="feature-desc">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -172,7 +171,7 @@ const LandingPage = () => {
             borderRadius: 'var(--radius-xl)', padding: '3rem', maxWidth: 700, margin: '0 auto',
           }}
         >
-          <h2 style={{ marginBottom: '1rem' }}>Prêt à rejoindre BuildMarket ?</h2>
+          <h2 style={{ marginBottom: '1rem' }}>Prêt à rejoindre Artisanet ?</h2>
           <p style={{ color: 'var(--clr-text-muted)', marginBottom: '2rem' }}>
             Inscription gratuite. Accès immédiat au catalogue et aux artisans.
           </p>
@@ -188,8 +187,11 @@ const LandingPage = () => {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         flexWrap: 'wrap', gap: '1rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem',
       }}>
-        <div style={{ color: 'var(--clr-primary)', fontWeight: 700, fontSize: '1rem' }}>🏛️ BuildMarket</div>
-        <div>© 2024 BuildMarket — Plateforme marketplace BTP Tunisie</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--clr-primary)', fontWeight: 700, fontSize: '1rem' }}>
+          <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '24px' }} />
+          <span>Artisanet</span>
+        </div>
+        <div>© 2024 Artisanet — Plateforme marketplace BTP Tunisie</div>
       </footer>
     </div>
   );

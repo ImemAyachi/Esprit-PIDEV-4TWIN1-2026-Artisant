@@ -92,14 +92,13 @@ const quoteSchema = new mongoose.Schema(
 );
 
 // ── Middleware pre-save : calcul automatique du total ─────────────────────────
-quoteSchema.pre('save', function (next) {
+quoteSchema.pre('save', async function () {
   if (this.items && this.items.length > 0) {
     this.items.forEach((item) => {
       item.total = item.quantity * item.unitPrice;
     });
     this.totalAmount = this.items.reduce((sum, item) => sum + (item.total || 0), 0);
   }
-  next();
 });
 
 quoteSchema.index({ requester: 1, status: 1 });

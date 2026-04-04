@@ -35,9 +35,10 @@ const projectSchema = new mongoose.Schema(
 
     // Artisans rattachés au chantier (plusieurs métiers)
     artisans: [{
-      artisan: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-      role:    { type: String }, // Rôle sur ce chantier
-      status:  { type: String, enum: ['invited', 'accepted', 'rejected', 'completed'], default: 'invited' },
+      artisan:     { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      role:        { type: String }, // Rôle sur ce chantier
+      status:      { type: String, enum: ['invited', 'accepted', 'rejected', 'completed'], default: 'invited' },
+      totalAmount: { type: Number, default: 0 }, // Montant du devis accepté
     }],
 
     // Localisation du chantier
@@ -87,7 +88,7 @@ const projectSchema = new mongoose.Schema(
 );
 
 // Recalcul des financials avant chaque sauvegarde
-projectSchema.pre('save', function (next) {
+projectSchema.pre('save', async function () {
   if (this.expenses && this.expenses.length >= 0) {
     const total = this.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
     this.financials.totalExpenses = total;
@@ -98,7 +99,6 @@ projectSchema.pre('save', function (next) {
       );
     }
   }
-  next();
 });
 
 projectSchema.index({ manager: 1, status: 1 });

@@ -26,16 +26,16 @@ export const createQuote = asyncHandler(async (req, res) => {
   const { artisanId, title, description, location, desiredDeadline, projectId } = req.body;
 
   const quote = await Quote.create({
-    requester:        req.user._id,
-    artisan:          artisanId,
+    requester: req.user._id,
+    artisan: artisanId,
     title,
     description,
     location,
     desiredDeadline,
-    project:          projectId,
-    status:           'open',
+    project: projectId || undefined,
+    status: 'open',
     statusHistory: [{
-      status:    'open',
+      status: 'open',
       changedBy: req.user._id,
     }],
   });
@@ -43,15 +43,18 @@ export const createQuote = asyncHandler(async (req, res) => {
   // Notifier l'artisan en temps réel via Socket.io
   const notification = await Notification.create({
     recipient: artisanId,
-    type:      'quote_received',
-    title:     'Nouvelle demande de devis',
-    message:   `${req.user.firstName} ${req.user.lastName} vous demande un devis pour : ${title}`,
-    link:      `/quotes/${quote._id}`,
-    data:      { quoteId: quote._id },
+    type: 'quote_received',
+    title: 'Nouvelle demande de devis',
+    message: `${req.user.firstName} ${req.user.lastName} vous demande un devis pour : ${title}`,
+    link: `/quotes/${quote._id}`,
+    data: { quoteId: quote._id },
   });
 
   // Pousser la notification en temps réel
-  req.app.get('io').to(`user_${artisanId}`).emit('notification', notification);
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`user_${artisanId}`).emit('notification', notification);
+  }
 
   // Si lié à un projet, ajouter le devis au projet
   if (projectId) {
@@ -85,8 +88,8 @@ export const getMyQuotes = asyncHandler(async (req, res) => {
   const [quotes, total] = await Promise.all([
     Quote.find(filter)
       .populate('requester', 'firstName lastName avatar role')
-      .populate('artisan',   'firstName lastName avatar craft rating')
-      .populate('project',   'title')
+      .populate('artisan', 'firstName lastName avatar craft rating')
+      .populate('project', 'title')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit)),
@@ -103,15 +106,15 @@ export const getMyQuotes = asyncHandler(async (req, res) => {
 export const getQuoteById = asyncHandler(async (req, res) => {
   const quote = await Quote.findById(req.params.id)
     .populate('requester', 'firstName lastName avatar email phone location')
-    .populate('artisan',   'firstName lastName avatar craft rating location phone')
-    .populate('project',   'title location status');
+    .populate('artisan', 'firstName lastName avatar craft rating location phone')
+    .populate('project', 'title location status');
 
   if (!quote) throw new AppError('Devis introuvable', 404);
 
   // Vérifier que l'utilisateur est concerné
   const involved =
     quote.requester._id.equals(req.user._id) ||
-    quote.artisan._id.equals(req.user._id)   ||
+    quote.artisan._id.equals(req.user._id) ||
     req.user.role === 'SuperAdmin';
 
   if (!involved) throw new AppError('Accès refusé', 403);
@@ -132,10 +135,10 @@ export const submitQuote = asyncHandler(async (req, res) => {
 
   const { items, proposedDeadline, notes } = req.body;
 
-  quote.items            = items;
+  quote.items = items;
   quote.proposedDeadline = proposedDeadline;
-  quote.notes            = notes;
-  quote.status           = 'pending';
+  quote.notes = notes;
+  quote.status = 'pending';
   quote.statusHistory.push({ status: 'pending', changedBy: req.user._id });
 
   await quote.save(); // Déclenche le calcul auto du totalAmount
@@ -143,14 +146,17 @@ export const submitQuote = asyncHandler(async (req, res) => {
   // Notifier le demandeur
   const notification = await Notification.create({
     recipient: quote.requester,
-    type:      'quote_submitted',
-    title:     'Devis soumis',
-    message:   `${req.user.firstName} a soumis un devis de ${quote.totalAmount} TND pour : ${quote.title}`,
-    link:      `/quotes/${quote._id}`,
-    data:      { quoteId: quote._id, amount: quote.totalAmount },
+    type: 'quote_submitted',
+    title: 'Devis soumis',
+    message: `${req.user.firstName} a soumis un devis de ${quote.totalAmount} TND pour : ${quote.title}`,
+    link: `/quotes/${quote._id}`,
+    data: { quoteId: quote._id, amount: quote.totalAmount },
   });
 
-  req.app.get('io').to(`user_${quote.requester}`).emit('notification', notification);
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`user_${quote.requester}`).emit('notification', notification);
+  }
 
   res.json({ success: true, quote });
 });
@@ -169,11 +175,34 @@ export const acceptQuote = asyncHandler(async (req, res) => {
   quote.statusHistory.push({ status: 'accepted', changedBy: req.user._id });
   await quote.save();
 
-  // Mettre à jour les financials du projet si lié
+  // ÉTAPE CLÉ : Ajouter automatiquement l'artisan au chantier
   if (quote.project) {
+    const Project = await import('../models/Project.model.js').then((m) => m.default);
+    const User = await import('../models/User.model.js').then((m) => m.default);
+
     const project = await Project.findById(quote.project);
     if (project) {
+      // Vérifier si l'artisan est déjà inscrit (pour éviter les doublons)
+      const isAlreadyAdded = project.artisans.some(a => a.artisan.toString() === quote.artisan.toString());
+
+      if (!isAlreadyAdded) {
+        const artisanInfo = await User.findById(quote.artisan);
+        project.artisans.push({
+          artisan: quote.artisan,
+          role: artisanInfo?.craft || 'Intervenant',
+          status: 'accepted',
+          totalAmount: quote.totalAmount // On enregistre le prix ICI
+        });
+      } else {
+        // S'il était déjà invité, on met à jour son statut et son prix
+        const member = project.artisans.find(a => a.artisan.toString() === quote.artisan.toString());
+        member.status = 'accepted';
+        member.totalAmount = quote.totalAmount;
+      }
+
+      // Mise à jour financière (ajouter le montant du devis aux revenus du projet)
       project.financials.totalRevenue += quote.totalAmount;
+
       await project.save();
     }
   }
@@ -181,13 +210,16 @@ export const acceptQuote = asyncHandler(async (req, res) => {
   // Notifier l'artisan
   const notification = await Notification.create({
     recipient: quote.artisan,
-    type:      'quote_accepted',
-    title:     '🎉 Devis accepté !',
-    message:   `Votre devis de ${quote.totalAmount} TND pour "${quote.title}" a été accepté`,
-    link:      `/quotes/${quote._id}`,
-    data:      { quoteId: quote._id },
+    type: 'quote_accepted',
+    title: 'Devis accepté !',
+    message: `Votre devis de ${quote.totalAmount} TND pour "${quote.title}" a été accepté`,
+    link: `/quotes/${quote._id}`,
+    data: { quoteId: quote._id },
   });
-  req.app.get('io').to(`user_${quote.artisan}`).emit('notification', notification);
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`user_${quote.artisan}`).emit('notification', notification);
+  }
 
   res.json({ success: true, quote });
 });
@@ -209,12 +241,15 @@ export const refuseQuote = asyncHandler(async (req, res) => {
 
   const notification = await Notification.create({
     recipient: quote.artisan,
-    type:      'quote_refused',
-    title:     'Devis refusé',
-    message:   `Votre devis pour "${quote.title}" a été refusé${reason ? ` : ${reason}` : ''}`,
-    link:      `/quotes/${quote._id}`,
+    type: 'quote_refused',
+    title: 'Devis refusé',
+    message: `Votre devis pour "${quote.title}" a été refusé${reason ? ` : ${reason}` : ''}`,
+    link: `/quotes/${quote._id}`,
   });
-  req.app.get('io').to(`user_${quote.artisan}`).emit('notification', notification);
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`user_${quote.artisan}`).emit('notification', notification);
+  }
 
   res.json({ success: true, quote });
 });

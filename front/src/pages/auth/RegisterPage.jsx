@@ -5,15 +5,15 @@ import { useForm } from 'react-hook-form';
 import { registerUser } from '../../store/slices/authSlice';
 
 const ROLES = [
-  { value: 'Architecte',  label: 'Architecte',  emoji: '🏛️' },
-  { value: 'Ingenieur',   label: 'Ingénieur',   emoji: '⚙️' },
-  { value: 'Artisan',     label: 'Artisan',      emoji: '🔨' },
-  { value: 'Fournisseur', label: 'Fournisseur',  emoji: '🏭' },
+  { value: 'Architecte', label: 'Architecte', emoji: '' },
+  { value: 'Ingenieur', label: 'Ingénieur', emoji: '' },
+  { value: 'Artisan', label: 'Artisan', emoji: '' },
+  { value: 'Fournisseur', label: 'Fournisseur', emoji: '' },
 ];
 
 const RegisterPage = () => {
-  const dispatch  = useDispatch();
-  const navigate  = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading } = useSelector((s) => s.auth);
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({ defaultValues: { role: '' } });
   const [selectedRole, setSelectedRole] = useState('');
@@ -38,7 +38,9 @@ const RegisterPage = () => {
       <div className="auth-visual">
         <div className="orb orb-1" /><div className="orb orb-2" />
         <div style={{ position: 'relative', zIndex: 10 }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏗️</div>
+          <Link to="/" style={{ display: 'inline-block', marginBottom: '1rem' }}>
+            <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '64px', cursor: 'pointer' }} />
+          </Link>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '1rem' }}>
             Rejoignez la communauté <span style={{ color: 'var(--clr-primary)' }}>BTP</span>
           </h2>
@@ -48,8 +50,7 @@ const RegisterPage = () => {
                 background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
                 borderRadius: 'var(--radius-md)', padding: '1rem', textAlign: 'center',
               }}>
-                <div style={{ fontSize: '1.75rem' }}>{r.emoji}</div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', marginTop: '0.4rem' }}>{r.label}</div>
+                <div style={{ fontWeight: 600, fontSize: '1.2rem', marginTop: '0.4rem' }}>{r.label}</div>
               </div>
             ))}
           </div>
@@ -59,7 +60,10 @@ const RegisterPage = () => {
       {/* Form */}
       <div className="auth-form-side" style={{ overflowY: 'auto' }}>
         <div className="auth-box">
-          <div className="auth-logo">🏛️ BuildMarket</div>
+          <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
+            <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '40px' }} />
+            <span>Artisanet</span>
+          </Link>
           <h1 className="auth-title">Créer un compte</h1>
           <p className="auth-sub">Choisissez votre rôle et commencez</p>
 
@@ -76,7 +80,6 @@ const RegisterPage = () => {
                     className={`role-btn ${selectedRole === r.value ? 'selected' : ''}`}
                     onClick={() => selectRole(r.value)}
                   >
-                    <span className="emoji">{r.emoji}</span>
                     <span>{r.label}</span>
                   </button>
                 ))}

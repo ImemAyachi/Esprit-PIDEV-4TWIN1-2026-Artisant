@@ -67,12 +67,11 @@ const orderSchema = new mongoose.Schema(
 );
 
 // Calcul auto du total avant sauvegarde
-orderSchema.pre('save', function (next) {
+orderSchema.pre('save', async function () {
   if (this.items && this.items.length > 0) {
     this.items.forEach((item) => (item.total = item.quantity * item.unitPrice));
     this.totalAmount = this.items.reduce((sum, item) => sum + (item.total || 0), 0);
   }
-  next();
 });
 
 orderSchema.index({ buyer: 1, status: 1 });

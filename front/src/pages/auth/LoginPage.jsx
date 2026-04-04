@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { loginUser } from '../../store/slices/authSlice';
 
 const LoginPage = () => {
-  const dispatch  = useDispatch();
-  const navigate  = useNavigate();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { loading, error } = useSelector((s) => s.auth);
   const { register, handleSubmit, formState: { errors } } = useForm();
 
@@ -24,17 +24,19 @@ const LoginPage = () => {
         <div className="orb orb-1" />
         <div className="orb orb-2" />
         <div style={{ position: 'relative', zIndex: 10, maxWidth: 400 }}>
-          <div style={{ fontSize: '4rem', marginBottom: '1.5rem' }}>🏛️</div>
+          <Link to="/" style={{ display: 'inline-block', marginBottom: '1.5rem' }}>
+            <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '64px', cursor: 'pointer' }} />
+          </Link>
           <h2 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: '1rem' }}>
-            Bienvenue sur <span style={{ color: 'var(--clr-primary)' }}>BuildMarket</span>
+            Bienvenue sur <span style={{ color: 'var(--clr-primary)' }}>Artisanet</span>
           </h2>
           <p style={{ color: 'var(--clr-text-muted)', lineHeight: 1.7 }}>
             La plateforme marketplace BTP qui connecte architectes, ingénieurs, artisans et fournisseurs de matériaux.
           </p>
           <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {['🏗️ Gestion de chantiers', '📦 Catalogue matériaux', '📋 Devis en ligne', '💰 Suivi financier'].map((f) => (
+            {['Gestion de chantiers', 'Catalogue matériaux', 'Devis en ligne', 'Suivi financier'].map((f) => (
               <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--clr-text-muted)', fontSize: '0.95rem' }}>
-                <span style={{ color: 'var(--clr-primary)' }}>✓</span> {f}
+                <span style={{ color: 'var(--clr-primary)' }}> </span> {f}
               </div>
             ))}
           </div>
@@ -44,7 +46,10 @@ const LoginPage = () => {
       {/* Form side */}
       <div className="auth-form-side">
         <div className="auth-box">
-          <div className="auth-logo">🏛️ BuildMarket</div>
+          <Link to="/" className="auth-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', color: 'inherit' }}>
+            <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '40px' }} />
+            <span>Artisanet</span>
+          </Link>
           <h1 className="auth-title">Connexion</h1>
           <p className="auth-sub">Accédez à votre espace professionnel</p>
 
@@ -54,9 +59,9 @@ const LoginPage = () => {
             borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', marginBottom: '1.5rem',
             fontSize: '0.82rem', color: 'var(--clr-text-muted)',
           }}>
-            <div style={{ fontWeight: 600, color: 'var(--clr-primary)', marginBottom: '0.4rem' }}>💡 Comptes de démo</div>
-            <div>Admin : <code style={{ color: 'var(--clr-text)' }}>admin@buildmarket.com</code> / <code>Admin123!</code></div>
-            <div>Artisan : <code style={{ color: 'var(--clr-text)' }}>hassen@buildmarket.com</code> / <code>Artisan123!</code></div>
+            <div style={{ fontWeight: 600, color: 'var(--clr-primary)', marginBottom: '0.4rem' }}>Comptes de démo</div>
+            <div>Admin : <code style={{ color: 'var(--clr-text)' }}>admin@artisanet.com</code> / <code>Admin123!</code></div>
+            <div>Artisan : <code style={{ color: 'var(--clr-text)' }}>hassen@artisanet.com</code> / <code>Artisan123!</code></div>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

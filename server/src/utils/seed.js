@@ -34,7 +34,7 @@ const seed = async () => {
     {
       firstName: 'Super',
       lastName:  'Admin',
-      email:     'admin@buildmarket.com',
+      email:     'admin@artisanet.com',
       password:  await bcrypt.hash('Admin123!', 12),
       role:      'SuperAdmin',
       isActive:  true,
@@ -45,7 +45,7 @@ const seed = async () => {
     {
       firstName:      'Sarra',
       lastName:       'Ben Ali',
-      email:          'sarra@buildmarket.com',
+      email:          'sarra@artisanet.com',
       password:       await bcrypt.hash('Architecte123!', 12),
       role:           'Architecte',
       isActive:       true,
@@ -58,7 +58,7 @@ const seed = async () => {
     {
       firstName:      'Mohamed',
       lastName:       'Kacem',
-      email:          'kacem@buildmarket.com',
+      email:          'kacem@artisanet.com',
       password:       await bcrypt.hash('Architecte123!', 12),
       role:           'Architecte',
       isActive:       true,
@@ -72,7 +72,7 @@ const seed = async () => {
     {
       firstName:      'Anis',
       lastName:       'Trabelsi',
-      email:          'anis@buildmarket.com',
+      email:          'anis@artisanet.com',
       password:       await bcrypt.hash('Ingenieur123!', 12),
       role:           'Ingenieur',
       isActive:       true,
@@ -85,7 +85,7 @@ const seed = async () => {
     {
       firstName:  'Hassen',
       lastName:   'Jebali',
-      email:      'hassen@buildmarket.com',
+      email:      'hassen@artisanet.com',
       password:   await bcrypt.hash('Artisan123!', 12),
       role:       'Artisan',
       craft:      'maçon',
@@ -99,7 +99,7 @@ const seed = async () => {
     {
       firstName:  'Karim',
       lastName:   'Hamdi',
-      email:      'karim@buildmarket.com',
+      email:      'karim@artisanet.com',
       password:   await bcrypt.hash('Artisan123!', 12),
       role:       'Artisan',
       craft:      'plombier',
@@ -113,7 +113,7 @@ const seed = async () => {
     {
       firstName:  'Nabil',
       lastName:   'Sassi',
-      email:      'nabil@buildmarket.com',
+      email:      'nabil@artisanet.com',
       password:   await bcrypt.hash('Artisan123!', 12),
       role:       'Artisan',
       craft:      'électricien',
@@ -128,7 +128,7 @@ const seed = async () => {
     {
       firstName:    'Khaled',
       lastName:     'Marktani',
-      email:        'marbre@buildmarket.com',
+      email:        'marbre@artisanet.com',
       password:     await bcrypt.hash('Fournisseur123!', 12),
       role:         'Fournisseur',
       companyName:  'Marktani Marbres',
@@ -140,7 +140,7 @@ const seed = async () => {
     {
       firstName:    'Fraj',
       lastName:     'Ciment',
-      email:        'ciment@buildmarket.com',
+      email:        'ciment@artisanet.com',
       password:     await bcrypt.hash('Fournisseur123!', 12),
       role:         'Fournisseur',
       companyName:  'CimentPro Tunisie',
@@ -252,12 +252,12 @@ const seed = async () => {
   console.log('\n✅ Seed terminé avec succès !');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('  Comptes de test :');
-  console.log('  SuperAdmin     : admin@buildmarket.com        / Admin123!');
-  console.log('  Architecte     : sarra@buildmarket.com        / Architecte123!');
-  console.log('  Ingénieur      : anis@buildmarket.com         / Ingenieur123!');
-  console.log('  Artisan maçon  : hassen@buildmarket.com       / Artisan123!');
-  console.log('  Artisan élec.  : nabil@buildmarket.com        / Artisan123!');
-  console.log('  Fournisseur    : marbre@buildmarket.com       / Fournisseur123!');
+  console.log('  SuperAdmin     : admin@artisanet.com        / Admin123!');
+  console.log('  Architecte     : sarra@artisanet.com        / Architecte123!');
+  console.log('  Ingénieur      : anis@artisanet.com         / Ingenieur123!');
+  console.log('  Artisan maçon  : hassen@artisanet.com       / Artisan123!');
+  console.log('  Artisan élec.  : nabil@artisanet.com        / Artisan123!');
+  console.log('  Fournisseur    : marbre@artisanet.com       / Fournisseur123!');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   await mongoose.disconnect();

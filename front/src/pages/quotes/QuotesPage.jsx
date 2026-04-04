@@ -22,7 +22,7 @@ const QuotesPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2>📋 {isRequester ? 'Mes demandes de devis' : 'Devis reçus'}</h2>
+          <h2> {isRequester ? 'Mes demandes de devis' : 'Devis reçus'}</h2>
           <p style={{ color: 'var(--clr-text-muted)', marginTop: '0.25rem' }}>{pagination.total || 0} devis au total</p>
         </div>
         {isRequester && (
@@ -50,7 +50,7 @@ const QuotesPage = () => {
         </div>
       ) : quotes.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
           <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Aucun devis</div>
           {isRequester && <Link to="/dashboard/artisans" className="btn btn-primary btn-sm mt-2">Trouver un artisan</Link>}
         </div>
@@ -72,12 +72,12 @@ const QuotesPage = () => {
                     <div>
                       <div style={{ fontWeight: 700, marginBottom: '0.25rem' }}>{q.title}</div>
                       <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>
-                        {isRequester ? '🔨 Artisan' : '🏛️ Demandeur'} : {other?.firstName} {other?.lastName}
+                        {isRequester ? ' Artisan' : ' Demandeur'} : {other?.firstName} {other?.lastName}
                         {other?.craft && ` • ${other.craft}`}
                       </div>
                       <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                        📅 {new Date(q.createdAt).toLocaleDateString('fr-FR')}
-                        {q.location && ` • 📍 ${q.location}`}
+                        Date:  {new Date(q.createdAt).toLocaleDateString('fr-FR')}
+                        {q.location && ` • Lieu:  ${q.location}`}
                       </div>
                     </div>
                   </div>

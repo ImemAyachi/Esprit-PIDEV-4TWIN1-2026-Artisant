@@ -14,9 +14,9 @@ const PAGE_TITLES = {
 const Topbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user }                    = useSelector((s) => s.auth);
+  const { user } = useSelector((s) => s.auth);
   const { items: notifs, unreadCount } = useSelector((s) => s.notifications);
-  const [showNotifs, setShowNotifs]  = useState(false);
+  const [showNotifs, setShowNotifs] = useState(false);
   const notifRef = useRef(null);
 
   // Fermer panneau notifs au clic externe
@@ -31,7 +31,7 @@ const Topbar = () => {
   }, []);
 
   const seg = window.location.pathname.split('/').pop();
-  const title = PAGE_TITLES[seg] || 'BuildMarket';
+  const title = PAGE_TITLES[seg] || 'Artisanet';
 
   return (
     <header className="topbar">
@@ -45,17 +45,24 @@ const Topbar = () => {
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button
             className="btn-ghost"
-            style={{ position: 'relative', fontSize: '1.2rem', padding: '0.5rem' }}
+            style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem', borderRadius: '50%', width: 40, height: 40 }}
             onClick={() => setShowNotifs((v) => !v)}
           >
-            🔔
+            {/* Icône Cloche SVG */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--clr-text)' }}>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+
             {unreadCount > 0 && (
               <span style={{
-                position: 'absolute', top: 2, right: 2,
-                width: 16, height: 16, borderRadius: '50%',
+                position: 'absolute', top: 4, right: 4,
+                minWidth: 16, height: 16, borderRadius: '10px',
                 background: '#ef4444', color: '#fff',
-                fontSize: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700,
+                padding: '0 4px',
+                fontSize: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 800, border: '2px solid var(--clr-surface)',
+                boxSizing: 'content-box'
               }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
             )}
           </button>

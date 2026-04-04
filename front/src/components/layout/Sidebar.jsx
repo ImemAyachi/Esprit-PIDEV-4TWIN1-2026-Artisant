@@ -6,41 +6,41 @@ import { toggleSidebar } from '../../store/slices/uiSlice';
 
 const ROLE_MENUS = {
   SuperAdmin: [
-    { label: 'Tableau de bord', icon: '📊', path: '/dashboard/home' },
-    { label: 'Utilisateurs',    icon: '👥', path: '/dashboard/users' },
-    { label: 'Catalogue',       icon: '📦', path: '/dashboard/catalog' },
-    { label: 'Artisans',        icon: '🔨', path: '/dashboard/artisans' },
+    { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
+    { label: 'Utilisateurs', icon: '', path: '/dashboard/users' },
+    { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
+    { label: 'Artisans', icon: '', path: '/dashboard/artisans' },
   ],
   Architecte: [
-    { label: 'Tableau de bord', icon: '📊', path: '/dashboard/home' },
-    { label: 'Catalogue',       icon: '📦', path: '/dashboard/catalog' },
-    { label: 'Artisans',        icon: '🔨', path: '/dashboard/artisans' },
-    { label: 'Mes devis',       icon: '📋', path: '/dashboard/quotes' },
+    { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
+    { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
+    { label: 'Artisans', icon: '', path: '/dashboard/artisans' },
+    { label: 'Mes devis', icon: '', path: '/dashboard/quotes' },
   ],
   Ingenieur: [
-    { label: 'Tableau de bord', icon: '📊', path: '/dashboard/home' },
-    { label: 'Mes chantiers',   icon: '🏗️',  path: '/dashboard/projects' },
-    { label: 'Artisans',        icon: '🔨', path: '/dashboard/artisans' },
-    { label: 'Catalogue',       icon: '📦', path: '/dashboard/catalog' },
-    { label: 'Mes devis',       icon: '📋', path: '/dashboard/quotes' },
+    { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
+    { label: 'Mes chantiers', icon: '', path: '/dashboard/projects' },
+    { label: 'Artisans', icon: '', path: '/dashboard/artisans' },
+    { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
+    { label: 'Mes devis', icon: '', path: '/dashboard/quotes' },
   ],
   Artisan: [
-    { label: 'Tableau de bord', icon: '📊', path: '/dashboard/home' },
-    { label: 'Mes devis',       icon: '📋', path: '/dashboard/quotes' },
-    { label: 'Mes chantiers',   icon: '🏗️',  path: '/dashboard/projects' },
-    { label: 'Catalogue',       icon: '📦', path: '/dashboard/catalog' },
+    { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
+    { label: 'Mes devis', icon: '', path: '/dashboard/quotes' },
+    { label: 'Mes chantiers', icon: '', path: '/dashboard/projects' },
+    { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
   ],
   Fournisseur: [
-    { label: 'Tableau de bord', icon: '📊', path: '/dashboard/home' },
-    { label: 'Mes produits',    icon: '📦', path: '/dashboard/my-products' },
-    { label: 'Catalogue',       icon: '🏪', path: '/dashboard/catalog' },
+    { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
+    { label: 'Mes produits', icon: '', path: '/dashboard/my-products' },
+    { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
   ],
 };
 
 const Sidebar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user }        = useSelector((s) => s.auth);
+  const { user } = useSelector((s) => s.auth);
   const { sidebarOpen } = useSelector((s) => s.ui);
 
   const menus = ROLE_MENUS[user?.role] || [];
@@ -53,9 +53,9 @@ const Sidebar = () => {
   return (
     <aside className={`sidebar ${sidebarOpen ? '' : 'collapsed'}`}>
       {/* Logo */}
-      <div className="sidebar-logo">
-        <span>🏛️</span>
-        {sidebarOpen && <span>BuildMarket</span>}
+      <div className="sidebar-logo" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '32px' }} />
+        {sidebarOpen && <span>Artisanet</span>}
       </div>
 
       {/* Navigation */}
@@ -78,12 +78,12 @@ const Sidebar = () => {
           to="/dashboard/profile"
           className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
-          <span className="nav-icon">👤</span>
+          <span className="nav-icon"></span>
           {sidebarOpen && <span>Mon profil</span>}
         </NavLink>
 
         <button className="nav-item" onClick={handleLogout} style={{ color: '#ef4444' }}>
-          <span className="nav-icon">🚪</span>
+          <span className="nav-icon"></span>
           {sidebarOpen && <span>Déconnexion</span>}
         </button>
       </nav>

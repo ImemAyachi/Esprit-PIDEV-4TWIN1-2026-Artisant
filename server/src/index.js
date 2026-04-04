@@ -83,7 +83,7 @@ const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
   httpServer.listen(PORT, () => {
-    console.log(`\n🚀 BuildMarket API démarrée sur http://localhost:${PORT}`);
+    console.log(`\n🚀 ARTISANET API démarrée sur http://localhost:${PORT}`);
     console.log(`📚 Documentation Swagger : http://localhost:${PORT}/api-docs`);
     console.log(`🔌 Socket.io actif`);
     console.log(`🗄️  MongoDB : ${process.env.MONGO_URI}\n`);

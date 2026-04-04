@@ -137,8 +137,11 @@ userSchema.virtual('fullName').get(function () {
 // ── Middleware pre-save : hash du mot de passe ─────────────────────────────────
 userSchema.pre('save', async function () {
   if (!this.isModified('password')) return;
-  const salt = await bcrypt.genSalt(12); // 12 rounds est le bon équilibre sécurité/perf
-  this.password = await bcrypt.hash(this.password, salt);
+  
+  // Éviter de rehacher si c'est déjà un hash bcrypt (ex: via seed)
+  if (this.password && this.password.startsWith('$2')) return;
+  
+  this.password = await bcrypt.hash(this.password, 12);
 });
 
 // ── Méthode d'instance : vérifier le mot de passe ─────────────────────────────

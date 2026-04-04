@@ -5,8 +5,8 @@ import { fetchProductById } from '../../store/slices/productSlice';
 
 const StarRating = ({ value }) => (
   <div className="stars">
-    {[1,2,3,4,5].map(n => (
-      <span key={n} style={{ color: n <= Math.round(value || 0) ? 'var(--clr-primary)' : 'var(--clr-surface3)', fontSize: '1.1rem' }}>★</span>
+    {[1, 2, 3, 4, 5].map(n => (
+      <span key={n} style={{ color: n <= Math.round(value || 0) ? 'var(--clr-primary)' : 'var(--clr-surface3)', fontSize: '1.1rem' }}></span>
     ))}
   </div>
 );
@@ -31,14 +31,14 @@ const ProductDetail = () => {
 
   if (!product) return (
     <div style={{ textAlign: 'center', padding: '4rem' }}>
-      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>😕</div>
+      <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
       <div>Produit introuvable</div>
       <button className="btn btn-secondary mt-2" onClick={() => navigate(-1)}>← Retour</button>
     </div>
   );
 
   const images = product.media?.filter(m => m.type === 'image') || [];
-  const pdfs   = product.media?.filter(m => m.type === 'pdf')   || [];
+  const pdfs = product.media?.filter(m => m.type === 'pdf') || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -55,7 +55,7 @@ const ProductDetail = () => {
             {images.length > 0 ? (
               <img src={images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <span style={{ fontSize: '5rem', opacity: 0.3 }}>📦</span>
+              <span style={{ fontSize: '5rem', opacity: 0.3 }}></span>
             )}
           </div>
           {images.length > 1 && (
@@ -72,7 +72,7 @@ const ProductDetail = () => {
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             <span className="badge badge-primary">{product.category}</span>
             <span className={`badge ${product.isAvailable ? 'badge-success' : 'badge-danger'}`}>
-              {product.isAvailable ? '✓ Disponible' : 'Épuisé'}
+              {product.isAvailable ? ' Disponible' : 'Épuisé'}
             </span>
           </div>
 
@@ -84,7 +84,7 @@ const ProductDetail = () => {
             <span style={{ color: 'var(--clr-text-muted)' }}>({product.rating?.count || 0} avis)</span>
             {product.rating?.count > 0 && (
               <span style={{ color: 'var(--clr-success)', fontSize: '0.85rem' }}>
-                👍 {Math.round((product.rating.recommended / product.rating.count) * 100)}% recommandent
+                {Math.round((product.rating.recommended / product.rating.count) * 100)}% recommandent
               </span>
             )}
           </div>
@@ -95,7 +95,7 @@ const ProductDetail = () => {
 
           {product.stock && (
             <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.9rem' }}>
-              📦 Stock : <strong style={{ color: 'var(--clr-text)' }}>{product.stock.quantity} {product.unit}s</strong>
+              Stock : <strong style={{ color: 'var(--clr-text)' }}>{product.stock.quantity} {product.unit}s</strong>
               {product.stock.minOrderQty > 1 && ` • Commande min : ${product.stock.minOrderQty} ${product.unit}s`}
             </div>
           )}
@@ -119,7 +119,7 @@ const ProductDetail = () => {
               </div>
               <div>
                 <div style={{ fontWeight: 600 }}>{product.supplier.companyName || `${product.supplier.firstName} ${product.supplier.lastName}`}</div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>📍 {product.supplier.location?.city || 'Tunisie'}</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>Lieu:  {product.supplier.location?.city || 'Tunisie'}</div>
               </div>
             </div>
           )}
@@ -129,7 +129,7 @@ const ProductDetail = () => {
             <div>
               {pdfs.map((pdf, i) => (
                 <a key={i} href={pdf.url} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }}>
-                  📄 Fiche technique {i + 1}
+                  Fiche technique {i + 1}
                 </a>
               ))}
             </div>
@@ -140,7 +140,7 @@ const ProductDetail = () => {
       {/* Specifications */}
       {product.specifications?.length > 0 && (
         <div className="card">
-          <h3 style={{ marginBottom: '1rem' }}>📋 Spécifications techniques</h3>
+          <h3 style={{ marginBottom: '1rem' }}> Spécifications techniques</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))', gap: '0.75rem' }}>
             {product.specifications.map((s, i) => (
               <div key={i} style={{ background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)', padding: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
@@ -155,7 +155,7 @@ const ProductDetail = () => {
       {/* Use cases */}
       {product.useCases?.length > 0 && (
         <div className="card">
-          <h3 style={{ marginBottom: '1rem' }}>💡 Cas d'usage</h3>
+          <h3 style={{ marginBottom: '1rem' }}> Cas d'usage</h3>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {product.useCases.map((u, i) => (
               <span key={i} className="badge badge-info">{u}</span>

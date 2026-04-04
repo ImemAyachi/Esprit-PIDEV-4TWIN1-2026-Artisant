@@ -40,7 +40,7 @@ const MyProductsPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2>📦 Mes produits</h2>
+          <h2> Mes produits</h2>
           <p style={{ color: 'var(--clr-text-muted)', marginTop: '0.25rem' }}>{products.length} produit(s) dans votre catalogue</p>
         </div>
         <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Ajouter un produit</button>
@@ -50,7 +50,7 @@ const MyProductsPage = () => {
         <div className="grid-auto">{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 200, borderRadius: 'var(--radius-xl)' }} />)}</div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📦</div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
           <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Aucun produit</div>
           <button className="btn btn-primary" onClick={() => setShowModal(true)}>Ajouter mon premier produit</button>
         </div>
@@ -66,13 +66,13 @@ const MyProductsPage = () => {
               <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.description}</p>
               <div style={{ fontWeight: 800, color: 'var(--clr-primary)', fontSize: '1.25rem', marginBottom: '0.5rem' }}>{p.price} DT / {p.unit}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)', marginBottom: '1rem' }}>
-                📦 Stock : {p.stock?.quantity || 0} {p.unit}s • 👁 {p.views || 0} vues • ⭐ {p.rating?.average?.toFixed(1) || '0.0'}
+                 Stock : {p.stock?.quantity || 0} {p.unit}s • Vues:  {p.views || 0} vues • * {p.rating?.average?.toFixed(1) || '0.0'}
               </div>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} onClick={() => handleToggle(p._id, p.isAvailable)}>
-                  {p.isAvailable ? '🚫 Désactiver' : '✅ Activer'}
+                  {p.isAvailable ? ' Désactiver' : 'Accepter Activer'}
                 </button>
-                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p._id)}>🗑</button>
+                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p._id)}>Supprimer</button>
               </div>
             </div>
           ))}
@@ -84,7 +84,7 @@ const MyProductsPage = () => {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">+ Nouveau produit</div>
-              <button className="btn-ghost" onClick={() => setShowModal(false)}>✕</button>
+              <button className="btn-ghost" onClick={() => setShowModal(false)}>X</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div className="form-group"><label className="form-label">Nom *</label><input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>

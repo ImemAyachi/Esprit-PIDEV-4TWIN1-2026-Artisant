@@ -30,14 +30,14 @@ const ArtisansPage = () => {
 
   const StarRating = ({ value }) => (
     <div className="stars" style={{ fontSize: '0.75rem' }}>
-      {[1,2,3,4,5].map(n => <span key={n} style={{ color: n <= Math.round(value || 0) ? 'var(--clr-primary)' : 'var(--clr-surface3)' }}>★</span>)}
+      {[1,2,3,4,5].map(n => <span key={n} style={{ color: n <= Math.round(value || 0) ? 'var(--clr-primary)' : 'var(--clr-surface3)' }}></span>)}
     </div>
   );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div>
-        <h2>🔨 Trouver un artisan</h2>
+        <h2> Trouver un artisan</h2>
         <p style={{ color: 'var(--clr-text-muted)', marginTop: '0.25rem' }}>{pagination.total} artisans vérifiés</p>
       </div>
 
@@ -72,7 +72,7 @@ const ArtisansPage = () => {
         </div>
       ) : artisans.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔨</div>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
           <div>Aucun artisan trouvé</div>
         </div>
       ) : (
@@ -97,8 +97,8 @@ const ArtisansPage = () => {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>
-                  {a.location?.city && <span>📍 {a.location.city}</span>}
-                  {a.experience && <span>🏆 {a.experience} ans d'expérience</span>}
+                  {a.location?.city && <span>Lieu:  {a.location.city}</span>}
+                  {a.experience && <span> {a.experience} ans d'expérience</span>}
                 </div>
               </div>
               {['Architecte', 'Ingenieur'].includes(user?.role) && (
@@ -107,7 +107,7 @@ const ArtisansPage = () => {
                   style={{ flexShrink: 0, alignSelf: 'flex-start' }}
                   onClick={() => setShowQuoteModal(a)}
                 >
-                  📋 Demande de devis
+                   Demande de devis
                 </button>
               )}
             </div>
@@ -125,8 +125,32 @@ const ArtisansPage = () => {
 
 const QuoteModal = ({ artisan, onClose }) => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ title: '', description: '', location: '' });
+  const [form, setForm] = useState({ title: '', description: '', location: '', projectId: '' });
+  const [myProjects, setMyProjects] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Charger les projets de l'utilisateur au montage
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await api.get('/projects');
+        setMyProjects(res.data.projects || []);
+      } catch (err) {}
+    };
+    fetchProjects();
+  }, []);
+
+  // Remplissage automatique des champs si un projet est choisi
+  const handleProjectChange = (id) => {
+    const selected = myProjects.find(p => p._id === id);
+    setForm(prev => ({
+      ...prev,
+      projectId:   id,
+      title:       selected ? selected.title : prev.title,
+      description: selected ? selected.description : prev.description,
+      location:    selected ? selected.location?.city || '' : prev.location
+    }));
+  };
 
   const submit = async () => {
     if (!form.title || !form.description) return;
@@ -143,24 +167,55 @@ const QuoteModal = ({ artisan, onClose }) => {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <div className="modal-title">📋 Demande de devis</div>
-          <button className="btn-ghost" onClick={onClose}>✕</button>
+          <div className="modal-title"> Demande de devis</div>
+          <button className="btn-ghost" onClick={onClose}>X</button>
         </div>
         <div style={{ marginBottom: '1rem', padding: '0.875rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)' }}>
           <strong>{artisan.firstName} {artisan.lastName}</strong> — {artisan.craft}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* Sélection du projet */}
+          <div className="form-group">
+            <label className="form-label"> Rattacher à un chantier (optionnel)</label>
+            <select 
+              className="form-input form-select" 
+              value={form.projectId} 
+              onChange={(e) => handleProjectChange(e.target.value)}
+            >
+              <option value="">Aucun chantier spécifique</option>
+              {myProjects.map(p => (
+                <option key={p._id} value={p._id}>{p.title} ({p.location?.city || 'Sans ville'})</option>
+              ))}
+            </select>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Titre du projet *</label>
-            <input className="form-input" placeholder="Ex: Travaux de plomberie salle de bain" value={form.title} onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} />
+            <input 
+              className="form-input" 
+              placeholder="Ex: Travaux de plomberie salle de bain" 
+              value={form.title} 
+              onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))} 
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Description des travaux *</label>
-            <textarea className="form-input" rows={4} placeholder="Décrivez les travaux à réaliser..." value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} />
+            <textarea 
+              className="form-input" 
+              rows={4} 
+              placeholder="Décrivez les travaux à réaliser..." 
+              value={form.description} 
+              onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} 
+            />
           </div>
           <div className="form-group">
             <label className="form-label">Adresse du chantier</label>
-            <input className="form-input" placeholder="Ex: 15 Rue de la République, Tunis" value={form.location} onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))} />
+            <input 
+              className="form-input" 
+              placeholder="Ex: 15 Rue de la République, Tunis" 
+              value={form.location} 
+              onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))} 
+            />
           </div>
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button className="btn btn-secondary" style={{ flex: 1 }} onClick={onClose}>Annuler</button>
