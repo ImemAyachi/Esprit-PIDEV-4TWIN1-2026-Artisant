@@ -302,10 +302,7 @@ h3 { font-size: 1.25rem; }
   border-radius: var(--radius-lg);
   padding: 1.5rem; position: relative; overflow: hidden;
 }
-.stat-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: var(--grad-primary);
-}
+
 .stat-value { font-size: 2rem; font-weight: 800; margin-top: 0.5rem; }
 .stat-label { color: var(--clr-text-muted); font-size: 0.85rem; font-weight: 500; }
 .stat-icon  { font-size: 2rem; opacity: 0.15; position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }

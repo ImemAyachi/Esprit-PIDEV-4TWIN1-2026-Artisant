@@ -89,17 +89,30 @@ const projectSchema = new mongoose.Schema(
 
 // Recalcul des financials avant chaque sauvegarde
 projectSchema.pre('save', async function () {
-  if (this.expenses && this.expenses.length >= 0) {
-    const total = this.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
-    this.financials.totalExpenses = total;
-    this.financials.profit = this.financials.totalRevenue - total;
-    if (this.financials.totalRevenue > 0) {
-      this.financials.profitMargin = Math.round(
-        (this.financials.profit / this.financials.totalRevenue) * 100
-      );
-    }
+  // 1. Revenu = Budget Client
+  this.financials.totalRevenue = this.budget || 0;
+
+  // 2. Dépenses = Dépenses manuelles + Somme des contrats artisans acceptés
+  const manualExpenses = (this.expenses || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+  const artisanContracts = (this.artisans || [])
+    .filter(a => a.status === 'accepted')
+    .reduce((sum, a) => sum + (a.totalAmount || 0), 0);
+
+  this.financials.totalExpenses = manualExpenses + artisanContracts;
+
+  // 3. Profit = Revenu - Dépenses
+  this.financials.profit = this.financials.totalRevenue - this.financials.totalExpenses;
+
+  // 4. Marge en %
+  if (this.financials.totalRevenue > 0) {
+    this.financials.profitMargin = Math.round(
+      (this.financials.profit / this.financials.totalRevenue) * 100
+    );
+  } else {
+    this.financials.profitMargin = 0;
   }
 });
+
 
 projectSchema.index({ manager: 1, status: 1 });
 projectSchema.index({ 'artisans.artisan': 1 });

@@ -15,7 +15,7 @@ const QuoteDetail = () => {
   const [quote, setQuote]       = useState(null);
   const [loading, setLoading]   = useState(true);
   const [showSubmit, setShowSubmit] = useState(false);
-  const [submitData, setSubmitData] = useState({ notes: '', proposedDeadline: '', items: [{ description: '', quantity: 1, unit: 'unité', unitPrice: 0 }] });
+  const [submitData, setSubmitData] = useState({ notes: '', proposedDeadline: '', items: [{ description: '', quantity: 1, unitPrice: 0 }] });
 
   const load = async () => {
     try { const r = await api.get(`/quotes/${id}`); setQuote(r.data.quote); } catch (_) {}
@@ -40,7 +40,7 @@ const QuoteDetail = () => {
     if (r.meta.requestStatus === 'fulfilled') load();
   };
 
-  const addItem = () => setSubmitData(d => ({ ...d, items: [...d.items, { description: '', quantity: 1, unit: 'unité', unitPrice: 0 }] }));
+  const addItem = () => setSubmitData(d => ({ ...d, items: [...d.items, { description: '', quantity: 1, unitPrice: 0 }] }));
   const removeItem = (i) => setSubmitData(d => ({ ...d, items: d.items.filter((_, idx) => idx !== i) }));
   const updateItem = (i, k, v) => setSubmitData(d => ({ ...d, items: d.items.map((it, idx) => idx === i ? { ...it, [k]: v } : it) }));
 
@@ -58,7 +58,8 @@ const QuoteDetail = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 860, margin: '0 auto' }}>
-      <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>← Retour</button>
+      <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>Retour</button>
+
 
       {/* Header */}
       <div className="card">
@@ -114,19 +115,18 @@ const QuoteDetail = () => {
           <h3 style={{ marginBottom: '1rem' }}> Détail du devis</h3>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Description</th><th>Qté</th><th>Unité</th><th>Prix unit.</th><th>Total</th></tr></thead>
+              <thead><tr><th>Description</th><th>Jours</th><th>Prix unit.</th><th>Total</th></tr></thead>
               <tbody>
                 {quote.items.map((item, i) => (
                   <tr key={i}>
                     <td>{item.description}</td>
                     <td>{item.quantity}</td>
-                    <td>{item.unit}</td>
                     <td>{item.unitPrice} DT</td>
                     <td style={{ fontWeight: 700 }}>{(item.quantity * item.unitPrice).toLocaleString()} DT</td>
                   </tr>
                 ))}
                 <tr style={{ background: 'rgba(245,158,11,0.05)' }}>
-                  <td colSpan={4} style={{ fontWeight: 700, textAlign: 'right' }}>TOTAL</td>
+                  <td colSpan={3} style={{ fontWeight: 700, textAlign: 'right' }}>TOTAL</td>
                   <td style={{ fontWeight: 900, color: 'var(--clr-primary)', fontSize: '1.1rem' }}>{quote.totalAmount?.toLocaleString()} DT</td>
                 </tr>
               </tbody>
@@ -163,18 +163,14 @@ const QuoteDetail = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <h4>Lignes de devis</h4>
               {submitData.items.map((item, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 0.8fr 0.8fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr 0.8fr 1fr auto', gap: '0.5rem', alignItems: 'end' }}>
                   <div className="form-group">
                     {i === 0 && <label className="form-label">Description</label>}
                     <input className="form-input" placeholder="Ex: Main d'œuvre plomberie" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} />
                   </div>
                   <div className="form-group">
-                    {i === 0 && <label className="form-label">Qté</label>}
+                    {i === 0 && <label className="form-label">Jours</label>}
                     <input className="form-input" type="number" min="1" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    {i === 0 && <label className="form-label">Unité</label>}
-                    <input className="form-input" placeholder="jour" value={item.unit} onChange={(e) => updateItem(i, 'unit', e.target.value)} />
                   </div>
                   <div className="form-group">
                     {i === 0 && <label className="form-label">Prix unit. (DT)</label>}

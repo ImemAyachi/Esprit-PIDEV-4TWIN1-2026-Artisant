@@ -79,8 +79,8 @@ const LandingPage = () => {
 
         {/* Hero content */}
         <div className="hero-content">
-          <div className="hero-badge">La marketplace du BTP en Tunisie</div>
           <h1 className="hero-title">
+
             Connectez{' '}
             <span className="gradient-text">Architectes, Artisans</span>
             {' '}& Fournisseurs
@@ -91,7 +91,8 @@ const LandingPage = () => {
           </p>
           <div className="hero-actions">
             <Link to="/register" className="btn btn-primary btn-lg">
-              Commencer gratuitement →
+              Commencer gratuitement
+
             </Link>
             <Link to="/dashboard/catalog" className="btn btn-secondary btn-lg">
               Voir le catalogue
@@ -140,6 +141,7 @@ const LandingPage = () => {
                 >
                   Rejoindre
                 </Link>
+
               </div>
             ))}
           </div>
@@ -176,7 +178,8 @@ const LandingPage = () => {
             Inscription gratuite. Accès immédiat au catalogue et aux artisans.
           </p>
           <Link to="/register" className="btn btn-primary btn-lg">
-            Créer mon compte →
+            Créer mon compte
+
           </Link>
         </div>
       </section>
