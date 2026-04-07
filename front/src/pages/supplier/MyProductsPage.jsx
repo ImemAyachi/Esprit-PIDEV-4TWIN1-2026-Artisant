@@ -6,20 +6,20 @@ import toast from 'react-hot-toast';
 const MyProductsPage = () => {
   const { user } = useSelector((s) => s.auth);
   const [products, setProducts] = useState([]);
-  const [loading,  setLoading]  = useState(true);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState([]);
-  
+
   const defaultForm = { name: '', description: '', category: 'marbre', price: '', unit: 'm²', stock: 0, specifications: '', useCases: '', isAvailable: true };
   const [form, setForm] = useState(defaultForm);
 
-  const load = async () => { try { const r = await api.get('/products/my'); setProducts(r.data.products); } catch (_) {}; setLoading(false); };
+  const load = async () => { try { const r = await api.get('/products/my'); setProducts(r.data.products); } catch (_) { }; setLoading(false); };
   useEffect(() => { load(); }, []);
 
   const openAddModal = () => { setEditId(null); setForm(defaultForm); setFiles([]); setShowModal(true); };
-  
+
   const openEditModal = (p) => {
     setEditId(p._id);
     setForm({
@@ -51,12 +51,12 @@ const MyProductsPage = () => {
       const payload = {
         ...form,
         stock: { quantity: Number(form.stock) || 0 },
-        specifications: form.specifications ? form.specifications.split('\n').map(l => { const [k,...v] = l.split(':'); return { key: k?.trim(), value: v.join(':').trim() }; }).filter(s => s.key && s.value) : [],
+        specifications: form.specifications ? form.specifications.split('\n').map(l => { const [k, ...v] = l.split(':'); return { key: k?.trim(), value: v.join(':').trim() }; }).filter(s => s.key && s.value) : [],
         useCases: form.useCases ? form.useCases.split('\n').filter(Boolean) : [],
       };
-      
+
       if (parsedMedia.length > 0) payload.media = parsedMedia;
-      
+
       if (editId) {
         await api.put(`/products/${editId}`, payload);
         toast.success('Produit mis à jour !');
@@ -71,11 +71,11 @@ const MyProductsPage = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Supprimer ce produit ?')) return;
-    try { await api.delete(`/products/${id}`); toast.success('Supprimé'); load(); } catch (_) {}
+    try { await api.delete(`/products/${id}`); toast.success('Supprimé'); load(); } catch (_) { }
   };
 
   const handleToggle = async (id, current) => {
-    try { await api.put(`/products/${id}`, { isAvailable: !current }); load(); } catch (_) {}
+    try { await api.put(`/products/${id}`, { isAvailable: !current }); load(); } catch (_) { }
   };
 
   const CATS = ['marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'peinture', 'plomberie', 'électricité', 'autre'];
@@ -91,7 +91,7 @@ const MyProductsPage = () => {
       </div>
 
       {loading ? (
-        <div className="grid-auto">{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: 200, borderRadius: 'var(--radius-xl)' }} />)}</div>
+        <div className="grid-auto">{[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 200, borderRadius: 'var(--radius-xl)' }} />)}</div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
@@ -179,22 +179,22 @@ const MyProductsPage = () => {
                   {p.isAvailable ? 'Disponible' : 'Indisponible'}
                 </span>
               </div>
-              
+
               <h3 className="premium-card-title">{p.name}</h3>
               <p className="premium-card-desc">{p.description}</p>
-              
+
               <div className="premium-card-price">
                 {p.price} <span>DT / {p.unit}</span>
               </div>
-              
+
               <div className="premium-card-meta">
                 <div>En stock: <strong>{p.stock?.quantity || 0}</strong> {p.unit}s</div>
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <span title="Vues">👁 {p.views || 0}</span>
-                  <span title="Note moy.">★ {p.rating?.average?.toFixed(1) || '0.0'}</span>
+                  <span title="Vues">Vues: {p.views || 0}</span>
+                  <span title="Note moy.">Note: {p.rating?.average?.toFixed(1) || '0.0'}</span>
                 </div>
               </div>
-              
+
               <div className="premium-card-actions">
                 <button className="premium-action-btn premium-btn-edit btn-single" onClick={() => openEditModal(p)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
@@ -289,22 +289,22 @@ const MyProductsPage = () => {
             @keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
             @keyframes modalSlideUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
           `}</style>
-          
+
           <div className="premium-modal" onClick={e => e.stopPropagation()}>
             <div className="premium-header">
               <div>
-                <div className="premium-title">{editId ? '✏️ Modifier le produit' : '✨ Ajouter un produit'}</div>
+                <div className="premium-title">{editId ? 'Modifier le produit' : 'Ajouter un produit'}</div>
                 <div className="premium-subtitle">{editId ? 'Mettez à jour les informations de votre matériau' : 'Enrichissez votre catalogue avec de nouveaux matériaux'}</div>
               </div>
-              <button className="premium-close" onClick={() => setShowModal(false)} title="Fermer">✕</button>
+              <button className="premium-close" onClick={() => setShowModal(false)} title="Fermer">X</button>
             </div>
-            
+
             <div className="premium-grid">
               <div className="premium-group full">
                 <label className="premium-label">Nom du Produit *</label>
                 <input className="premium-input" placeholder="Ex: Marbre Blanc Carrara Premium" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
               </div>
-              
+
               <div className="premium-group full">
                 <label className="premium-label">Description *</label>
                 <textarea className="premium-input" placeholder="Décrivez les qualités de votre produit..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
@@ -334,10 +334,10 @@ const MyProductsPage = () => {
                 <input className="premium-input" type="number" min="0" placeholder="0" value={form.stock} onChange={e => {
                   const val = e.target.value;
                   const numVal = Number(val);
-                  setForm(f => ({ 
-                    ...f, 
-                    stock: val, 
-                    isAvailable: numVal === 0 ? false : f.isAvailable 
+                  setForm(f => ({
+                    ...f,
+                    stock: val,
+                    isAvailable: numVal === 0 ? false : f.isAvailable
                   }));
                 }} />
               </div>

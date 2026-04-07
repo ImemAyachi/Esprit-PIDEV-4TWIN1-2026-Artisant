@@ -1,7 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProductById } from '../../store/slices/productSlice';
+import api from '../../services/api';
+import toast from 'react-hot-toast';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const StarRating = ({ value }) => (
   <div className="stars">
@@ -17,10 +20,40 @@ const ProductDetail = () => {
   const navigate = useNavigate();
   const { current: product, loading } = useSelector((s) => s.products);
   const { user } = useSelector((s) => s.auth);
+  
+  const [orderModal, setOrderModal] = useState(false);
+  const [orderData, setOrderData] = useState({ quantity: 1, deliveryAddress: '', projectId: '' });
+  const [myProjects, setMyProjects] = useState([]);
 
   useEffect(() => {
     dispatch(fetchProductById(id));
   }, [id]);
+
+  const handleOpenOrder = async () => {
+    try {
+      const res = await api.get('/projects');
+      setMyProjects(res.data.projects || []);
+      setOrderModal(true);
+    } catch(e) { }
+  };
+
+  const handlePlaceOrder = async () => {
+    try {
+      if (!orderData.quantity || !orderData.deliveryAddress) return toast.error("Veuillez remplir les informations de livraison");
+      
+      const payload = {
+        items: [{ product: product._id, quantity: Number(orderData.quantity), unitPrice: parseFloat(product.price) }],
+        deliveryAddress: { address: orderData.deliveryAddress || 'Aucune', city: 'Non spécifié' },
+        projectId: orderData.projectId || undefined
+      };
+
+      await api.post('/orders', payload);
+      toast.success("Commande envoyée au fournisseur !");
+      setOrderModal(false);
+    } catch(e) { 
+      toast.error(e.response?.data?.message || "Erreur lors de la commande"); 
+    }
+  };
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -53,7 +86,7 @@ const ProductDetail = () => {
             height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             {images.length > 0 ? (
-              <img src={images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={getImageUrl(images[0].url)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <span style={{ fontSize: '5rem', opacity: 0.3 }}></span>
             )}
@@ -61,7 +94,7 @@ const ProductDetail = () => {
           {images.length > 1 && (
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', overflowX: 'auto' }}>
               {images.slice(1).map((img, i) => (
-                <img key={i} src={img.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: '1px solid var(--clr-border)' }} />
+                <img key={i} src={getImageUrl(img.url)} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: '1px solid var(--clr-border)' }} />
               ))}
             </div>
           )}
@@ -92,6 +125,12 @@ const ProductDetail = () => {
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>
             {product.price} DT <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--clr-text-muted)' }}>/ {product.unit}</span>
           </div>
+          
+          {(user?.role === 'Artisan' || user?.role === 'Ingenieur') && product.isAvailable && (
+            <button className="btn btn-primary" style={{ padding: '1rem', marginTop: '0.5rem', fontSize: '1.1rem' }} onClick={handleOpenOrder}>
+              Commander ({product.price} DT / {product.unit})
+            </button>
+          )}
 
           {product.stock && (
             <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.9rem' }}>
@@ -160,6 +199,51 @@ const ProductDetail = () => {
             {product.useCases.map((u, i) => (
               <span key={i} className="badge badge-info">{u}</span>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Commande */}
+      {orderModal && (
+        <div className="modal-overlay" onClick={() => setOrderModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">📦 Commander : {product.name}</div>
+              <button className="btn-ghost" onClick={() => setOrderModal(false)}>✕</button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1rem' }}>
+              <div className="form-group">
+                <label className="form-label">Quantité en {product.unit}</label>
+                <input className="form-input" type="number" min="1" max={product.stock?.quantity || 1000} value={orderData.quantity} onChange={e => setOrderData(o => ({...o, quantity: e.target.value}))} />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Détails de Livraison (Adresse complête, tél, etc.) *</label>
+                <textarea className="form-input" rows={3} placeholder="Saisissez vos instructions et adresse de livraison..." value={orderData.deliveryAddress} onChange={e => setOrderData(o => ({...o, deliveryAddress: e.target.value}))}></textarea>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Lier à un de mes chantiers (Optionnel)</label>
+                <select className="form-input form-select" value={orderData.projectId} onChange={e => setOrderData(o => ({...o, projectId: e.target.value}))}>
+                  <option value="">-- Aucun chantier spécifique --</option>
+                  {myProjects.map(p => (
+                    <option key={p._id} value={p._id}>{p.title}</option>
+                  ))}
+                </select>
+                <p style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)', marginTop: '0.5rem' }}>
+                  En liant cette commande à un chantier, vous pourrez l'enregistrer automatiquement dans les frais et recalculer votre rentabilité lors de la réception.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', borderTop: '1px solid var(--clr-border)', paddingTop: '1rem' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--clr-primary)' }}>Total : {((parseFloat(product.price) || 0) * (Number(orderData.quantity) || 1)).toFixed(2)} DT</span>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn btn-secondary" onClick={() => setOrderModal(false)}>Annuler</button>
+                  <button className="btn btn-primary" onClick={handlePlaceOrder}>Confirmer la commande</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { protect  } from '../middleware/auth.js';
+import { protect } from '../middleware/auth.middleware.js';
 
 const router = express.Router();
 

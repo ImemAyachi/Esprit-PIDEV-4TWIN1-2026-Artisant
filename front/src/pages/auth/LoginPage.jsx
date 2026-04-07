@@ -71,6 +71,7 @@ const LoginPage = () => {
                 id="login-email"
                 className={`form-input ${errors.email ? 'is-error' : ''}`}
                 type="email"
+                autoComplete="email"
                 placeholder="votre@email.com"
                 {...register('email', { required: 'Email requis' })}
               />
@@ -83,6 +84,7 @@ const LoginPage = () => {
                 id="login-password"
                 className={`form-input ${errors.password ? 'is-error' : ''}`}
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 {...register('password', { required: 'Mot de passe requis' })}
               />

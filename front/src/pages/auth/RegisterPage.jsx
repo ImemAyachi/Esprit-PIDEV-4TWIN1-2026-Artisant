@@ -92,26 +92,26 @@ const RegisterPage = () => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
               <div className="form-group">
                 <label className="form-label">Prénom *</label>
-                <input id="reg-firstname" className="form-input" placeholder="Sarra" {...register('firstName', { required: 'Requis' })} />
+                <input id="reg-firstname" className="form-input" placeholder="Sarra" autoComplete="given-name" {...register('firstName', { required: 'Requis' })} />
                 {errors.firstName && <span className="form-error">{errors.firstName.message}</span>}
               </div>
               <div className="form-group">
                 <label className="form-label">Nom *</label>
-                <input id="reg-lastname" className="form-input" placeholder="Ben Ali" {...register('lastName', { required: 'Requis' })} />
+                <input id="reg-lastname" className="form-input" placeholder="Ben Ali" autoComplete="family-name" {...register('lastName', { required: 'Requis' })} />
                 {errors.lastName && <span className="form-error">{errors.lastName.message}</span>}
               </div>
             </div>
 
             <div className="form-group">
               <label className="form-label">Email *</label>
-              <input id="reg-email" className="form-input" type="email" placeholder="votre@email.com"
+              <input id="reg-email" className="form-input" type="email" placeholder="votre@email.com" autoComplete="email"
                 {...register('email', { required: 'Email requis', pattern: { value: /^\S+@\S+\.\S+$/, message: 'Email invalide' } })} />
               {errors.email && <span className="form-error">{errors.email.message}</span>}
             </div>
 
             <div className="form-group">
               <label className="form-label">Téléphone</label>
-              <input id="reg-phone" className="form-input" placeholder="+216 XX XXX XXX" {...register('phone')} />
+              <input id="reg-phone" className="form-input" placeholder="+216 XX XXX XXX" autoComplete="tel" {...register('phone')} />
             </div>
 
             {/* Artisan specific */}
@@ -138,7 +138,7 @@ const RegisterPage = () => {
 
             <div className="form-group">
               <label className="form-label">Mot de passe *</label>
-              <input id="reg-password" className="form-input" type="password" placeholder="Minimum 8 caractères"
+              <input id="reg-password" className="form-input" type="password" placeholder="Minimum 8 caractères" autoComplete="new-password"
                 {...register('password', { required: 'Requis', minLength: { value: 8, message: 'Minimum 8 caractères' } })} />
               {errors.password && <span className="form-error">{errors.password.message}</span>}
             </div>

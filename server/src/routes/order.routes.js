@@ -13,7 +13,7 @@ router.post('/', asyncHandler(async (req, res) => {
 }));
 router.get('/', asyncHandler(async (req, res) => {
   const filter = req.user.role === 'Fournisseur' ? { supplier: req.user._id } : req.user.role === 'SuperAdmin' ? {} : { buyer: req.user._id };
-  const orders = await Order.find(filter).populate('buyer', 'firstName lastName avatar').populate('supplier', 'firstName lastName companyName').populate('items.product', 'name category').sort({ createdAt: -1 });
+  const orders = await Order.find(filter).populate('buyer', 'firstName lastName avatar').populate('supplier', 'firstName lastName companyName').populate('items.product', 'name category unit').sort({ createdAt: -1 });
   res.json({ success: true, orders });
 }));
 router.put('/:id/status', authorize('Fournisseur', 'SuperAdmin'), asyncHandler(async (req, res) => {
@@ -23,5 +23,29 @@ router.put('/:id/status', authorize('Fournisseur', 'SuperAdmin'), asyncHandler(a
   const notification = await Notification.create({ recipient: order.buyer, type: `order_${status}`, title: `Commande ${status}`, message: `Votre commande est maintenant : ${status}`, link: `/orders/${order._id}` });
   req.app.get('io').to(`user_${order.buyer}`).emit('notification', notification);
   res.json({ success: true, order });
+}));
+
+// Modifier une commande (seulement si en attente et par l'acheteur)
+router.put('/:id', asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) throw new AppError('Commande introuvable', 404);
+  if (order.buyer.toString() !== req.user._id.toString()) throw new AppError('Non autorisé', 403);
+  if (order.status !== 'pending') throw new AppError('Impossible de modifier une commande déjà traitée', 400);
+
+  const updatedOrder = await Order.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  res.json({ success: true, order: updatedOrder });
+}));
+
+// Supprimer/Annuler une commande (seulement si en attente et par l'acheteur)
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) throw new AppError('Commande introuvable', 404);
+  if (order.buyer.toString() !== req.user._id.toString()) throw new AppError('Non autorisé', 403);
+  
+  // Si en attente, on supprime. Si plus loin, on ne peut plus.
+  if (order.status !== 'pending') throw new AppError('Impossible d\'annuler une commande déjà validée par le fournisseur', 400);
+
+  await Order.findByIdAndDelete(req.params.id);
+  res.json({ success: true, message: 'Commande supprimée avec succès' });
 }));
 export default router;

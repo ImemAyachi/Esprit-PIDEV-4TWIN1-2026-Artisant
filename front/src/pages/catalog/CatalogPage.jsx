@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, setFilters } from '../../store/slices/productSlice';
+import { getProductImage } from '../../utils/imageUrl';
 
 const CATEGORIES = ['', 'marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'peinture', 'plomberie', 'électricité', 'autre'];
 const CAT_ICONS  = { marbre: '', granit: '', ciment: '', sable: '', carrelage: '', brique: '', bois: '', acier: '', peinture: '', plomberie: '', électricité: '', autre: '' };
@@ -102,8 +103,8 @@ const CatalogPage = () => {
             <Link to={`/dashboard/catalog/${p._id}`} key={p._id} style={{ textDecoration: 'none' }}>
               <div className="product-card">
                 <div className="product-card-img">
-                  {p.mainImage || (p.media?.find(m => m.type === 'image')?.url) ? (
-                    <img src={p.mainImage || p.media?.find(m => m.type === 'image')?.url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {getProductImage(p) ? (
+                    <img src={getProductImage(p)} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <span style={{ fontSize: '3rem' }}>{CAT_ICONS[p.category] || ''}</span>
                   )}

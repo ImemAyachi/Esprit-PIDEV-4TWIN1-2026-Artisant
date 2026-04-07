@@ -88,7 +88,7 @@ app.use(`${API}/admin`, adminRoutes);
 app.use(`${API}/documents`, documentRoutes);
 app.use(`${API}/invoices`, invoiceRoutes);
 app.use(`${API}/public`, publicRoutes);
-app.use(`${API}/upload`, uploadRoutes);
+app.use(`${API}/uploads`, uploadRoutes);
 
 // * Note: The following overlapping routes from Yahya were omitted to prevent conflicts:
 // * authRoutes.js, userRoutes.js, productRoutes.js, orderRoutes.js, projectRoutes.js, quoteRoutes.js

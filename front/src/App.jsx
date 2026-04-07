@@ -23,6 +23,7 @@ import ProjectDetail from './pages/projects/ProjectDetail';
 import MyProductsPage from './pages/supplier/MyProductsPage';
 import SupplierOrdersPage from './pages/supplier/SupplierOrdersPage';
 import SupplierStatsPage from './pages/supplier/SupplierStatsPage';
+import MyOrdersPage from './pages/artisans/MyOrdersPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -70,6 +71,12 @@ function App() {
             {/* Devis */}
             <Route path="quotes" element={<QuotesPage />} />
             <Route path="quotes/:id" element={<QuoteDetail />} />
+
+            <Route path="my-orders" element={
+              <RoleRoute roles={['Artisan', 'Ingenieur']}>
+                <MyOrdersPage />
+              </RoleRoute>
+            } />
 
             {/* Projets / Chantiers */}
             <Route path="projects" element={<ProjectsPage />} />

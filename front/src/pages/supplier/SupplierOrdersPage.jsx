@@ -58,31 +58,36 @@ const SupplierOrdersPage = () => {
                     Commande #{order._id.substring(0, 8).toUpperCase()}
                   </h3>
                   <div style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                    🗓 {new Date(order.createdAt).toLocaleDateString()} &nbsp;•&nbsp; 
-                    👤 {order.buyer?.firstName} {order.buyer?.lastName}
+                    {new Date(order.createdAt).toLocaleDateString()} &nbsp;•&nbsp; 
+                    {order.buyer?.firstName} {order.buyer?.lastName}
                   </div>
                 </div>
                 <div style={{
                   padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: 600, fontSize: '0.85rem',
-                  background: order.status === 'en attente' ? '#fef08a' :
-                              order.status === 'confirmée' ? '#bae6fd' :
-                              order.status === 'expédiée' ? '#c7d2fe' :
-                              order.status === 'livrée' ? '#bbf7d0' : '#fecaca',
-                  color: order.status === 'en attente' ? '#854d0e' :
-                         order.status === 'confirmée' ? '#0369a1' :
-                         order.status === 'expédiée' ? '#4338ca' :
-                         order.status === 'livrée' ? '#15803d' : '#b91c1c'
+                  background: order.status === 'pending' ? '#fef08a' :
+                              order.status === 'confirmed' ? '#bae6fd' :
+                              order.status === 'shipped' ? '#c7d2fe' :
+                              order.status === 'delivered' ? '#bbf7d0' : '#fecaca',
+                  color: order.status === 'pending' ? '#854d0e' :
+                         order.status === 'confirmed' ? '#0369a1' :
+                         order.status === 'shipped' ? '#4338ca' :
+                         order.status === 'delivered' ? '#15803d' : '#b91c1c'
                 }}>
-                  {order.status.toUpperCase()}
+                  {order.status === 'pending' ? 'EN ATTENTE' : 
+                   order.status === 'confirmed' ? 'CONFIRMÉE' : 
+                   order.status === 'shipped' ? 'EXPÉDIÉE' : 
+                   order.status === 'delivered' ? 'LIVRÉE' : 'ANNULÉE'}
                 </div>
               </div>
 
               <div>
-                <strong style={{ fontSize: '0.9rem', color: '#475569' }}>Détail des articles :</strong>
-                <ul style={{ margin: '0.5rem 0 0 1.5rem', color: '#334155' }}>
+                <strong style={{ fontSize: '0.9rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Détail des articles vendus</strong>
+                <ul style={{ margin: '0.75rem 0 0 0', color: '#334155', listStyleType: 'none', padding: 0 }}>
                   {order.items.map((item, idx) => (
-                    <li key={idx}>
-                      {item.quantity}x {item.product?.name || 'Produit inconnu'} ({(item.price || 0).toFixed(2)} DT unitaire)
+                    <li key={idx} style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderRadius: '10px', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', border: '1px solid #f1f5f9' }}>
+                      <span style={{ fontWeight: 800, color: '#3b82f6', background: '#eff6ff', padding: '0.25rem 0.75rem', borderRadius: '8px', fontSize: '0.85rem' }}>{item.quantity} {item.product?.unit || 'unité'}s</span>
+                      <span style={{ fontWeight: 600, fontSize: '1rem', color: '#0f172a' }}>{item.product?.name || 'Produit inconnu'}</span>
+                      <span style={{ marginLeft: 'auto', color: '#64748b', fontSize: '0.9rem', fontWeight: 500 }}>{(item.unitPrice || 0).toFixed(2)} DT / {item.product?.unit || 'unité'}</span>
                     </li>
                   ))}
                 </ul>
@@ -94,17 +99,17 @@ const SupplierOrdersPage = () => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  {order.status === 'en attente' && (
+                  {order.status === 'pending' && (
                     <>
-                      <button onClick={() => updateStatus(order._id, 'annulée')} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Refuser</button>
-                      <button onClick={() => updateStatus(order._id, 'confirmée')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Confirmer (En stock)</button>
+                      <button onClick={() => updateStatus(order._id, 'cancelled')} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Refuser</button>
+                      <button onClick={() => updateStatus(order._id, 'confirmed')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Confirmer (En stock)</button>
                     </>
                   )}
-                  {order.status === 'confirmée' && (
-                    <button onClick={() => updateStatus(order._id, 'expédiée')} style={{ background: '#e0e7ff', color: '#4f46e5', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Marquer comme Expédiée</button>
+                  {order.status === 'confirmed' && (
+                    <button onClick={() => updateStatus(order._id, 'shipped')} style={{ background: '#e0e7ff', color: '#4f46e5', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Marquer comme Expédiée</button>
                   )}
-                  {order.status === 'expédiée' && (
-                    <button onClick={() => updateStatus(order._id, 'livrée')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Marquer comme Livrée</button>
+                  {order.status === 'shipped' && (
+                    <button onClick={() => updateStatus(order._id, 'delivered')} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', padding: '0.6rem 1rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Marquer comme Livrée</button>
                   )}
                 </div>
               </div>
