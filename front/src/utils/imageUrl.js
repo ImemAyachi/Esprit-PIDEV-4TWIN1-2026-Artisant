@@ -11,8 +11,8 @@ export const getImageUrl = (url) => {
   if (!url) return null;
   // Already absolute URL (Cloudinary, S3, etc.)
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  // Local upload path — proxy handles it in dev, prepend API_BASE for safety
-  if (url.startsWith('/uploads/')) return `${API_BASE}${url}`;
+  // Local upload path — return as-is so Vite proxy handles it in dev (avoids cross-origin block)
+  if (url.startsWith('/uploads/')) return url;
   return url;
 };
 
