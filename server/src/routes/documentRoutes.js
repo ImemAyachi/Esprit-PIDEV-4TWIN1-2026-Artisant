@@ -1,6 +1,5 @@
-const express = require('express');
-const {
-    getAllDocuments,
+import express from 'express';
+import { getAllDocuments,
     getDocument,
     createDocument,
     updateDocument,
@@ -8,9 +7,9 @@ const {
     toggleFavorite,
     getDocumentHistory,
     logConsultation
-} = require('../controllers/documentController');
+ } from '../controllers/documentController.js';
 
-const { protect, authorize } = require('../middleware/auth');
+import { protect, authorize  } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -31,6 +30,6 @@ router.route('/:id')
 router.route('/:id/favorite')
     .put(protect, toggleFavorite);
 
-module.exports = router;
+export default router;
 
 

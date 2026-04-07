@@ -1,8 +1,8 @@
-const User = require('../models/User');
+import User from '../models/User.js';
 
 // @desc    Get all users (Admin)
 // @route   GET /api/users
-exports.getAllUsers = async (req, res) => {
+export const getAllUsers = async (req, res) => {
     try {
         const { search, role, status } = req.query;
         let query = {};
@@ -31,7 +31,7 @@ exports.getAllUsers = async (req, res) => {
 
 // @desc    Get single user
 // @route   GET /api/users/:id
-exports.getUser = async (req, res) => {
+export const getUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id).select('-password -faceEmbedding');
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -43,7 +43,7 @@ exports.getUser = async (req, res) => {
 
 // @desc    Update user
 // @route   PUT /api/users/:id
-exports.updateUser = async (req, res) => {
+export const updateUser = async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -59,7 +59,7 @@ exports.updateUser = async (req, res) => {
 
 // @desc    Delete user
 // @route   DELETE /api/users/:id
-exports.deleteUser = async (req, res) => {
+export const deleteUser = async (req, res) => {
     try {
         const user = await User.findByIdAndDelete(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -71,7 +71,7 @@ exports.deleteUser = async (req, res) => {
 
 // @desc    Update user role
 // @route   PUT /api/users/:id/role
-exports.updateUserRole = async (req, res) => {
+export const updateUserRole = async (req, res) => {
     try {
         const { role } = req.body;
         const allowedRoles = ['artisan', 'manufacturer', 'expert', 'admin'];

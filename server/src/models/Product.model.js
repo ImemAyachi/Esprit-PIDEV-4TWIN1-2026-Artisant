@@ -58,7 +58,6 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: ['marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'verre', 'peinture', 'plomberie', 'électricité', 'autre'],
-      index: true,
     },
     subCategory: { type: String },
 
@@ -68,7 +67,6 @@ const productSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true,
     },
 
     // ── Prix & Stock ──────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const expertSavedDocumentSchema = new mongoose.Schema({
     expert: {
@@ -22,5 +22,5 @@ const expertSavedDocumentSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const ExpertSavedDocument = mongoose.model('ExpertSavedDocument', expertSavedDocumentSchema);
-module.exports = ExpertSavedDocument;
+const ExpertSavedDocument = mongoose.model('ExpertSavedDocumentYahya', expertSavedDocumentSchema);
+export default ExpertSavedDocument;

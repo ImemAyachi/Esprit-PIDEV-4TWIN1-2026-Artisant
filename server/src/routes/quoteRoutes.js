@@ -1,12 +1,11 @@
-const express = require('express');
-const {
-    createQuote,
+import express from 'express';
+import { createQuote,
     getMyQuotes,
     updateQuote,
     deleteQuote,
     acceptQuote
-} = require('../controllers/quoteController');
-const { protect, authorize } = require('../middleware/auth');
+ } from '../controllers/quoteController.js';
+import { protect, authorize  } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -21,5 +20,5 @@ router.get('/my', getMyQuotes);
 router.put('/:id', updateQuote);
 router.delete('/:id', deleteQuote);
 
-module.exports = router;
+export default router;
 

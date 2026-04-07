@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const artisanSchema = new mongoose.Schema({
     user: {
@@ -18,5 +18,5 @@ const artisanSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const Artisan = mongoose.model('Artisan', artisanSchema);
-module.exports = Artisan;
+const Artisan = mongoose.model('ArtisanYahya', artisanSchema);
+export default Artisan;

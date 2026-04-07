@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const accessibilityFeatureSchema = new mongoose.Schema({
     name: {
@@ -20,5 +20,5 @@ const accessibilityFeatureSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const AccessibilityFeature = mongoose.model('AccessibilityFeature', accessibilityFeatureSchema);
-module.exports = AccessibilityFeature;
+const AccessibilityFeature = mongoose.model('AccessibilityFeatureYahya', accessibilityFeatureSchema);
+export default AccessibilityFeature;

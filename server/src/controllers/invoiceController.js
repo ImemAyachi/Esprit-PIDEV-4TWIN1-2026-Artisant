@@ -1,8 +1,8 @@
-const Invoice = require('../models/Invoice');
+import Invoice from '../models/Invoice.js';
 
 // @desc    Create new invoice
 // @route   POST /api/invoices
-exports.createInvoice = async (req, res) => {
+export const createInvoice = async (req, res) => {
     try {
         const invoice = await Invoice.create({
             ...req.body,
@@ -16,7 +16,7 @@ exports.createInvoice = async (req, res) => {
 
 // @desc    Get all invoices for the logged-in artisan
 // @route   GET /api/invoices/my
-exports.getMyInvoices = async (req, res) => {
+export const getMyInvoices = async (req, res) => {
     try {
         const invoices = await Invoice.find({ artisan: req.user.id })
             .populate('quote', 'clientName totalAmount')
@@ -38,7 +38,7 @@ exports.getMyInvoices = async (req, res) => {
 
 // @desc    Update an invoice
 // @route   PUT /api/invoices/:id
-exports.updateInvoice = async (req, res) => {
+export const updateInvoice = async (req, res) => {
     try {
         const invoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -53,7 +53,7 @@ exports.updateInvoice = async (req, res) => {
 
 // @desc    Delete invoice
 // @route   DELETE /api/invoices/:id
-exports.deleteInvoice = async (req, res) => {
+export const deleteInvoice = async (req, res) => {
     try {
         const invoice = await Invoice.findByIdAndDelete(req.params.id);
         if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found.' });
@@ -64,7 +64,7 @@ exports.deleteInvoice = async (req, res) => {
 };
 // @desc    Get financial summary
 // @route   GET /api/invoices/summary
-exports.getFinancialSummary = async (req, res) => {
+export const getFinancialSummary = async (req, res) => {
     try {
         const invoices = await Invoice.find({ artisan: req.user.id }).populate('quote', 'totalAmount');
         const summary = {
@@ -87,7 +87,7 @@ exports.getFinancialSummary = async (req, res) => {
 
 // @desc    Record payment
 // @route   PATCH /api/invoices/:id/payment
-exports.recordPayment = async (req, res) => {
+export const recordPayment = async (req, res) => {
     try {
         const invoice = await Invoice.findByIdAndUpdate(req.params.id, { 
             status: 'payé',
@@ -102,7 +102,7 @@ exports.recordPayment = async (req, res) => {
 
 // @desc    Void invoice
 // @route   PATCH /api/invoices/:id/void
-exports.voidInvoice = async (req, res) => {
+export const voidInvoice = async (req, res) => {
     try {
         const invoice = await Invoice.findByIdAndUpdate(req.params.id, { status: 'en_retard' }, { new: true });
         if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found.' });

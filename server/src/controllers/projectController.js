@@ -1,8 +1,8 @@
-const Project = require('../models/Project');
+import Project from '../models/Project.js';
 
 // @desc    Get all projects for the logged-in artisan
 // @route   GET /api/projects/my
-exports.getMyProjects = async (req, res) => {
+export const getMyProjects = async (req, res) => {
     try {
         const projects = await Project.find({ artisan: req.user.id }).sort('-createdAt');
         
@@ -23,7 +23,7 @@ exports.getMyProjects = async (req, res) => {
 
 // @desc    Archive project
 // @route   PATCH /api/projects/:id/archive
-exports.archiveProject = async (req, res) => {
+export const archiveProject = async (req, res) => {
     try {
         const project = await Project.findByIdAndUpdate(req.params.id, { status: 'archivé' }, { new: true });
         if (!project) return res.status(404).json({ message: 'Not found' });
@@ -41,7 +41,7 @@ exports.archiveProject = async (req, res) => {
 
 // @desc    Get detailed project
 // @route   GET /api/projects/:id
-exports.getProject = async (req, res) => {
+export const getProject = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id).populate('artisan', 'email companyName phone');
         if (!project) return res.status(404).json({ message: 'Project not found' });
@@ -62,7 +62,7 @@ exports.getProject = async (req, res) => {
 
 // @desc    Create project
 // @route   POST /api/projects
-exports.createProject = async (req, res) => {
+export const createProject = async (req, res) => {
     try {
         const project = await Project.create({
             ...req.body,
@@ -76,7 +76,7 @@ exports.createProject = async (req, res) => {
 
 // @desc    Update project
 // @route   PUT /api/projects/:id
-exports.updateProject = async (req, res) => {
+export const updateProject = async (req, res) => {
     try {
         const project = await Project.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -91,7 +91,7 @@ exports.updateProject = async (req, res) => {
 
 // @desc    Delete project
 // @route   DELETE /api/projects/:id
-exports.deleteProject = async (req, res) => {
+export const deleteProject = async (req, res) => {
     try {
         const project = await Project.findByIdAndDelete(req.params.id);
         if (!project) return res.status(404).json({ message: 'Not found' });
@@ -102,7 +102,7 @@ exports.deleteProject = async (req, res) => {
 };
 
 // @desc    Get All (Admin)
-exports.getAllProjects = async (req, res) => {
+export const getAllProjects = async (req, res) => {
     try {
         const projects = await Project.find().populate('artisan', 'email companyName');
         res.json({ success: true, data: projects });

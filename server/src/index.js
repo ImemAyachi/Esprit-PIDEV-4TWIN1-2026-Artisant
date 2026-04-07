@@ -99,7 +99,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 app.get('/', (req, res) => {
-    res.json({ message: 'Welcome to Artisant API' });
+  res.json({ message: 'Welcome to Artisant API' });
 });
 
 // ─── Gestion des erreurs centralisée ─────────────────────────────────────────

@@ -21,6 +21,8 @@ import QuoteDetail from './pages/quotes/QuoteDetail';
 import ProjectsPage from './pages/projects/ProjectsPage';
 import ProjectDetail from './pages/projects/ProjectDetail';
 import MyProductsPage from './pages/supplier/MyProductsPage';
+import SupplierOrdersPage from './pages/supplier/SupplierOrdersPage';
+import SupplierStatsPage from './pages/supplier/SupplierStatsPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -77,6 +79,16 @@ function App() {
             <Route path="my-products" element={
               <RoleRoute roles={['Fournisseur', 'SuperAdmin']}>
                 <MyProductsPage />
+              </RoleRoute>
+            } />
+            <Route path="supplier/orders" element={
+              <RoleRoute roles={['Fournisseur', 'SuperAdmin']}>
+                <SupplierOrdersPage />
+              </RoleRoute>
+            } />
+            <Route path="supplier/stats" element={
+              <RoleRoute roles={['Fournisseur', 'SuperAdmin']}>
+                <SupplierStatsPage />
               </RoleRoute>
             } />
 

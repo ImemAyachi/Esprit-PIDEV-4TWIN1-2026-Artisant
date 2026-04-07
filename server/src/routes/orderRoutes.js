@@ -1,14 +1,13 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const { 
-    createOrder, 
+import { createOrder, 
     getMyOrders, 
     getManufacturerOrders,
     updateOrderStatus,
     getOrder,
     getOrderAnalytics
-} = require('../controllers/orderController');
-const { protect, authorize } = require('../middleware/auth');
+ } from '../controllers/orderController.js';
+import { protect, authorize  } from '../middleware/auth.js';
 
 router.route('/')
     .post(protect, createOrder);
@@ -29,5 +28,5 @@ router.route('/:id/status')
     .patch(protect, authorize('manufacturer', 'admin'), updateOrderStatus);
 
 
-module.exports = router;
+export default router;
 

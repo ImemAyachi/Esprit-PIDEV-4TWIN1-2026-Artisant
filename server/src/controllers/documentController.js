@@ -1,10 +1,10 @@
-const Document = require('../models/Document');
-const Consultation = require('../models/Consultation');
+import Document from '../models/Document.js';
+import Consultation from '../models/Consultation.js';
 
 
 // @desc    Get all documents
 // @route   GET /api/documents
-exports.getAllDocuments = async (req, res) => {
+export const getAllDocuments = async (req, res) => {
     try {
         const { search, type, project, product } = req.query;
         let query = {};
@@ -25,7 +25,7 @@ exports.getAllDocuments = async (req, res) => {
 
 // @desc    Get single document
 // @route   GET /api/documents/:id
-exports.getDocument = async (req, res) => {
+export const getDocument = async (req, res) => {
     try {
         const document = await Document.findById(req.params.id).populate('project product');
         if (!document) return res.status(404).json({ message: 'Document not found' });
@@ -37,7 +37,7 @@ exports.getDocument = async (req, res) => {
 
 // @desc    Create new document
 // @route   POST /api/documents
-exports.createDocument = async (req, res) => {
+export const createDocument = async (req, res) => {
     try {
         const { title, name, fileUrl, type } = req.body;
         
@@ -68,7 +68,7 @@ exports.createDocument = async (req, res) => {
 
 // @desc    Update document
 // @route   PUT /api/documents/:id
-exports.updateDocument = async (req, res) => {
+export const updateDocument = async (req, res) => {
     try {
         const document = await Document.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -83,7 +83,7 @@ exports.updateDocument = async (req, res) => {
 
 // @desc    Delete document
 // @route   DELETE /api/documents/:id
-exports.deleteDocument = async (req, res) => {
+export const deleteDocument = async (req, res) => {
     try {
         const document = await Document.findByIdAndDelete(req.params.id);
         if (!document) return res.status(404).json({ message: 'Document not found' });
@@ -94,7 +94,7 @@ exports.deleteDocument = async (req, res) => {
 };
 // @desc    Toggle document favorite
 // @route   PUT /api/documents/:id/favorite
-exports.toggleFavorite = async (req, res) => {
+export const toggleFavorite = async (req, res) => {
     try {
         const document = await Document.findById(req.params.id);
         if (!document) return res.status(404).json({ message: 'Document not found' });
@@ -116,7 +116,7 @@ exports.toggleFavorite = async (req, res) => {
 
 // @desc    Get document consultation history
 // @route   GET /api/documents/history
-exports.getDocumentHistory = async (req, res) => {
+export const getDocumentHistory = async (req, res) => {
     try {
         const history = await Consultation.find({ user: req.user.id })
             .populate('document')
@@ -140,7 +140,7 @@ exports.getDocumentHistory = async (req, res) => {
 
 // @desc    Log document consultation
 // @route   POST /api/documents/:id/consult
-exports.logConsultation = async (req, res) => {
+export const logConsultation = async (req, res) => {
     try {
         const { action, timeSpent } = req.body;
         const consultation = await Consultation.create({

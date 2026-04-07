@@ -1,6 +1,6 @@
-const Order = require('../models/Order');
-const OrderItem = require('../models/OrderItem');
-const Product = require('../models/Product');
+import Order from '../models/Order.js';
+import OrderItem from '../models/OrderItem.js';
+import Product from '../models/Product.js';
 
 // Helper to map order for frontend
 const mapOrder = (order, artisan) => ({
@@ -19,7 +19,7 @@ const mapOrder = (order, artisan) => ({
 
 // @desc    Create new order
 // @route   POST /api/orders
-exports.createOrder = async (req, res) => {
+export const createOrder = async (req, res) => {
     try {
         const { items, shipping, financials, vocalResumeUrl } = req.body;
 
@@ -88,7 +88,7 @@ exports.createOrder = async (req, res) => {
 
 // @desc    Get all orders for the logged-in artisan
 // @route   GET /api/orders/my
-exports.getMyOrders = async (req, res) => {
+export const getMyOrders = async (req, res) => {
     try {
         const orders = await Order.find({ artisan: req.user.id })
             .populate('manufacturer', 'companyName')
@@ -116,7 +116,7 @@ exports.getMyOrders = async (req, res) => {
 
 // @desc    Get all orders for the logged-in manufacturer
 // @route   GET /api/orders/manufacturer
-exports.getManufacturerOrders = async (req, res) => {
+export const getManufacturerOrders = async (req, res) => {
     try {
         const orders = await Order.find({ manufacturer: req.user.id })
             .populate('artisan', 'companyName email')
@@ -144,7 +144,7 @@ exports.getManufacturerOrders = async (req, res) => {
 
 // @desc    Update order status
 // @route   PATCH /api/orders/:id/status
-exports.updateOrderStatus = async (req, res) => {
+export const updateOrderStatus = async (req, res) => {
     try {
         const { status } = req.body;
         const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true });
@@ -157,7 +157,7 @@ exports.updateOrderStatus = async (req, res) => {
 
 // @desc    Get order details (with items)
 // @route   GET /api/orders/:id
-exports.getOrder = async (req, res) => {
+export const getOrder = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id)
             .populate('artisan', 'companyName')
@@ -175,7 +175,7 @@ exports.getOrder = async (req, res) => {
 
 // @desc    Get order analytics for dashboard
 // @route   GET /api/orders/summary
-exports.getOrderAnalytics = async (req, res) => {
+export const getOrderAnalytics = async (req, res) => {
     try {
         const query = req.user.role === 'manufacturer' 
             ? { manufacturer: req.user.id } 

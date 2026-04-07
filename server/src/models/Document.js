@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const documentSchema = new mongoose.Schema({
     product: {
@@ -44,6 +44,6 @@ const documentSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const Document = mongoose.model('Document', documentSchema);
-module.exports = Document;
+const Document = mongoose.model('DocumentYahya', documentSchema);
+export default Document;
 

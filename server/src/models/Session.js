@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const sessionSchema = new mongoose.Schema({
     user: {
@@ -34,5 +34,5 @@ const sessionSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const Session = mongoose.model('Session', sessionSchema);
-module.exports = Session;
+const Session = mongoose.model('SessionYahya', sessionSchema);
+export default Session;

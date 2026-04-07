@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const iaLogSchema = new mongoose.Schema({
     user: {
@@ -28,5 +28,5 @@ const iaLogSchema = new mongoose.Schema({
     timestamps: false,
 });
 
-const IALog = mongoose.model('IALog', iaLogSchema);
-module.exports = IALog;
+const IALog = mongoose.model('IALogYahya', iaLogSchema);
+export default IALog;

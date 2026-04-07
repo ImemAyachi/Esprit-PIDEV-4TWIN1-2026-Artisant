@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -73,6 +73,6 @@ userSchema.methods.compareFaceEmbedding = function (candidateEmbedding) {
     return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+const User = mongoose.model('UserYahya', userSchema);
+export default User;
 

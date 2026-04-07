@@ -1,6 +1,6 @@
-const User = require('../models/User');
-const Session = require('../models/Session');
-const jwt = require('jsonwebtoken');
+import User from '../models/User.js';
+import Session from '../models/Session.js';
+import jwt from 'jsonwebtoken';
 
 
 const signToken = (user) => {
@@ -31,7 +31,7 @@ const sendTokenResponse = async (user, statusCode, req, res) => {
 };
 
 // ─── Password Register ──────────────────────────────────────────────────────
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
     try {
         const { companyName, email, password, phone, role, faceEmbedding } = req.body;
 
@@ -61,7 +61,7 @@ exports.register = async (req, res) => {
 };
 
 // ─── Password Login ─────────────────────────────────────────────────────────
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -83,7 +83,7 @@ exports.login = async (req, res) => {
 };
 
 // ─── Face Login ─────────────────────────────────────────────────────────────
-exports.loginWithFace = async (req, res) => {
+export const loginWithFace = async (req, res) => {
     try {
         const { email, faceEmbedding } = req.body;
 
@@ -113,7 +113,7 @@ exports.loginWithFace = async (req, res) => {
 };
 
 // ─── Enroll Face (authenticated) ────────────────────────────────────────────
-exports.enrollFace = async (req, res) => {
+export const enrollFace = async (req, res) => {
     try {
         const { faceEmbedding } = req.body;
         if (!faceEmbedding || !Array.isArray(faceEmbedding) || faceEmbedding.length === 0) {
@@ -137,7 +137,7 @@ exports.enrollFace = async (req, res) => {
 };
 
 // ─── Get Me ─────────────────────────────────────────────────────────────────
-exports.getMe = async (req, res) => {
+export const getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select('-password -faceEmbedding');
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -148,7 +148,7 @@ exports.getMe = async (req, res) => {
 };
 
 // ─── Update Profile ──────────────────────────────────────────────────────────
-exports.updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
     try {
         const allowedFields = ['companyName', 'phone', 'avatarUrl'];
         const updates = {};
@@ -170,7 +170,7 @@ exports.updateProfile = async (req, res) => {
 };
 
 // ─── Account Deletion ───────────────────────────────────────────────────────
-exports.deleteAccount = async (req, res) => {
+export const deleteAccount = async (req, res) => {
     try {
         await User.findByIdAndDelete(req.user._id);
         res.status(200).json({ status: 'success', message: 'Account deleted' });
@@ -180,7 +180,7 @@ exports.deleteAccount = async (req, res) => {
 };
 
 // ─── Session Management ───────────────────────────────────────────────────────
-exports.getSessions = async (req, res) => {
+export const getSessions = async (req, res) => {
     try {
         let sessions = await Session.find({ user: req.user._id }).sort({ lastActive: -1 });
         
@@ -203,7 +203,7 @@ exports.getSessions = async (req, res) => {
     }
 };
 
-exports.deleteSession = async (req, res) => {
+export const deleteSession = async (req, res) => {
     try {
         await Session.findOneAndDelete({ _id: req.params.id, user: req.user._id });
         res.status(200).json({ status: 'success', message: 'Session terminated' });

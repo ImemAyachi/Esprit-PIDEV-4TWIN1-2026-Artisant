@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const consultationSchema = new mongoose.Schema({
     user: {
@@ -28,5 +28,5 @@ const consultationSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const Consultation = mongoose.model('Consultation', consultationSchema);
-module.exports = Consultation;
+const Consultation = mongoose.model('ConsultationYahya', consultationSchema);
+export default Consultation;

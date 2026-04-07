@@ -1,8 +1,8 @@
-const Quote = require('../models/Quote');
+import Quote from '../models/Quote.js';
 
 // @desc    Create new quote
 // @route   POST /api/quotes
-exports.createQuote = async (req, res) => {
+export const createQuote = async (req, res) => {
     try {
         const quote = await Quote.create({
             ...req.body,
@@ -16,7 +16,7 @@ exports.createQuote = async (req, res) => {
 
 // @desc    Get all quotes for the logged-in artisan
 // @route   GET /api/quotes/my
-exports.getMyQuotes = async (req, res) => {
+export const getMyQuotes = async (req, res) => {
     try {
         const quotes = await Quote.find({ artisan: req.user.id }).populate('project').sort('-createdAt');
         
@@ -40,7 +40,7 @@ exports.getMyQuotes = async (req, res) => {
 
 // @desc    Update a quote
 // @route   PUT /api/quotes/:id
-exports.updateQuote = async (req, res) => {
+export const updateQuote = async (req, res) => {
     try {
         const quote = await Quote.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
@@ -64,7 +64,7 @@ exports.updateQuote = async (req, res) => {
 
 // @desc    Delete quote
 // @route   DELETE /api/quotes/:id
-exports.deleteQuote = async (req, res) => {
+export const deleteQuote = async (req, res) => {
     try {
         const quote = await Quote.findByIdAndDelete(req.params.id);
         if (!quote) return res.status(404).json({ success: false, message: 'Quote not found.' });
@@ -76,7 +76,7 @@ exports.deleteQuote = async (req, res) => {
 
 // @desc    Accept quote
 // @route   PATCH /api/quotes/:id/accept
-exports.acceptQuote = async (req, res) => {
+export const acceptQuote = async (req, res) => {
     try {
         const quote = await Quote.findByIdAndUpdate(req.params.id, { status: 'accepté' }, { new: true });
         if (!quote) return res.status(404).json({ success: false, message: 'Quote not found.' });
