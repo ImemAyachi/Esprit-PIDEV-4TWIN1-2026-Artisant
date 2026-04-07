@@ -3,6 +3,7 @@ import api from '../../services/api';
 import toast from 'react-hot-toast';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import ConfirmModal from '../../components/ConfirmModal';
 
 // ─── PDF download ─────────────────────────────────────────────────────────────
 const downloadInvoicePDF = async (invoice, ref) => {
@@ -216,6 +217,7 @@ const MyOrdersPage = () => {
   const [projects, setProjects]      = useState([]);
   const [invoiceMap, setInvoiceMap]  = useState({});
   const [viewingInvoice, setViewing] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const [selectedProjects, setSelectedProjects] = useState({});
   const [editingOrder, setEditingOrder]          = useState(null);
@@ -257,10 +259,17 @@ const MyOrdersPage = () => {
     } catch { toast.error('Impossible de lier cet achat.'); }
   };
 
-  const handleDeleteOrder = async (id) => {
-    if (!window.confirm('Annuler cette commande ?')) return;
-    try { await api.delete(`/orders/${id}`); toast.success('Commande annulée'); fetchData(); }
-    catch (err) { toast.error(err.response?.data?.message || "Erreur lors de l'annulation"); }
+  const handleDeleteOrder = (id) => {
+    setConfirmConfig({
+      type: 'warning',
+      title: 'Annuler cette commande ?',
+      message: 'La commande sera annulée et le fournisseur en sera informé. Cette action est irréversible.',
+      confirmLabel: 'Annuler la commande',
+      onConfirm: async () => {
+        try { await api.delete(`/orders/${id}`); toast.success('Commande annulée'); fetchData(); }
+        catch (err) { toast.error(err.response?.data?.message || "Erreur lors de l'annulation"); }
+      }
+    });
   };
 
   const handleEditClick = (order) => {
@@ -442,6 +451,7 @@ const MyOrdersPage = () => {
       {viewingInvoice && (
         <InvoiceModal invoice={viewingInvoice} onClose={() => setViewing(null)} />
       )}
+      <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
     </div>
   );
 };

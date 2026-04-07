@@ -68,13 +68,13 @@ export const register = asyncHandler(async (req, res) => {
       : 'Compte créé — en attente de validation par l\'administrateur',
     token,
     user: {
-      _id:        user._id,
-      firstName:  user.firstName,
-      lastName:   user.lastName,
-      email:      user.email,
-      role:       user.role,
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
       isVerified: user.isVerified,
-      avatar:     user.avatar,
+      avatar: user.avatar,
     },
   });
 });
@@ -128,16 +128,16 @@ export const login = asyncHandler(async (req, res) => {
     success: true,
     token,
     user: {
-      _id:        user._id,
-      firstName:  user.firstName,
-      lastName:   user.lastName,
-      email:      user.email,
-      role:       user.role,
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
       isVerified: user.isVerified,
-      isActive:   user.isActive,
-      avatar:     user.avatar,
-      craft:      user.craft,
-      rating:     user.rating,
+      isActive: user.isActive,
+      avatar: user.avatar,
+      craft: user.craft,
+      rating: user.rating,
     },
   });
 });
@@ -159,8 +159,13 @@ export const getMe = asyncHandler(async (req, res) => {
 
 export const updateMe = asyncHandler(async (req, res) => {
   // Champs non modifiables via ce endpoint
-  const forbidden = ['password', 'role', 'email', 'isVerified', 'isActive'];
+  const forbidden = ['password', 'role', 'email', 'isVerified', 'isActive', 'rating'];
   forbidden.forEach((field) => delete req.body[field]);
+
+  // Nettoyage des données pour éviter les erreurs d'enum (ex: si craft est renvoyé vide par un non-artisan)
+  if (req.body.craft === '') delete req.body.craft;
+  if (!req.body.firstName) delete req.body.firstName; // Ne pas vider si requis
+  if (!req.body.lastName) delete req.body.lastName;
 
   const user = await User.findByIdAndUpdate(req.user._id, req.body, {
     new:              true,
@@ -183,4 +188,19 @@ export const updatePassword = asyncHandler(async (req, res) => {
 
   const token = generateToken(user._id);
   res.json({ success: true, message: 'Mot de passe mis à jour', token });
+});
+
+/**
+ * Upload d'avatar utilisateur (via Multer + Cloudinary)
+ */
+export const uploadAvatarController = asyncHandler(async (req, res) => {
+  if (!req.file) throw new AppError('Aucun fichier reçu', 400);
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    { avatar: req.file.path }, // Multer-storage-cloudinary remplit req.file.path avec l'URL Cloudinary
+    { new: true }
+  );
+
+  res.json({ success: true, user });
 });

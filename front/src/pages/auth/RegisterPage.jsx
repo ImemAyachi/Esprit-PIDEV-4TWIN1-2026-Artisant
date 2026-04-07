@@ -42,7 +42,7 @@ const RegisterPage = () => {
             <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '64px', cursor: 'pointer' }} />
           </Link>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 900, marginBottom: '1rem' }}>
-            Rejoignez la communauté <span style={{ color: 'var(--clr-primary)' }}>BTP</span>
+            Rejoignez la communauté <span style={{ color: 'var(--clr-primary)' }}>Artisanet</span>
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '2rem' }}>
             {ROLES.map((r) => (

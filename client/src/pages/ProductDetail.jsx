@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useProductStore from '../store/productStore';
 import useCartStore from '../store/cartStore';
-import { Loader2, ArrowLeft, Star, Package, Plus, Minus, Info, ChevronRight, MessageSquare, ShoppingCart, ShieldCheck, Truck, ShieldAlert } from 'lucide-react';
+import { Loader2, ArrowLeft, Star, Package, Plus, Minus, Info, ChevronRight, MessageSquare, ShoppingCart, ShieldCheck, Play, FileText, ThumbsUp, ThumbsDown } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { toast } from 'react-hot-toast';
 import { getImageUrl } from '../utils/imageUrl';
@@ -16,12 +16,21 @@ const ProductDetail = () => {
     const [product, setProduct] = useState(null);
     const [quantity, setQuantity] = useState(1);
     const [activeImg, setActiveImg] = useState(0);
-    const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+    const [reviews, setReviews] = useState([]);
+    const [newReview, setNewReview] = useState({ rating: 5, comment: '', isRecommended: false });
 
     useEffect(() => {
         const found = products.find(p => p._id === id);
-        if (found) setProduct(found);
+        if (found) {
+           setProduct(found);
+           fetchReviews(id);
+        }
     }, [id, products]);
+
+    const fetchReviews = async (productId) => {
+        const res = await useProductStore.getState().getProductReviews(productId);
+        if (res.success) setReviews(res.reviews);
+    };
 
     const handleAddToCart = () => {
         addItem(product, quantity);
@@ -33,7 +42,10 @@ const ProductDetail = () => {
         const res = await addReview(id, newReview);
         if (res.success) {
             toast.success('Rapport de feedback indexé.');
-            setNewReview({ rating: 5, comment: '' });
+            setNewReview({ rating: 5, comment: '', isRecommended: false });
+            fetchReviews(id);
+        } else {
+            toast.error(res.message || 'Erreur lors de l\'envoi de l\'avis');
         }
     };
 
@@ -58,21 +70,29 @@ const ProductDetail = () => {
                     
                     {/* Gallery Section */}
                     <div className="space-y-6">
-                        <div className="aspect-square bg-white border-8 border-brand-teal overflow-hidden group cursor-zoom-in relative">
-                            <img 
-                                src={getImageUrl(product.images?.[activeImg]) || '/placeholder.png'} 
-                                className="w-full h-full object-cover group-hover:scale-150 transition-transform duration-700 origin-center"
-                                alt={product.name}
-                            />
+                        <div className="aspect-square bg-white border-8 border-brand-teal overflow-hidden group relative">
+                            {product.media?.[activeImg]?.type === 'video' ? (
+                                <video src={getImageUrl(product.media[activeImg].url)} controls className="w-full h-full object-cover" />
+                            ) : product.media?.[activeImg]?.type === 'pdf' ? (
+                                <iframe src={getImageUrl(product.media[activeImg].url)} className="w-full h-full" title="PDF viewer" />
+                            ) : (
+                                <img 
+                                    src={getImageUrl(product.media?.[activeImg]?.url) || getImageUrl(product.images?.[activeImg]) || '/placeholder.png'} 
+                                    className="w-full h-full object-cover group-hover:scale-150 transition-transform duration-700 origin-center cursor-zoom-in"
+                                    alt={product.name}
+                                />
+                            )}
                         </div>
                         <div className="flex gap-4">
-                            {product.images?.map((img, idx) => (
+                            {(product.media || product.images?.map(url => ({type: 'image', url})))?.map((mediaItem, idx) => (
                                 <button 
                                     key={idx} 
                                     onClick={() => setActiveImg(idx)}
-                                    className={`w-24 h-24 border-4 transition-all ${activeImg === idx ? 'border-brand-orange' : 'border-brand-teal/10 hover:border-brand-teal'}`}
+                                    className={`relative w-24 h-24 border-4 transition-all ${activeImg === idx ? 'border-brand-orange' : 'border-brand-teal/10 hover:border-brand-teal'}`}
                                 >
-                                    <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" />
+                                    {mediaItem.type === 'video' && <div className="absolute inset-0 bg-black/50 flex items-center justify-center"><Play size={24} color="white"/></div>}
+                                    {mediaItem.type === 'pdf' && <div className="absolute inset-0 bg-brand-cream flex items-center justify-center"><FileText size={24} className="text-brand-teal"/></div>}
+                                    {mediaItem.type === 'image' && <img src={getImageUrl(mediaItem.url)} className="w-full h-full object-cover" alt="" />}
                                 </button>
                             ))}
                         </div>
@@ -88,9 +108,15 @@ const ProductDetail = () => {
                             <h1 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">{product.name}</h1>
                             <div className="flex items-center gap-4">
                                 <div className="flex text-brand-orange">
-                                    {[...Array(5)].map((_, i) => <Star key={i} size={16} className={i < Math.round(product.ratings?.average || 0) ? 'fill-current' : ''} />)}
+                                    {[...Array(5)].map((_, i) => <Star key={i} size={16} className={i < Math.round(product.rating?.average || 0) ? 'fill-current' : ''} />)}
                                 </div>
-                                <span className="text-[10px] font-black text-brand-teal/60">({product.ratings?.count || 0} AVIS CERTIFIÉS)</span>
+                                <span className="text-[10px] font-black text-brand-teal/60">({product.rating?.count || 0} AVIS CERTIFIÉS)</span>
+                                <button 
+                                    onClick={() => document.getElementById('review-form')?.scrollIntoView({ behavior: 'smooth' })}
+                                    className="ml-4 text-[9px] font-black uppercase text-brand-orange border-b-2 border-brand-orange hover:text-brand-teal hover:border-brand-teal transition-all"
+                                >
+                                    Donner mon avis ↓
+                                </button>
                             </div>
                         </div>
 
@@ -171,8 +197,11 @@ const ProductDetail = () => {
                         <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal border-l-8 border-brand-teal pl-6">Retours d'Expérience</h3>
                         
                         {/* Add Review */}
-                        <form onSubmit={handleReview} className="bg-brand-cream p-8 border-4 border-brand-teal/10 space-y-6">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal/40">Évaluer le Gisement</p>
+                        <form id="review-form" onSubmit={handleReview} className="bg-brand-cream p-8 border-4 border-brand-teal/10 space-y-6 shadow-[8px_8px_0px_0px_rgba(45,90,90,0.05)]">
+                            <h4 className="text-xl font-black uppercase tracking-tighter text-brand-teal border-l-4 border-brand-orange pl-4 mb-2">Partagez votre expertise</h4>
+                            <p className="text-[10px] font-bold text-brand-teal/40 uppercase tracking-widest leading-tight">
+                                Votre retour technique aide la communauté à choisir les meilleurs matériaux gérés par Artisant.
+                            </p>
                             <div className="flex gap-2">
                                 {[1,2,3,4,5].map(i => (
                                     <button 
@@ -188,25 +217,49 @@ const ProductDetail = () => {
                             <textarea 
                                 required
                                 className="w-full bg-white border-4 border-brand-teal/10 p-4 text-[10px] font-bold outline-none focus:border-brand-teal h-24 resize-none"
-                                placeholder="OBSERVATIONS TECHNIQUES..."
+                                placeholder="VOTRE COMMENTAIRE..."
                                 value={newReview.comment}
                                 onChange={e => setNewReview({...newReview, comment: e.target.value})}
                             />
+                            <div className="flex items-center gap-4 py-2">
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-teal/60">Recommanderiez-vous ce produit ?</p>
+                                <button type="button" onClick={() => setNewReview({...newReview, isRecommended: true})} className={`flex items-center gap-2 px-4 py-2 border-2 ${newReview.isRecommended ? 'border-brand-orange text-brand-orange' : 'border-brand-teal/10 text-brand-teal/40 hover:border-brand-teal'} transition-all`}>
+                                  <ThumbsUp size={16} /> <span className="text-[9px] font-bold uppercase">Oui</span>
+                                </button>
+                                <button type="button" onClick={() => setNewReview({...newReview, isRecommended: false})} className={`flex items-center gap-2 px-4 py-2 border-2 ${!newReview.isRecommended ? 'border-red-500 text-red-500' : 'border-brand-teal/10 text-brand-teal/40 hover:border-brand-teal'} transition-all`}>
+                                  <ThumbsDown size={16} /> <span className="text-[9px] font-bold uppercase">Non</span>
+                                </button>
+                            </div>
                             <button type="submit" className="w-full py-4 bg-brand-teal text-white text-[9px] font-black uppercase tracking-widest hover:bg-brand-orange transition-all">SOUMETTRE LE RAPPORT</button>
                         </form>
 
                         <div className="space-y-6">
-                            {product.reviews?.map((rev, i) => (
+                            {reviews?.map((rev, i) => (
                                 <div key={i} className="p-6 bg-white border-2 border-brand-teal/5 shadow-sm">
                                     <div className="flex justify-between items-start mb-4">
-                                        <div className="flex text-brand-orange">
-                                            {[...Array(5)].map((_, si) => <Star key={si} size={10} className={si < rev.rating ? 'fill-current' : ''} />)}
+                                        <div>
+                                            <p className="text-[11px] font-black uppercase text-brand-teal mb-1">{rev.author?.firstName} {rev.author?.lastName} {rev.author?.companyName && `(${rev.author.companyName})`}</p>
+                                            <div className="flex text-brand-orange">
+                                                {[...Array(5)].map((_, si) => <Star key={si} size={10} className={si < rev.rating ? 'fill-current' : ''} />)}
+                                            </div>
                                         </div>
                                         <span className="text-[8px] font-black uppercase text-brand-teal/30">{new Date(rev.createdAt).toLocaleDateString()}</span>
                                     </div>
-                                    <p className="text-[10px] font-bold text-brand-slate opacity-80 leading-relaxed italic">"{rev.comment}"</p>
+                                    <p className="text-[10px] font-bold text-brand-slate opacity-80 leading-relaxed italic mb-4">"{rev.comment}"</p>
+                                    {rev.isRecommended ? (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-cream text-brand-orange">
+                                            <ThumbsUp size={12} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest">Recommande ce produit</span>
+                                        </div>
+                                    ) : (
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-cream text-red-500">
+                                            <ThumbsDown size={12} />
+                                            <span className="text-[9px] font-black uppercase tracking-widest">Ne recommande pas</span>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
+                            {reviews.length === 0 && <p className="text-center text-[10px] font-bold uppercase tracking-widest text-brand-teal/40">Aucun avis pour l'instant.</p>}
                         </div>
                     </div>
                 </div>

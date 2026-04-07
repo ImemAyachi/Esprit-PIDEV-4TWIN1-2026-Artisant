@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { acceptQuote, refuseQuote, submitQuote } from '../../store/slices/quoteSlice';
 import api from '../../services/api';
+import ConfirmModal from '../../components/ConfirmModal';
+import toast from 'react-hot-toast';
 
 const STATUS_LABELS = { open: 'Ouvert', pending: 'En attente', accepted: 'Accepter Accepté', refused: 'Refuser Refusé', completed: 'Terminé', cancelled: 'Annulé' };
 const STATUS_CLASS  = { open: 'badge-info', pending: 'badge-primary', accepted: 'badge-success', refused: 'badge-danger', completed: 'badge-success', cancelled: 'badge-muted' };
@@ -16,6 +18,7 @@ const QuoteDetail = () => {
   const [loading, setLoading]   = useState(true);
   const [showSubmit, setShowSubmit] = useState(false);
   const [submitData, setSubmitData] = useState({ notes: '', proposedDeadline: '', items: [{ description: '', quantity: 1, unitPrice: 0 }] });
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const load = async () => {
     try { const r = await api.get(`/quotes/${id}`); setQuote(r.data.quote); } catch (_) {}
@@ -27,17 +30,30 @@ const QuoteDetail = () => {
   const isRequester = ['Architecte', 'Ingenieur'].includes(user?.role);
   const isArtisan   = user?.role === 'Artisan'   && quote?.artisan?._id === user?._id;
 
-  const handleAccept = async () => {
-    if (!window.confirm('Accepter ce devis ?')) return;
-    const r = await dispatch(acceptQuote(id));
-    if (r.meta.requestStatus === 'fulfilled') load();
+  const handleAccept = () => {
+    setConfirmConfig({
+      type: 'info',
+      title: 'Accepter ce devis ?',
+      message: 'Vous confirmez votre accord sur ce devis. L\'artisan sera notifié.',
+      confirmLabel: 'Accepter',
+      onConfirm: async () => {
+        const r = await dispatch(acceptQuote(id));
+        if (r.meta.requestStatus === 'fulfilled') { toast.success('Devis accepté !'); load(); }
+      }
+    });
   };
 
-  const handleRefuse = async () => {
-    const reason = window.prompt('Motif du refus (optionnel):');
-    if (reason === null) return;
-    const r = await dispatch(refuseQuote({ id, reason }));
-    if (r.meta.requestStatus === 'fulfilled') load();
+  const handleRefuse = () => {
+    setConfirmConfig({
+      type: 'warning',
+      title: 'Refuser ce devis ?',
+      message: 'Le devis sera refusé et l\'artisan sera informé.',
+      confirmLabel: 'Refuser',
+      onConfirm: async () => {
+        const r = await dispatch(refuseQuote({ id, reason: '' }));
+        if (r.meta.requestStatus === 'fulfilled') { toast.success('Devis refusé'); load(); }
+      }
+    });
   };
 
   const addItem = () => setSubmitData(d => ({ ...d, items: [...d.items, { description: '', quantity: 1, unitPrice: 0 }] }));
@@ -202,6 +218,7 @@ const QuoteDetail = () => {
           </div>
         </div>
       )}
+      <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const MyProductsPage = () => {
   const { user } = useSelector((s) => s.auth);
@@ -14,6 +15,7 @@ const MyProductsPage = () => {
 
   const defaultForm = { name: '', description: '', category: 'marbre', price: '', unit: 'm²', stock: 0, specifications: '', useCases: '', isAvailable: true };
   const [form, setForm] = useState(defaultForm);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const load = async () => { try { const r = await api.get('/products/my'); setProducts(r.data.products); } catch (_) { }; setLoading(false); };
   useEffect(() => { load(); }, []);
@@ -69,9 +71,16 @@ const MyProductsPage = () => {
     finally { setUploading(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Supprimer ce produit ?')) return;
-    try { await api.delete(`/products/${id}`); toast.success('Supprimé'); load(); } catch (_) { }
+  const handleDelete = async (id, name) => {
+    setConfirmConfig({
+      type: 'danger',
+      title: 'Supprimer ce produit ?',
+      message: `Le produit "${name}" sera définitivement supprimé. Cette action est irréversible.`,
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try { await api.delete(`/products/${id}`); toast.success('Produit supprimé avec succès'); load(); } catch (_) { toast.error('Erreur lors de la suppression'); }
+      }
+    });
   };
 
   const handleToggle = async (id, current) => {
@@ -204,7 +213,7 @@ const MyProductsPage = () => {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
                   {p.isAvailable ? 'Désactiver' : 'Activer'}
                 </button>
-                <button className="premium-action-btn premium-btn-delete" onClick={() => handleDelete(p._id)}>
+                <button className="premium-action-btn premium-btn-delete" onClick={() => handleDelete(p._id, p.name)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                   Supprimer
                 </button>
@@ -386,6 +395,8 @@ const MyProductsPage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
     </div>
   );
 };

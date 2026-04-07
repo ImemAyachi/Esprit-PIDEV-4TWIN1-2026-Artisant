@@ -61,13 +61,20 @@ const useProductStore = create((set, get) => ({
 
     addReview: async (id, review) => {
         try {
-            const res = await api.post(`/products/${id}/review`, review);
-            set(s => ({
-                products: s.products.map(p => p._id === id ? res.data.data : p)
-            }));
-            return { success: true };
+            const res = await api.post(`/reviews`, { productId: id, ...review });
+            get().fetchProducts(); // Refresh products to update average rating
+            return { success: true, data: res.data };
         } catch (err) {
-            return { success: false, message: err.message };
+            return { success: false, message: err.response?.data?.message || err.message };
+        }
+    },
+
+    getProductReviews: async (id) => {
+        try {
+            const res = await api.get(`/reviews/product/${id}`);
+            return { success: true, reviews: res.data.reviews };
+        } catch (err) {
+            return { success: false, reviews: [] };
         }
     }
 }));

@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../../services/api';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import ConfirmModal from '../../components/ConfirmModal';
+import toast from 'react-hot-toast';
 
 const CAT_ICON = { matériaux: '', main_d_oeuvre: '', outillage: '', transport: '', autre: '' };
 
@@ -14,6 +16,7 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showExpense, setShowExpense] = useState(false);
   const [expense, setExpense] = useState({ description: '', amount: '', category: 'matériaux' });
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const load = async () => { try { const r = await api.get(`/projects/${id}`); setProject(r.data.project); } catch (_) { }; setLoading(false); };
   useEffect(() => { load(); }, [id]);
@@ -22,9 +25,16 @@ const ProjectDetail = () => {
     try { await api.post(`/projects/${id}/expenses`, expense); setShowExpense(false); setExpense({ description: '', amount: '', category: 'matériaux' }); load(); } catch (_) { }
   };
 
-  const handleDelExpense = async (expId) => {
-    if (!window.confirm('Supprimer cette dépense ?')) return;
-    try { await api.delete(`/projects/${id}/expenses/${expId}`); load(); } catch (_) { }
+  const handleDelExpense = (expId) => {
+    setConfirmConfig({
+      type: 'danger',
+      title: 'Supprimer cette dépense ?',
+      message: 'Cette dépense sera définitivement supprimée du projet.',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try { await api.delete(`/projects/${id}/expenses/${expId}`); toast.success('Dépense supprimée'); load(); } catch (_) { toast.error('Erreur'); }
+      }
+    });
   };
 
   if (loading) return <div style={{ padding: '2rem' }}>Chargement...</div>;
@@ -138,6 +148,7 @@ const ProjectDetail = () => {
             </div>
           </div>
         )}
+        <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
       </div>
     );
   }
@@ -261,6 +272,7 @@ const ProjectDetail = () => {
           </div>
         </div>
       )}
+      <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
     </div>
   );
 };

@@ -7,9 +7,13 @@ import toast from 'react-hot-toast';
 import { getImageUrl } from '../../utils/imageUrl';
 
 const StarRating = ({ value }) => (
-  <div className="stars">
+  <div className="stars" style={{ display: 'flex', gap: '2px' }}>
     {[1, 2, 3, 4, 5].map(n => (
-      <span key={n} style={{ color: n <= Math.round(value || 0) ? 'var(--clr-primary)' : 'var(--clr-surface3)', fontSize: '1.1rem' }}></span>
+      <span key={n} style={{ 
+        color: n <= Math.round(value || 0) ? '#f59e0b' : '#d1d5db', 
+        fontSize: '1.2rem',
+        cursor: 'default'
+      }}>★</span>
     ))}
   </div>
 );
@@ -24,10 +28,23 @@ const ProductDetail = () => {
   const [orderModal, setOrderModal] = useState(false);
   const [orderData, setOrderData] = useState({ quantity: 1, deliveryAddress: '', projectId: '' });
   const [myProjects, setMyProjects] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '', isRecommended: true });
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     dispatch(fetchProductById(id));
+    fetchReviews();
   }, [id]);
+
+  const fetchReviews = async () => {
+    try {
+      const res = await api.get(`/reviews/product/${id}`);
+      setReviews(res.data.reviews || []);
+    } catch (e) {
+      console.error("Error fetching reviews", e);
+    }
+  };
 
   const handleOpenOrder = async () => {
     try {
@@ -55,6 +72,24 @@ const ProductDetail = () => {
     }
   };
 
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!newReview.comment.trim()) {
+      setReviewError('Veuillez rédiger votre commentaire avant de soumettre votre avis.');
+      return;
+    }
+    setReviewError('');
+    try {
+      await api.post('/reviews', { productId: id, ...newReview });
+      toast.success("Votre avis a été publié !");
+      setNewReview({ rating: 5, comment: '', isRecommended: true });
+      fetchReviews();
+      dispatch(fetchProductById(id)); // Recalculate average
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Erreur lors de la publication de l'avis");
+    }
+  };
+
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       <div className="skeleton" style={{ height: 400, borderRadius: 'var(--radius-xl)' }} />
@@ -72,30 +107,41 @@ const ProductDetail = () => {
 
   const images = product.media?.filter(m => m.type === 'image') || [];
   const pdfs = product.media?.filter(m => m.type === 'pdf') || [];
+  const videos = product.media?.filter(m => m.type === 'video') || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>← Retour au catalogue</button>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px,1fr) minmax(300px,1fr)', gap: '1.5rem' }}>
-        {/* Left: Images */}
+        {/* Left: Images & Media */}
         <div>
           <div style={{
             borderRadius: 'var(--radius-xl)', overflow: 'hidden',
             background: 'var(--clr-surface)', border: '1px solid var(--clr-border)',
             height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            position: 'relative'
           }}>
             {images.length > 0 ? (
               <img src={getImageUrl(images[0].url)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <span style={{ fontSize: '5rem', opacity: 0.3 }}></span>
+              <span style={{ fontSize: '5rem', opacity: 0.3 }}>📦</span>
             )}
           </div>
-          {images.length > 1 && (
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', overflowX: 'auto' }}>
-              {images.slice(1).map((img, i) => (
-                <img key={i} src={getImageUrl(img.url)} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: '1px solid var(--clr-border)' }} />
+          
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', overflowX: 'auto' }}>
+              {images.map((img, i) => (
+                <img key={i} src={getImageUrl(img.url)} alt="" style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 'var(--radius-sm)', cursor: 'pointer', border: '1px solid var(--clr-border)' }} />
               ))}
+              {videos.map((vid, i) => (
+                <div key={i} style={{ width: 60, height: 60, background: '#000', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}>▶</div>
+              ))}
+          </div>
+
+          {videos.length > 0 && (
+            <div className="card mt-4">
+              <h4>Vidéo de présentation</h4>
+              <video src={getImageUrl(videos[0].url)} controls style={{ width: '100%', borderRadius: 'var(--radius-md)', marginTop: '0.5rem' }} />
             </div>
           )}
         </div>
@@ -109,17 +155,18 @@ const ProductDetail = () => {
             </span>
           </div>
 
-          <h1 style={{ fontSize: '1.75rem' }}>{product.name}</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{product.name}</h1>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <StarRating value={product.rating?.average} />
             <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{product.rating?.average?.toFixed(1) || '0.0'}</span>
             <span style={{ color: 'var(--clr-text-muted)' }}>({product.rating?.count || 0} avis)</span>
-            {product.rating?.count > 0 && (
-              <span style={{ color: 'var(--clr-success)', fontSize: '0.85rem' }}>
-                {Math.round((product.rating.recommended / product.rating.count) * 100)}% recommandent
-              </span>
-            )}
+            <button 
+              onClick={() => document.getElementById('review-section')?.scrollIntoView({ behavior: 'smooth' })}
+              style={{ background: 'none', border: 'none', color: 'var(--clr-primary)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              Donner mon avis
+            </button>
           </div>
 
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>
@@ -165,10 +212,11 @@ const ProductDetail = () => {
 
           {/* PDF Downloads */}
           {pdfs.length > 0 && (
-            <div>
+            <div style={{ marginTop: '0.5rem' }}>
+              <h5 style={{ marginBottom: '0.5rem' }}>Documents techniques (PDF)</h5>
               {pdfs.map((pdf, i) => (
-                <a key={i} href={pdf.url} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem' }}>
-                  Fiche technique {i + 1}
+                <a key={i} href={getImageUrl(pdf.url)} target="_blank" rel="noreferrer" className="btn btn-secondary btn-sm" style={{ marginRight: '0.5rem', marginBottom: '0.5rem' }}>
+                  📄 Télécharger PDF {i + 1}
                 </a>
               ))}
             </div>
@@ -202,6 +250,84 @@ const ProductDetail = () => {
           </div>
         </div>
       )}
+
+      {/* Reviews Section */}
+      <div id="review-section" className="card" style={{ marginTop: '1rem' }}>
+        <h2 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', borderBottom: '2px solid var(--clr-primary)', paddingBottom: '0.5rem', width: 'fit-content' }}>
+          Feedback et Avis
+        </h2>
+
+        {/* Formulaire pour Architecte */}
+        {user?.role === 'Architecte' && (
+          <div style={{ background: 'var(--clr-surface2)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', marginBottom: '2rem' }}>
+            <h4 style={{ marginBottom: '1rem' }}>Donner mon avis</h4>
+            <form onSubmit={handleSubmitReview} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span>Note :</span>
+                <div style={{ display: 'flex', gap: '5px' }}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <span 
+                      key={n} 
+                      onClick={() => setNewReview({ ...newReview, rating: n })}
+                      style={{ color: n <= newReview.rating ? '#f59e0b' : '#d1d5db', fontSize: '1.5rem', cursor: 'pointer' }}
+                    >★</span>
+                  ))}
+                </div>
+              </div>
+              <textarea 
+                className={`form-input ${reviewError ? 'is-error' : ''}`}
+                placeholder="Votre retour sur la qualité du produit..." 
+                rows="3"
+                value={newReview.comment}
+                onChange={e => { setNewReview({ ...newReview, comment: e.target.value }); if (reviewError) setReviewError(''); }}
+              />
+              {reviewError && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.5rem',
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                  borderRadius: 'var(--radius-md)', padding: '0.6rem 1rem',
+                  color: '#ef4444', fontSize: '0.875rem', fontWeight: 500
+                }}>
+                  <span style={{ fontSize: '1rem' }}>⚠</span> {reviewError}
+                </div>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <span>Recommandez-vous ce produit ?</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                  <input type="radio" checked={newReview.isRecommended} onChange={() => setNewReview({ ...newReview, isRecommended: true })} /> Oui
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                  <input type="radio" checked={!newReview.isRecommended} onChange={() => setNewReview({ ...newReview, isRecommended: false })} /> Non
+                </label>
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', padding: '0.75rem 2rem' }}>
+                Soumettre l'avis
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Liste des avis */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {reviews.length > 0 ? (
+            reviews.map((rev, i) => (
+              <div key={i} style={{ borderBottom: '1px solid var(--clr-border)', paddingBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div style={{ fontWeight: 700 }}>{rev.author?.firstName} {rev.author?.lastName}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>{new Date(rev.createdAt).toLocaleDateString()}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <StarRating value={rev.rating} />
+                  {rev.isRecommended && <span className="badge badge-success" style={{ fontSize: '0.7rem' }}>Recommandé</span>}
+                </div>
+                <p style={{ fontStyle: 'italic', color: 'var(--clr-text)' }}>"{rev.comment}"</p>
+              </div>
+            ))
+          ) : (
+            <p style={{ color: 'var(--clr-text-muted)', textAlign: 'center', padding: '1rem' }}>Aucun avis pour le moment.</p>
+          )}
+        </div>
+      </div>
 
       {/* Modal Commande */}
       {orderModal && (
