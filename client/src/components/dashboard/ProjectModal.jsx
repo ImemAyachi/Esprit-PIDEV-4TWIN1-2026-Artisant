@@ -89,17 +89,30 @@ const ProjectModal = ({ project, onClose, onSave }) => {
     const handleSubmit = async () => {
         setLoading(true);
         try {
+            // Map frontend schema to backend industrial schema
+            const payload = {
+                ...form,
+                address: form.location,
+                status: form.status === 'planned' ? 'planifié' : 
+                        form.status === 'in_progress' ? 'en_cours' : 
+                        form.status === 'completed' ? 'terminé' : 'planifié',
+                totalAmount: form.budget.reduce((acc, b) => acc + Number(b.planned), 0)
+            };
+
             const res = isEdit 
-                ? await updateProject(project._id || project.id, form)
-                : await createProject(form);
+                ? await updateProject(project._id || project.id, payload)
+                : await createProject(payload);
             if (res.success) {
                 setSaved(true);
                 setTimeout(() => { onClose(); onSave?.(); }, 1500);
             }
+        } catch (err) {
+            setErrors({ general: 'Project initialization failure' });
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <>
@@ -231,13 +244,52 @@ const ProjectModal = ({ project, onClose, onSave }) => {
                             <p className="text-[10px] font-bold text-center text-brand-teal/40 uppercase bg-white py-12 border-2 border-dashed border-brand-teal/20">
                                 Le système de gestion d'équipe est interfacé avec l'annuaire central.<br/>Attribuez des rôles pour activer les notifications.
                             </p>
-                            {/* In a real app, populate with User selection. Here we mock adding by email */}
+                            {/* Team management logic */}
                             <div className="flex gap-4">
-                                <input className="flex-1 bg-white border-2 border-brand-teal/20 p-4 text-xs font-bold" placeholder="Email du collaborateur..." />
-                                <button className="px-8 bg-brand-teal text-white font-black uppercase text-[10px] tracking-widest">Assigner</button>
+                                <input 
+                                    id="team-email"
+                                    className="flex-1 bg-white border-2 border-brand-teal/20 p-4 text-xs font-bold outline-none focus:border-brand-teal" 
+                                    placeholder="Email du collaborateur..." 
+                                />
+                                <button 
+                                    onClick={() => {
+                                        const emailInput = document.getElementById('team-email');
+                                        const email = emailInput?.value;
+                                        if (email && email.includes('@')) {
+                                            setForm({ ...form, team: [...form.team, { email, role: 'Collaborateur' }] });
+                                            emailInput.value = '';
+                                        }
+                                    }}
+                                    className="px-8 bg-brand-teal text-white font-black uppercase text-[10px] tracking-widest hover:bg-brand-orange transition-all"
+                                >
+                                    Assigner
+                                </button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {form.team.map((member, i) => (
+                                    <div key={i} className="flex justify-between items-center p-4 bg-white border-2 border-brand-teal/5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-brand-orange text-white flex items-center justify-center font-black text-[10px]">
+                                                {member.email[0].toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase text-brand-teal">{member.email}</p>
+                                                <p className="text-[8px] font-bold text-brand-teal/40 uppercase tracking-widest">{member.role}</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setForm({ ...form, team: form.team.filter((_, idx) => idx !== i) })}
+                                            className="text-red-400 hover:text-red-500"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
+
 
                     {currentStep === 3 && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">

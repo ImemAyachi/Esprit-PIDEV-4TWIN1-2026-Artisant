@@ -16,9 +16,13 @@ import useProjectStore from '../store/projectStore';
 import useQuoteStore from '../store/quoteStore';
 import useInvoiceStore from '../store/invoiceStore';
 import useOrderStore from '../store/orderStore';
+import useCartStore from '../store/cartStore';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import logo from '../assets/logo.png';
+import { toast } from 'react-hot-toast';
+
 import UserList from '../components/dashboard/UserList';
 import DocumentLibrary from '../components/dashboard/DocumentLibrary';
 import ProjectList from '../components/dashboard/ProjectList';
@@ -714,18 +718,18 @@ const Dashboard = () => {
 
     return (
         <DashboardLayout currentTab={activeTab} onTabChange={setActiveTab}>
-            <div className="p-12">
+            <div className="p-4 md:p-12">
                 {activeTab === 'Overview' && (
                     <>
                         {/* Welcome Banner */}
-                        <div className="mb-12 bg-white border-8 border-brand-teal p-12 relative overflow-hidden group">
+                        <div className="mb-12 bg-white border-8 border-brand-teal p-8 md:p-12 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-64 h-full bg-brand-orange transform translate-x-12 -skew-x-12 opacity-10 group-hover:translate-x-4 transition-transform duration-700"></div>
-                            <div className="relative z-10">
-                                <h3 className="text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
+                            <div className="relative z-10 text-center md:text-left">
+                                <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-brand-teal leading-none mb-4">
                                     Welcome back,<br />
                                     <span className="text-brand-orange">Operator {user?.companyName}</span>
                                 </h3>
-                                <p className="max-w-xl font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
+                                <p className="max-w-xl mx-auto md:mx-0 font-bold text-sm text-brand-slate opacity-60 leading-relaxed mb-8">
                                     Your current workspace is optimized for the <span className="text-brand-teal">{user?.role}</span> module.
                                     All industrial systems are operational and ready for deployment.
                                 </p>
@@ -736,13 +740,13 @@ const Dashboard = () => {
                                             setActiveTab('Projects');
                                             setEditProject('new');
                                         }}
-                                        className="btn-primary flex items-center gap-3"
+                                        className="btn-primary flex items-center gap-3 mx-auto md:mx-0"
                                     >
                                         Initialize New Site <Plus size={20} />
                                     </button>
                                 )}
                             </div>
-                            <div className="absolute bottom-8 right-8 text-brand-teal opacity-10">
+                            <div className="absolute bottom-8 right-8 text-brand-teal opacity-10 hidden md:block">
                                 <Hammer size={120} />
                             </div>
                         </div>
@@ -759,7 +763,7 @@ const Dashboard = () => {
                                         if (stat.label.includes('Quote')) setActiveTab('Quotes');
                                         if (stat.label.includes('Rank')) setActiveTab('Analytics');
                                     }}
-                                    className="bg-white p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group cursor-pointer focus:z-10"
+                                    className="bg-white p-6 md:p-8 border border-brand-teal/10 flex flex-col justify-between hover:bg-brand-cream transition-colors group cursor-pointer focus:z-10"
                                 >
                                     <div className="flex justify-between items-start mb-4">
                                         <p className="label leading-none">{stat.label}</p>
@@ -768,7 +772,7 @@ const Dashboard = () => {
                                         </span>
                                     </div>
                                     <div className="flex items-end justify-between">
-                                        <p className="text-4xl font-black text-brand-teal">{stat.value}</p>
+                                        <p className="text-3xl md:text-4xl font-black text-brand-teal">{stat.value}</p>
                                         <ArrowUpRight className="text-brand-teal opacity-10 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" size={32} />
                                     </div>
                                 </div>
@@ -776,7 +780,7 @@ const Dashboard = () => {
                         </div>
 
                         {/* Secondary Grid */}
-                        <div className="grid lg:grid-cols-2 gap-12">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
                             {/* Activity Ledger */}
                             <div className="card h-full min-h-[400px]">
                                 <div className="flex justify-between items-center mb-10">
@@ -793,13 +797,12 @@ const Dashboard = () => {
                                         <div
                                             key={i}
                                             onClick={() => setActiveTab('Analytics')}
-                                            className="flex gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer focus:border-brand-teal/20 focus:bg-brand-cream"
+                                            className="flex gap-4 md:gap-6 p-4 border-2 border-transparent hover:border-brand-teal/10 hover:bg-brand-cream transition-all group cursor-pointer focus:border-brand-teal/20 focus:bg-brand-cream"
                                         >
-
-                                            <div className="w-12 h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
+                                            <div className="w-10 h-10 md:w-12 md:h-12 bg-brand-teal text-white flex items-center justify-center shrink-0">
                                                 <Clock size={20} />
                                             </div>
-                                            <div>
+                                            <div className="flex-1">
                                                 <p className="font-black uppercase text-xs text-brand-teal mb-1">Project Sync Completed</p>
                                                 <p className="text-[10px] font-bold text-brand-slate opacity-40 leading-tight">Site-Alpha deployment verified by controller.</p>
                                             </div>
@@ -809,13 +812,12 @@ const Dashboard = () => {
                                         </div>
                                     ))}
                                 </div>
-
                             </div>
 
                             {/* Creative Box */}
-                            <div className="bg-brand-teal p-12 text-white relative flex flex-col justify-between overflow-hidden">
+                            <div className="bg-brand-teal p-12 text-white relative flex flex-col justify-between overflow-hidden min-h-[400px]">
                                 <div className="absolute top-0 left-0 w-full h-1 bg-brand-orange"></div>
-                                <div className="relative z-10 text-6xl font-black uppercase tracking-tighter opacity-10 leading-none mb-12">
+                                <div className="relative z-10 text-4xl md:text-6xl font-black uppercase tracking-tighter opacity-10 leading-none mb-12">
                                     Industrial<br />Standard.
                                 </div>
                                 <div className="relative z-10">
@@ -846,7 +848,7 @@ const Dashboard = () => {
                 {activeTab === 'Documents' && <DocumentLibrary />}
                 {activeTab === 'Quotes' && <QuoteDashboard />}
                 {activeTab === 'Orders' && <OrdersPanel role={user?.role} />}
-                {activeTab === 'Financials' && <Financials />}
+                {activeTab === 'Financials' && <FinancialLedger />}
                 {activeTab === 'Products' && <ProductsPanel />}
                 {activeTab === 'Analytics' && <ConsultationHistoryAnalytics />}
                 {activeTab === 'Settings' && <SettingsPanel user={user} />}
@@ -858,7 +860,6 @@ const Dashboard = () => {
                     item={viewItem.item}
                     type={viewItem.type}
                     onClose={() => setViewItem(null)}
-                    onDownloadPDF={generateInvoicePDF}
                 />
             )}
         </DashboardLayout>
@@ -878,52 +879,54 @@ const FinancialLedger = () => {
     }, { total: 0, paid: 0, pending: 0 });
 
     return (
-        <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-500">
-            <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Livre de Caisse Industriel</h3>
-                <div className="bg-brand-teal text-white p-4 border-l-4 border-brand-orange">
-                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60 text-center mb-1">Solde de Compte</p>
-                    <p className="text-2xl font-black">{stats.paid.toLocaleString()} DT</p>
+        <div className="space-y-8 animate-in feed-in duration-500">
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-brand-teal">Livre de Caisse Industriel</h3>
+                <div className="bg-brand-teal text-white p-4 border-l-4 border-brand-orange self-start md:self-auto">
+                    <p className="text-[8px] font-black uppercase tracking-widest opacity-60 text-center mb-1 text-center">Solde de Compte</p>
+                    <p className="text-xl md:text-2xl font-black">{stats.paid.toLocaleString()} DT</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-0 border-4 border-brand-teal">
-                <div className="bg-white p-6 border-r border-brand-teal/10">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-4 border-brand-teal">
+                <div className="bg-white p-6 border-b md:border-b-0 md:border-r border-brand-teal/10">
                     <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Volume d'Affaire</p>
-                    <p className="text-2xl font-black text-brand-teal">{stats.total.toLocaleString()} DT</p>
+                    <p className="text-xl md:text-2xl font-black text-brand-teal">{stats.total.toLocaleString()} DT</p>
                 </div>
-                <div className="bg-white p-6 border-r border-brand-teal/10">
+                <div className="bg-white p-6 border-b md:border-b-0 md:border-r border-brand-teal/10">
                     <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Total Encaissé</p>
-                    <p className="text-2xl font-black text-brand-green">{stats.paid.toLocaleString()} DT</p>
+                    <p className="text-xl md:text-2xl font-black text-brand-green">{stats.paid.toLocaleString()} DT</p>
                 </div>
                 <div className="bg-white p-6">
                     <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal/40">Créances Clients</p>
-                    <p className="text-2xl font-black text-brand-orange">{stats.pending.toLocaleString()} DT</p>
+                    <p className="text-xl md:text-2xl font-black text-brand-orange">{stats.pending.toLocaleString()} DT</p>
                 </div>
             </div>
 
-            <div className="space-y-0 border-4 border-brand-teal overflow-hidden">
-                <div className="bg-brand-teal text-white p-4 grid grid-cols-5 text-[9px] font-black uppercase tracking-widest">
-                    <span>Date</span>
-                    <span>Référence</span>
-                    <span className="col-span-2">Opération</span>
-                    <span className="text-right">Montant</span>
+            <div className="border-4 border-brand-teal overflow-hidden overflow-x-auto no-scrollbar">
+                <div className="min-w-[600px]">
+                    <div className="bg-brand-teal text-white p-4 grid grid-cols-5 text-[9px] font-black uppercase tracking-widest">
+                        <span>Date</span>
+                        <span>Référence</span>
+                        <span className="col-span-2">Opération</span>
+                        <span className="text-right">Montant</span>
+                    </div>
+                    {orders.length === 0 ? (
+                        <div className="p-12 text-center bg-white italic text-brand-teal/30 text-[9px] font-black uppercase">Aucune transaction répertoriée</div>
+                    ) : (
+                        orders.map((o) => (
+                            <div key={o._id} className={`p-4 grid grid-cols-5 items-center border-b border-brand-teal/10 text-xs font-bold ${o.paymentStatus === 'Paid' ? 'bg-white' : 'bg-red-50/30'}`}>
+                                <span className="text-brand-slate/40 leading-none">{new Date(o.createdAt).toLocaleDateString()}</span>
+                                <span className="font-black text-brand-teal leading-none">{String(o._id).slice(-6).toUpperCase()}</span>
+                                <span className="col-span-2 flex items-center gap-2 leading-none">
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${o.paymentStatus === 'Paid' ? 'bg-brand-green' : 'bg-brand-orange'}`} />
+                                    {o.items?.[0]?.product?.name || 'Vente Produit'}
+                                </span>
+                                <span className="text-right font-black text-brand-teal leading-none">{o.totalAmount?.toLocaleString()} DT</span>
+                            </div>
+                        ))
+                    )}
                 </div>
-                {orders.length === 0 ? (
-                    <div className="p-12 text-center bg-white italic text-brand-teal/30 text-[9px] font-black uppercase">Aucune transaction répertoriée</div>
-                ) : (
-                    orders.map((o) => (
-                        <div key={o._id} className={`p-4 grid grid-cols-5 items-center border-b border-brand-teal/10 text-xs font-bold ${o.paymentStatus === 'Paid' ? 'bg-white' : 'bg-red-50/30'}`}>
-                            <span className="text-brand-slate/40">{new Date(o.createdAt).toLocaleDateString()}</span>
-                            <span className="font-black text-brand-teal">{String(o._id).slice(-6).toUpperCase()}</span>
-                            <span className="col-span-2 flex items-center gap-2">
-                                <div className={`w-1.5 h-1.5 rounded-full ${o.paymentStatus === 'Paid' ? 'bg-brand-green' : 'bg-brand-orange'}`} />
-                                {o.items?.[0]?.product?.name || 'Vente Produit'}
-                            </span>
-                            <span className="text-right font-black text-brand-teal">{o.totalAmount?.toLocaleString()} DT</span>
-                        </div>
-                    ))
-                )}
             </div>
         </div>
     );
@@ -933,6 +936,7 @@ const FinancialLedger = () => {
 const MarketplacePanel = () => {
     const [search, setSearch] = useState("");
     const [isListening, setIsListening] = useState(false);
+    const { addItem } = useCartStore();
 
     const startVoiceSearch = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -947,20 +951,20 @@ const MarketplacePanel = () => {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center">
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-brand-teal">Central d'Achat Industriel</h3>
-                <div className="flex items-center gap-2 bg-white border-4 border-brand-teal px-4 py-2 w-full max-w-md">
-                    <Search className="text-brand-teal" size={18} />
+            <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4">
+                <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-brand-teal">Central d'Achat Industriel</h3>
+                <div className="flex items-center gap-2 bg-white border-4 border-brand-teal px-4 py-3 w-full max-w-xl">
+                    <Search className="text-brand-teal shrink-0" size={18} />
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Rechercher des matériaux (Ciment, Acier...)"
-                        className="flex-1 bg-transparent text-xs font-bold outline-none uppercase placeholder:text-brand-teal/20"
+                        placeholder="RECHERCHER DANS LE STOCK CENTRAL..."
+                        className="flex-1 bg-transparent text-[10px] md:text-xs font-black outline-none uppercase placeholder:text-brand-teal/20"
                     />
                     <button
                         onClick={startVoiceSearch}
-                        className={`p-1.5 transition-colors ${isListening ? 'text-brand-orange animate-pulse' : 'text-brand-teal/30 hover:text-brand-teal'}`}
+                        className={`p-1.5 transition-colors shrink-0 ${isListening ? 'text-brand-orange animate-pulse' : 'text-brand-teal/30 hover:text-brand-teal'}`}
                     >
                         <Mic size={18} />
                     </button>
@@ -968,35 +972,51 @@ const MarketplacePanel = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {PRODUCTS.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase())).map(p => (
-                    <div key={p.id} className="bg-white border-4 border-brand-teal group hover:border-brand-orange transition-colors">
-                        <div className="h-48 bg-brand-cream relative overflow-hidden flex items-center justify-center">
-                            {/* In a real app, use p.image. Here we use an icon as placeholder but with descriptive alt if it were an img */}
-                            <Package className="text-brand-teal/10 group-hover:scale-110 transition-transform duration-500" size={80} />
-                            <div className="absolute top-2 right-2 bg-brand-teal text-white text-[8px] font-black uppercase px-2 py-1">
-                                {p.category}
-                            </div>
-                        </div>
-                        <div className="p-4 border-t-2 border-brand-teal/5">
-                            <h4 className="font-black text-brand-teal uppercase text-sm mb-1">{p.name}</h4>
-                            <div className="flex justify-between items-end">
-                                <div>
-                                    <p className="text-[10px] font-bold text-brand-slate/40 uppercase">Prix Unitaire</p>
-                                    <p className="text-lg font-black text-brand-orange">{p.price.toLocaleString()} DT</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 ${p.status === 'disponible' ? 'bg-brand-green/10 text-brand-green' : 'bg-red-100 text-red-600'}`}>
-                                        {p.status}
-                                    </p>
-                                    <p className="text-[10px] font-bold text-brand-teal/20 mt-1">{p.stock} en stock</p>
+                {PRODUCTS.filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase())).map(p => {
+                    const isOutOfStock = p.stock <= 0 || p.status === 'rupture';
+                    return (
+                        <div key={p.id} className="bg-white border-4 border-brand-teal group hover:border-brand-orange transition-colors">
+                            <div className="h-48 bg-brand-cream relative overflow-hidden flex items-center justify-center">
+                                <Package className={`transition-transform duration-500 ${isOutOfStock ? 'text-brand-teal/5' : 'text-brand-teal/10 group-hover:scale-110'}`} size={80} />
+                                <div className={`absolute top-2 right-2 text-[8px] font-black uppercase px-2 py-1 ${isOutOfStock ? 'bg-brand-teal/40 text-white/50' : 'bg-brand-teal text-white'}`}>
+                                    {p.category}
                                 </div>
                             </div>
-                            <button className="w-full mt-4 btn-primary py-2 text-[10px] flex items-center justify-center gap-2 group-hover:bg-brand-orange">
-                                <Plus size={14} /> Ajouter au Panier
-                            </button>
+                            <div className="p-4 border-t-2 border-brand-teal/5">
+                                <h4 className={`font-black uppercase text-sm mb-1 ${isOutOfStock ? 'text-brand-teal/40' : 'text-brand-teal'}`}>{p.name}</h4>
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-brand-slate/40 uppercase">Prix Unitaire</p>
+                                        <p className={`text-lg font-black ${isOutOfStock ? 'text-brand-orange/40' : 'text-brand-orange'}`}>{p.price.toLocaleString()} DT</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 ${p.status === 'disponible' ? 'bg-brand-green/10 text-brand-green' : 'bg-red-100 text-red-600'}`}>
+                                            {p.status}
+                                        </p>
+                                        <p className="text-[10px] font-bold text-brand-teal/20 mt-1">{p.stock} en stock</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        if (!isOutOfStock) {
+                                            addItem({ ...p, _id: `mock-${p.id}` });
+                                            toast.success(`${p.name} ajouté au gisement.`);
+                                        }
+                                    }}
+                                    disabled={isOutOfStock}
+                                    className={`w-full mt-4 py-2 text-[10px] flex items-center justify-center gap-2 transition-all font-black uppercase tracking-widest ${
+                                        isOutOfStock 
+                                        ? 'bg-brand-teal/5 text-brand-teal/20 cursor-not-allowed border-2 border-dashed border-brand-teal/10' 
+                                        : 'btn-primary group-hover:bg-brand-orange'
+                                    }`}
+                                >
+                                    {isOutOfStock ? <X size={14} /> : <Plus size={14} />} 
+                                    {isOutOfStock ? 'Rupture de Stock' : 'Ajouter au Panier'}
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );

@@ -1,11 +1,11 @@
-const User = require('../models/User');
-const Project = require('../models/Project');
-const Order = require('../models/Order');
+import User from '../models/User.js';
+import Project from '../models/Project.js';
+import Order from '../models/Order.js';
 
 // @desc    Get public statistics for landing page
 // @route   GET /api/public/stats
 // @access  Public
-exports.getStats = async (req, res) => {
+export const getStats = async (req, res) => {
     try {
         const artisanCount = await User.countDocuments({ role: 'artisan' });
         const manufacturerCount = await User.countDocuments({ role: 'manufacturer' });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Hammer, Wrench, Leaf, Shield, ArrowRight, Zap, Globe, Users, ShoppingCart } from 'lucide-react';
+import { Hammer, Wrench, Leaf, Shield, ArrowRight, Zap, Globe, Users, ShoppingCart, Menu, X } from 'lucide-react';
 import logo from '../assets/logo.png';
 import api from '../api/axios';
 import useAuthStore from '../store/authStore';
@@ -16,6 +16,7 @@ const Landing = () => {
     });
     const [recentProducts, setRecentProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     useEffect(() => {
         const fetchLandingData = async () => {
@@ -56,61 +57,96 @@ const Landing = () => {
     return (
         <div className="min-h-screen bg-white">
             {/* Navigation */}
-            <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-none border-b-4 border-brand-teal px-8 py-4 flex justify-between items-center">
+            <nav className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-md border-b-4 border-brand-teal px-4 md:px-8 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    <img src={logo} alt="Artisanat Logo" className="w-10 h-10 object-contain" />
-                    <span className="text-xl font-black uppercase tracking-tighter text-brand-teal">Artisanat</span>
+                    <img src={logo} alt="Artisanat Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                    <span className="text-lg md:text-xl font-black uppercase tracking-tighter text-brand-teal">Artisanat</span>
                 </div>
-                <div className="hidden md:flex gap-8">
+                
+                {/* Desktop Nav */}
+                <div className="hidden lg:flex gap-8">
                     <a href="#features" className="nav-link">Features</a>
                     <a href="#products" className="nav-link">Recent Products</a>
                     <a href="#platform" className="nav-link">Platform</a>
                 </div>
-                <div className="flex gap-4">
-                    {isAuthenticated ? (
-                        <Link to="/dashboard" className="btn-primary py-2 px-4 text-xs">Dashboard</Link>
-                    ) : (
-                        <>
-                            <Link to="/login" className="nav-link pt-2.5">Login</Link>
-                            <Link to="/register" className="btn-primary py-2 px-4 text-xs">Join Industry</Link>
-                        </>
-                    )}
+
+                <div className="flex items-center gap-4">
+                    {/* Mobile Menu Toggle */}
+                    <button 
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        className="lg:hidden p-2 text-brand-teal border-2 border-brand-teal hover:bg-brand-teal hover:text-white transition-all"
+                    >
+                        {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+                    </button>
+
+                    <div className="hidden md:flex gap-4">
+                        {isAuthenticated ? (
+                            <Link to="/dashboard" className="btn-primary py-2 px-4 text-xs">Dashboard</Link>
+                        ) : (
+                            <>
+                                <Link to="/login" className="nav-link pt-2.5">Login</Link>
+                                <Link to="/register" className="btn-primary py-2 px-4 text-xs">Join Industry</Link>
+                            </>
+                        )}
+                    </div>
                 </div>
+
+                {/* Mobile Slide-over Menu */}
+                {isMobileMenuOpen && (
+                    <div className="fixed inset-0 top-[76px] bg-white z-40 lg:hidden animate-in slide-in-from-right duration-300">
+                        <div className="flex flex-col p-8 gap-8 border-t-4 border-brand-teal">
+                            <a href="#features" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black uppercase tracking-tighter text-brand-teal border-b-4 border-transparent hover:border-brand-orange w-fit">Features</a>
+                            <a href="#products" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black uppercase tracking-tighter text-brand-teal border-b-4 border-transparent hover:border-brand-orange w-fit">Products</a>
+                            <a href="#platform" onClick={() => setIsMobileMenuOpen(false)} className="text-3xl font-black uppercase tracking-tighter text-brand-teal border-b-4 border-transparent hover:border-brand-orange w-fit">Platform</a>
+                            
+                            <div className="mt-8 flex flex-col gap-4">
+                                {isAuthenticated ? (
+                                    <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary text-center py-4 text-sm font-black uppercase tracking-widest">To Dashboard</Link>
+                                ) : (
+                                    <>
+                                        <Link to="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full text-center py-4 border-4 border-brand-teal text-brand-teal font-black uppercase tracking-widest">Login</Link>
+                                        <Link to="/register" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary text-center py-4 text-sm font-black uppercase tracking-widest">Establish Account</Link>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </nav>
 
             {/* Hero Section */}
-            <header className="pt-40 pb-20 px-8 bg-pattern overflow-hidden border-b-4 border-brand-teal">
-                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-                    <div className="animate-in" style={{ animationDelay: '0.1s' }}>
+            <header className="pt-24 md:pt-40 pb-12 md:pb-20 px-4 md:px-8 bg-pattern overflow-hidden border-b-4 border-brand-teal">
+                <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
+                    <div className="animate-in text-center lg:text-left" style={{ animationDelay: '0.1s' }}>
                         <div className="inline-block px-4 py-1 bg-brand-orange text-white text-[10px] font-black uppercase tracking-[0.3em] mb-6">
                             Next Gen Industry OS
                         </div>
-                        <h1 className="text-6xl md:text-8xl font-black text-brand-teal uppercase leading-[0.9] tracking-tighter mb-8">
-                            Crafting The <br />
-                            <span className="text-brand-orange">Digital</span> <br />
+                        <h1 className="text-5xl md:text-8xl font-black text-brand-teal uppercase leading-[0.9] tracking-tighter mb-8">
+                            Crafting The <br className="hidden md:block" />
+                            <span className="text-brand-orange">Digital</span> <br className="hidden md:block" />
                             Standard.
                         </h1>
-                        <p className="text-lg text-brand-slate font-bold max-w-lg mb-10 leading-relaxed">
+                        <p className="text-base md:text-lg text-brand-slate font-bold max-w-lg mx-auto lg:mx-0 mb-10 leading-relaxed">
                             The comprehensive platform for modern artisans, manufacturers, and experts.
                             Build, manage, and scale your industrial footprint with precision.
                         </p>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-col sm:flex-row flex-wrap justify-center lg:justify-start gap-4">
                             {isAuthenticated ? (
-                                <Link to="/dashboard" className="btn-primary text-base px-8 py-4 flex items-center gap-3">
+                                <Link to="/dashboard" className="btn-primary text-sm md:text-base px-8 py-4 flex items-center justify-center gap-3">
                                     Continue to Dashboard <ArrowRight size={20} />
                                 </Link>
                             ) : (
-                                <Link to="/register" className="btn-primary text-base px-8 py-4 flex items-center gap-3">
+                                <Link to="/register" className="btn-primary text-sm md:text-base px-8 py-4 flex items-center justify-center gap-3">
                                     Start Your Project <ArrowRight size={20} />
                                 </Link>
                             )}
-                            <Link to="/marketplace" className="btn-secondary text-base px-8 py-4 flex items-center gap-2">
+                            <Link to="/marketplace" className="btn-secondary text-sm md:text-base px-8 py-4 flex items-center justify-center gap-2">
                                 <ShoppingCart size={20} /> Browse Marketplace
                             </Link>
                         </div>
                     </div>
 
-                    <div className="relative animate-in" style={{ animationDelay: '0.3s' }}>
+                    <div className="relative animate-in hidden md:block" style={{ animationDelay: '0.3s' }}>
                         <div className="aspect-square bg-brand-teal p-1 border-4 border-brand-teal flex items-center justify-center relative overflow-hidden">
                             <div className="absolute inset-0 bg-white opacity-5"></div>
                             <div className="grid grid-cols-2 gap-1 w-full h-full">
@@ -135,15 +171,15 @@ const Landing = () => {
             </header>
 
             {/* Features Section */}
-            <section id="features" className="py-24 px-8 border-b-4 border-brand-teal">
+            <section id="features" className="py-12 md:py-24 px-4 md:px-8 border-b-4 border-brand-teal">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-20">
-                        <h2 className="text-4xl font-black uppercase tracking-tighter border-b-8 border-brand-teal inline-block pb-2">
+                    <div className="text-center mb-12 md:20">
+                        <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter border-b-8 border-brand-teal inline-block pb-2">
                             Infrastructure Components
                         </h2>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-0 border-4 border-brand-teal">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-0 border-4 border-brand-teal">
                         {[
                             { title: 'Project Core', icon: Hammer, desc: 'Centralized workspace for site management and real-time coordination.' },
                             { title: 'Global Catalog', icon: Globe, desc: 'Direct access to verified manufacturer product streams and inventory.' },
@@ -156,7 +192,7 @@ const Landing = () => {
                                 key={i}
                                 tabIndex="0"
                                 aria-label={`${feature.title}: ${feature.desc}`}
-                                className="p-10 border border-brand-teal/20 hover:bg-brand-teal hover:text-white transition-all group flex flex-col items-start gap-6 cursor-pointer focus:z-10"
+                                className="p-8 md:p-10 border border-brand-teal/20 hover:bg-brand-teal hover:text-white transition-all group flex flex-col items-start gap-6 cursor-pointer focus:z-10"
                             >
                                 <div className="p-3 bg-brand-teal text-white group-hover:bg-white group-hover:text-brand-teal transition-colors">
                                     <feature.icon size={28} />
@@ -170,14 +206,14 @@ const Landing = () => {
             </section>
 
             {/* Recent Products Grid */}
-            <section id="products" className="py-24 px-8 bg-slate-50 border-b-4 border-brand-teal">
+            <section id="products" className="py-12 md:py-24 px-4 md:px-8 bg-slate-50 border-b-4 border-brand-teal">
                 <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-end mb-16 px-2">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 md:mb-16 gap-6 px-2">
                         <div>
                             <div className="text-brand-orange text-xs font-black uppercase tracking-[0.3em] mb-3">Verified Supply</div>
-                            <h2 className="text-5xl font-black uppercase tracking-tighter">Recent Products</h2>
+                            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">Recent Products</h2>
                         </div>
-                        <Link to="/marketplace" className="btn-primary py-3 px-6 text-sm flex items-center gap-2">
+                        <Link to="/marketplace" className="btn-primary py-3 px-6 text-sm flex items-center justify-center gap-2 w-full md:w-auto">
                             View Catalog <ArrowRight size={18} />
                         </Link>
                     </div>
@@ -244,23 +280,23 @@ const Landing = () => {
             </section>
 
             {/* Platform Stats */}
-            <section id="platform" className="bg-brand-teal py-20 px-8 text-white text-center">
-                <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12">
-                    <div>
-                        <div className="text-5xl font-black mb-2">{stats.artisans}</div>
-                        <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Verified Artisans</div>
+            <section id="platform" className="bg-brand-teal py-12 md:py-20 px-4 md:px-8 text-white text-center">
+                <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+                    <div className="group">
+                        <div className="text-3xl md:text-5xl font-black mb-2 transition-transform group-hover:scale-110">{stats.artisans}</div>
+                        <div className="text-[8px] md:text-[10px] font-black uppercase tracking-widest opacity-60">Verified Artisans</div>
                     </div>
-                    <div>
-                        <div className="text-5xl font-black mb-2">{stats.manufacturers}</div>
-                        <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Manufacturers</div>
+                    <div className="group">
+                        <div className="text-3xl md:text-5xl font-black mb-2 transition-transform group-hover:scale-110">{stats.manufacturers}</div>
+                        <div className="text-[8px] md:text-[10px] font-black uppercase tracking-widest opacity-60">Manufacturers</div>
                     </div>
-                    <div>
-                        <div className="text-5xl font-black mb-2">{stats.projects}</div>
-                        <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Completed Projects</div>
+                    <div className="group">
+                        <div className="text-3xl md:text-5xl font-black mb-2 transition-transform group-hover:scale-110">{stats.projects}</div>
+                        <div className="text-[8px] md:text-[10px] font-black uppercase tracking-widest opacity-60">Completed Projects</div>
                     </div>
-                    <div>
-                        <div className="text-5xl font-black mb-2">{stats.volume}</div>
-                        <div className="text-[10px] font-black uppercase tracking-widest opacity-60">Transaction Volume</div>
+                    <div className="group">
+                        <div className="text-3xl md:text-5xl font-black mb-2 transition-transform group-hover:scale-110">{stats.volume}</div>
+                        <div className="text-[8px] md:text-[10px] font-black uppercase tracking-widest opacity-60">Transaction Volume</div>
                     </div>
                 </div>
             </section>
@@ -284,19 +320,19 @@ const Landing = () => {
             </section>
 
             {/* Footer */}
-            <footer className="bg-brand-slate text-white py-12 px-8">
+            <footer className="bg-brand-slate text-white py-12 px-4 md:px-8">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-white text-brand-slate flex items-center justify-center font-black">A</div>
                         <span className="text-2xl font-black uppercase tracking-tighter">Artisanat</span>
                     </div>
-                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">
+                    <div className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] text-center md:text-left">
                         Precision Engineering &copy; 2026 / All Rights Reserved
                     </div>
                     <div className="flex gap-6">
-                        <a href="#" className="hover:text-brand-orange">Twitter</a>
-                        <a href="#" className="hover:text-brand-orange">LinkedIn</a>
-                        <a href="#" className="hover:text-brand-orange">Github</a>
+                        <a href="#" className="hover:text-brand-orange transition-colors">Twitter</a>
+                        <a href="#" className="hover:text-brand-orange transition-colors">LinkedIn</a>
+                        <a href="#" className="hover:text-brand-orange transition-colors">Github</a>
                     </div>
                 </div>
             </footer>

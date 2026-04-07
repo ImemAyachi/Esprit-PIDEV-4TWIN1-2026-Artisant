@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import useCartStore from '../../store/cartStore';
 import logo from '../../assets/logo.png';
 import {
     LayoutDashboard, Briefcase, ShoppingBag,
     Settings, LogOut, Search, Bell, Menu, X,
     FolderOpen, ClipboardList, Receipt, BarChart2, Shield, ChevronRight, Package,
+    ShoppingCart,
 } from 'lucide-react';
+
 import VoiceAssistant from '../VoiceAssistant';
 import { toast } from 'react-hot-toast';
 
@@ -53,21 +56,45 @@ const NAV_BY_ROLE = {
 
 export default function DashboardLayout({ children, currentTab, onTabChange }) {
     const { user, logout, isAuthenticated } = useAuthStore();
+    const { items: cartItems } = useCartStore();
     const navigate = useNavigate();
+
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const navigation = NAV_BY_ROLE[user?.role] || (isAuthenticated ? NAV_BY_ROLE.artisan : NAV_BY_ROLE.guest);
 
     return (
-        <div className="h-screen w-full bg-brand-cream flex overflow-hidden font-outfit">
+        <div className="h-screen w-full bg-brand-cream flex overflow-hidden font-outfit relative">
+            
+            {/* ── Mobile Sidebar Overlay ── */}
+            {mobileMenuOpen && (
+                <div 
+                    className="fixed inset-0 bg-brand-teal/60 backdrop-blur-sm z-[60] lg:hidden animate-in fade-in duration-300"
+                    onClick={() => setMobileMenuOpen(false)}
+                />
+            )}
+
             {/* ── Sidebar ── */}
-            <aside className={`bg-brand-teal text-white border-r-8 border-brand-teal transition-all duration-300 flex flex-col ${sidebarOpen ? 'w-72' : 'w-20'} shrink-0 z-50`}>
-                {/* Logo */}
-                <div className="p-6 border-b-4 border-white/10 flex items-center gap-4 h-20 shrink-0">
-                    <img src={logo} alt="" className="w-9 h-9 object-contain bg-white shrink-0" />
-                    {sidebarOpen && <span className="font-black uppercase tracking-tighter text-xl animate-in">Artisanat</span>}
+            <aside className={`
+                fixed inset-y-0 left-0 lg:static bg-brand-teal text-white border-r-8 border-brand-teal flex flex-col shrink-0 z-[70] transition-transform duration-500 ease-out
+                ${sidebarOpen ? 'w-72' : 'w-20'} 
+                ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
+                {/* Logo Section */}
+                <div className="p-6 border-b-4 border-white/10 flex items-center justify-between h-20 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <img src={logo} alt="" className="w-9 h-9 object-contain bg-white shrink-0" />
+                        {(sidebarOpen || mobileMenuOpen) && <span className="font-black uppercase tracking-tighter text-xl animate-in">Artisanat</span>}
+                    </div>
+                    {mobileMenuOpen && (
+                        <button onClick={() => setMobileMenuOpen(false)} className="lg:hidden p-2 hover:bg-white/10">
+                            <X size={24} />
+                        </button>
+                    )}
                 </div>
+
 
                 {/* Navigation */}
                 <nav className="flex-1 p-4 flex flex-col gap-2 overflow-y-auto no-scrollbar pt-8" aria-label="Main Navigation">
@@ -165,23 +192,40 @@ export default function DashboardLayout({ children, currentTab, onTabChange }) {
             {/* ── Main ── */}
             <main className="flex-1 flex flex-col relative overflow-hidden bg-brand-cream">
                 {/* Topbar */}
-                <header className="h-20 border-b-8 border-brand-teal bg-white px-8 flex items-center justify-between shrink-0 z-40">
-                    <div className="flex items-center gap-5">
+                <header className="h-20 border-b-8 border-brand-teal bg-white px-4 md:px-8 flex items-center justify-between shrink-0 z-40">
+                    <div className="flex items-center gap-3 md:gap-5">
                         <button
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            onClick={() => {
+                                if (window.innerWidth < 1024) setMobileMenuOpen(true);
+                                else setSidebarOpen(!sidebarOpen);
+                            }}
                             aria-label={sidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
                             className="p-2 border-2 border-brand-teal text-brand-teal hover:bg-brand-teal hover:text-white transition-all focus:z-10"
                         >
-                            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+                            <Menu size={18} />
                         </button>
-                        <div>
-                            <h2 className="text-xl font-black uppercase tracking-tighter text-brand-teal leading-none">{currentTab}</h2>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-brand-teal opacity-40 mt-0.5">Espace Opérationnel / Actif</p>
+                        <div className="flex flex-col">
+                            <h2 className="text-lg md:text-xl font-black uppercase tracking-tighter text-brand-teal leading-none">{currentTab}</h2>
+                            <p className="text-[7px] md:text-[9px] font-black uppercase tracking-widest text-brand-teal opacity-40 mt-1 whitespace-nowrap">Opérations / {user?.role}</p>
                         </div>
                     </div>
 
+
                     <div className="flex items-center gap-3">
+                        {cartItems.length > 0 && (
+                            <button
+                                onClick={() => navigate('/checkout')}
+                                aria-label={`View Cart with ${cartItems.length} items`}
+                                className="relative w-10 h-10 border-4 border-brand-orange flex items-center justify-center text-brand-orange hover:bg-brand-orange hover:text-white transition-all focus:z-10"
+                            >
+                                <ShoppingCart size={20} />
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-teal text-white text-[9px] font-black flex items-center justify-center border-2 border-white">
+                                    {cartItems.length}
+                                </span>
+                            </button>
+                        )}
                         <div className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-brand-cream border-2 border-brand-teal">
+
                             <Search size={14} className="text-brand-teal/40" />
                             <input
                                 type="text"

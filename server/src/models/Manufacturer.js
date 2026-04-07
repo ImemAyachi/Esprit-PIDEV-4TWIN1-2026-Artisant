@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const manufacturerSchema = new mongoose.Schema({
     user: {
@@ -25,5 +25,5 @@ const manufacturerSchema = new mongoose.Schema({
     timestamps: true,
 });
 
-const Manufacturer = mongoose.model('Manufacturer', manufacturerSchema);
-module.exports = Manufacturer;
+const Manufacturer = mongoose.model('ManufacturerYahya', manufacturerSchema);
+export default Manufacturer;

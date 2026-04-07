@@ -1,13 +1,13 @@
-// User routes definition
-const express = require('express');
-const {
+import express from 'express';
+import {
     getAllUsers,
     getUser,
     updateUser,
     deleteUser,
-    toggleAccountStatus,
-} = require('../controllers/userController');
-const { protect, authorize } = require('../middleware/auth');
+    updateUserRole,
+    toggleAccountStatus
+} from '../controllers/userController.js';
+import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -15,12 +15,10 @@ router.use(protect); // Protect all routes
 router.use(authorize('admin')); // Restrict all routes to admin
 
 router.get('/', getAllUsers);
-
-router.route('/:id')
-    .get(getUser)
-    .put(updateUser)
-    .delete(deleteUser);
-
+router.get('/:id', getUser);
+router.put('/:id', updateUser);
+router.delete('/:id', deleteUser);
+router.put('/:id/role', updateUserRole);
 router.patch('/:id/toggle-status', toggleAccountStatus);
 
-module.exports = router;
+export default router;

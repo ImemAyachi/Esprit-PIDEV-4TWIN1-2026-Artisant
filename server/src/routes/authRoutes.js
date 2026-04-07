@@ -1,10 +1,9 @@
-const express = require('express');
-const { 
-    register, login, loginWithFace, enrollFace, getMe, 
+import express from 'express';
+import { register, login, loginWithFace, enrollFace, getMe, 
     updateProfile, deleteAccount, getSessions, deleteSession
-} = require('../controllers/authController');
+ } from '../controllers/authController.js';
 
-const { protect } = require('../middleware/auth');
+import { protect  } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -23,6 +22,6 @@ router.post('/me/face/enroll', protect, enrollFace);
 router.get('/me/sessions', protect, getSessions);
 router.delete('/me/sessions/:id', protect, deleteSession);
 
-module.exports = router;
+export default router;
 
 

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const accessibilityLogSchema = new mongoose.Schema({
     user: {
@@ -24,5 +24,5 @@ const accessibilityLogSchema = new mongoose.Schema({
     timestamps: false,
 });
 
-const AccessibilityLog = mongoose.model('AccessibilityLog', accessibilityLogSchema);
-module.exports = AccessibilityLog;
+const AccessibilityLog = mongoose.model('AccessibilityLogYahya', accessibilityLogSchema);
+export default AccessibilityLog;

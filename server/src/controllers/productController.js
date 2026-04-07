@@ -1,8 +1,8 @@
-const Product = require('../models/Product');
+import Product from '../models/Product.js';
 
 // @desc    Get all products with basic filtering and search
 // @route   GET /api/products
-exports.getProducts = async (req, res) => {
+export const getProducts = async (req, res) => {
     try {
         const { search, category, minPrice, maxPrice, manufacturer } = req.query;
         let query = {};
@@ -46,7 +46,7 @@ exports.getProducts = async (req, res) => {
 
 // @desc    Create product
 // @route   POST /api/products
-exports.createProduct = async (req, res) => {
+export const createProduct = async (req, res) => {
     try {
         const { name, description, category, price, stock, imageUrls } = req.body;
         
@@ -78,7 +78,7 @@ exports.createProduct = async (req, res) => {
 
 // @desc    Update product
 // @route   PUT /api/products/:id
-exports.updateProduct = async (req, res) => {
+export const updateProduct = async (req, res) => {
     try {
         const { name, description, category, price, stock, imageUrls } = req.body;
         
@@ -120,7 +120,7 @@ exports.updateProduct = async (req, res) => {
 
 // @desc    Delete product
 // @route   DELETE /api/products/:id
-exports.deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res) => {
     try {
         const product = await Product.findByIdAndDelete(req.params.id);
         if (!product) return res.status(404).json({ success: false, message: 'Product not found.' });
@@ -132,7 +132,7 @@ exports.deleteProduct = async (req, res) => {
 
 // @desc    Get low stock products
 // @route   GET /api/products/low-stock
-exports.getLowStockProducts = async (req, res) => {
+export const getLowStockProducts = async (req, res) => {
     try {
         const products = await Product.find({
             manufacturer: req.user.id,

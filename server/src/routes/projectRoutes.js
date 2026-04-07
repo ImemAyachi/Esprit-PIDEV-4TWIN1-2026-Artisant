@@ -1,14 +1,13 @@
-const express = require('express');
-const {
-    createProject,
+import express from 'express';
+import { createProject,
     getMyProjects,
     getProject,
     getAllProjects,
     updateProject,
     deleteProject,
     archiveProject
-} = require('../controllers/projectController');
-const { protect, authorize } = require('../middleware/auth');
+ } from '../controllers/projectController.js';
+import { protect, authorize  } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -26,6 +25,6 @@ router.patch('/:id/archive', authorize('artisan', 'admin'), archiveProject);
 router.delete('/:id', authorize('artisan', 'admin'), deleteProject);
 
 
-module.exports = router;
+export default router;
 
 
