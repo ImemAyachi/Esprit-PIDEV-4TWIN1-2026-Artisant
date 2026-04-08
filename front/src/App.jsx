@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
+import GestureController from './components/common/GestureController';
 import { store } from './store';
 
 // Pages
@@ -48,6 +49,7 @@ function App() {
             },
           }}
         />
+        <GestureController />
         <Routes>
           {/* Pages publiques */}
           <Route path="/" element={<LandingPage />} />
