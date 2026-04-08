@@ -26,6 +26,7 @@ import projectRoutes from './routes/project.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 
 // ---- Routes (Yahya's unique architecture) ----
 // Note: These files will need to be converted to ES Modules (import/export)
@@ -87,6 +88,7 @@ app.use(`${API}/projects`, projectRoutes);
 app.use(`${API}/reviews`, reviewRoutes);
 app.use(`${API}/notifications`, notificationRoutes);
 app.use(`${API}/admin`, adminRoutes);
+app.use(`${API}/chat`, chatRoutes);
 
 // Yahya's specific routes
 app.use(`${API}/documents`, documentRoutes);
