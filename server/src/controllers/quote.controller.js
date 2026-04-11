@@ -200,8 +200,8 @@ export const acceptQuote = asyncHandler(async (req, res) => {
         member.totalAmount = quote.totalAmount;
       }
 
-      // Mise à jour financière (ajouter le montant du devis aux revenus du projet)
-      project.financials.totalRevenue += quote.totalAmount;
+      // Mise à jour financière effectuée automatiquement par project.pre('save')
+
 
       await project.save();
     }

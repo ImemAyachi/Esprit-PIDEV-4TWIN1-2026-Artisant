@@ -116,6 +116,10 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken:   { type: String },
     resetPasswordExpire:  { type: Date },
     lastLogin:            { type: Date },
+    
+    // 2FA Fields
+    twoFactorCode:        { type: String },
+    twoFactorExpire:      { type: Date },
   },
   {
     timestamps: true, // Ajoute createdAt et updatedAt automatiquement

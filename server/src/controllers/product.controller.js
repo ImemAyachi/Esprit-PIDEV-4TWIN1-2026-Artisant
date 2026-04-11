@@ -69,15 +69,19 @@ export const getProductById = asyncHandler(async (req, res) => {
 });
 
 export const createProduct = asyncHandler(async (req, res) => {
-  // Traiter les médias uploadés (Multer + Cloudinary)
+  // Traiter les médias uploadés (Multer multipart) ou pré-uploadés (JSON body)
   let media = [];
   if (req.files && req.files.length > 0) {
+    // Cas multipart/form-data : fichiers envoyés directement
     media = req.files.map((f) => ({
       url:  f.path,
       type: f.mimetype.startsWith('video/') ? 'video'
            : f.mimetype === 'application/pdf' ? 'pdf'
            : 'image',
     }));
+  } else if (req.body.media && Array.isArray(req.body.media) && req.body.media.length > 0) {
+    // Cas JSON : URLs pré-uploadées via /uploads/multiple, envoyées en JSON
+    media = req.body.media;
   }
 
   // Désérialiser les champs JSON envoyés en FormData

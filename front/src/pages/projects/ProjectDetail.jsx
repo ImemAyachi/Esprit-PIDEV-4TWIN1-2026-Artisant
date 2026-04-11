@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../../services/api';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import ConfirmModal from '../../components/ConfirmModal';
+import toast from 'react-hot-toast';
 
 const CAT_ICON = { matériaux: '', main_d_oeuvre: '', outillage: '', transport: '', autre: '' };
 
@@ -14,6 +16,7 @@ const ProjectDetail = () => {
   const [loading, setLoading] = useState(true);
   const [showExpense, setShowExpense] = useState(false);
   const [expense, setExpense] = useState({ description: '', amount: '', category: 'matériaux' });
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const load = async () => { try { const r = await api.get(`/projects/${id}`); setProject(r.data.project); } catch (_) { }; setLoading(false); };
   useEffect(() => { load(); }, [id]);
@@ -22,9 +25,16 @@ const ProjectDetail = () => {
     try { await api.post(`/projects/${id}/expenses`, expense); setShowExpense(false); setExpense({ description: '', amount: '', category: 'matériaux' }); load(); } catch (_) { }
   };
 
-  const handleDelExpense = async (expId) => {
-    if (!window.confirm('Supprimer cette dépense ?')) return;
-    try { await api.delete(`/projects/${id}/expenses/${expId}`); load(); } catch (_) { }
+  const handleDelExpense = (expId) => {
+    setConfirmConfig({
+      type: 'danger',
+      title: 'Supprimer cette dépense ?',
+      message: 'Cette dépense sera définitivement supprimée du projet.',
+      confirmLabel: 'Supprimer',
+      onConfirm: async () => {
+        try { await api.delete(`/projects/${id}/expenses/${expId}`); toast.success('Dépense supprimée'); load(); } catch (_) { toast.error('Erreur'); }
+      }
+    });
   };
 
   if (loading) return <div style={{ padding: '2rem' }}>Chargement...</div>;
@@ -44,15 +54,30 @@ const ProjectDetail = () => {
     ? (project.artisans?.find(a => a.artisan?._id === user._id || a.artisan === user._id)?.totalAmount || 0)
     : project.budget;
 
+  // Fusionner les dépenses manuelles et les contrats artisans acceptés pour l'affichage
+  const artisanContractExpenses = (project.artisans || [])
+    .filter(a => a.status === 'accepted')
+    .map(a => ({
+      _id: `art-${a.artisan?._id || a.artisan}`,
+      description: `Contrat : ${a.artisan?.firstName} ${a.artisan?.lastName}`,
+      amount: a.totalAmount,
+      category: 'main_d_oeuvre',
+      isContract: true,
+      date: project.createdAt // Date par défaut
+    }));
+
+  const allExpenses = [...expenses, ...artisanContractExpenses].sort((a,b) => new Date(b.date) - new Date(a.date));
+
   const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444'];
   const catData = Object.entries(
-    personalExpenses.reduce((acc, e) => { acc[e.category] = (acc[e.category] || 0) + e.amount; return acc; }, {})
+    allExpenses.reduce((acc, e) => { acc[e.category] = (acc[e.category] || 0) + e.amount; return acc; }, {})
   ).map(([name, value]) => ({ name, value }));
 
   if (isArtisan) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>← Retour</button>
+        <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>Retour</button>
+
 
         <div className="card">
           <h2 style={{ marginBottom: '1rem', color: 'var(--clr-primary)' }}>{project.title}</h2>
@@ -123,13 +148,15 @@ const ProjectDetail = () => {
             </div>
           </div>
         )}
+        <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
       </div>
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>← Retour</button>
+      <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>Retour</button>
+
 
       <div className="card">
         <h2 style={{ marginBottom: '0.5rem' }}>{project.title}</h2>
@@ -140,10 +167,10 @@ const ProjectDetail = () => {
       <div className="stats-grid">
         {[
           { label: 'Budget', value: `${(project.budget || 0).toLocaleString()} DT`, icon: '', color: '#3b82f6' },
-          { label: 'Revenus', value: `${(financials?.totalRevenue || 0).toLocaleString()} DT`, icon: '', color: '#10b981' },
           { label: 'Dépenses', value: `${(financials?.totalExpenses || 0).toLocaleString()} DT`, icon: '', color: '#f59e0b' },
-          { label: 'Bénéfice', value: `${profit.toLocaleString()} DT`, icon: profit >= 0 ? 'Accepter' : 'Refuser', color: profit >= 0 ? '#10b981' : '#ef4444' },
+          { label: 'Bénéfice', value: `${profit.toLocaleString()} DT`, icon: '', color: profit >= 0 ? '#10b981' : '#ef4444' },
         ].map(s => (
+
           <div key={s.label} className="stat-card">
             <div className="stat-label">{s.label}</div>
             <div className="stat-value" style={{ color: s.color, fontSize: '1.5rem' }}>{s.value}</div>
@@ -174,14 +201,16 @@ const ProjectDetail = () => {
           <h3> Dépenses</h3>
           <button className="btn btn-primary btn-sm" onClick={() => setShowExpense(true)}>+ Ajouter</button>
         </div>
-        {expenses.length === 0 ? (
+        {allExpenses.length === 0 ? (
           <p style={{ color: 'var(--clr-text-muted)', textAlign: 'center', padding: '2rem' }}>Aucune dépense enregistrée</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {expenses.map(e => (
-              <div key={e._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)' }}>
+            {allExpenses.map(e => (
+              <div key={e._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: e.isContract ? 'rgba(74,93,35,0.05)' : 'var(--clr-surface2)', border: e.isContract ? '1px dashed var(--clr-primary)' : '1px solid transparent', borderRadius: 'var(--radius-md)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '1.25rem' }}>{CAT_ICON[e.category] || ''}</span>
+                  <div style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>
+                    {/* Emojis removed */}
+                  </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{e.description}</div>
                     <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.78rem' }}>{e.category} • {new Date(e.date).toLocaleDateString('fr-FR')}</div>
@@ -189,7 +218,9 @@ const ProjectDetail = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <span style={{ fontWeight: 700, color: 'var(--clr-danger)' }}>{e.amount.toLocaleString()} DT</span>
-                  <button className="btn-ghost" style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)' }} onClick={() => handleDelExpense(e._id)}>Supprimer</button>
+                  {!e.isContract && (
+                    <button className="btn-ghost" style={{ fontSize: '0.85rem', color: 'var(--clr-text-muted)' }} onClick={() => handleDelExpense(e._id)}>Supprimer</button>
+                  )}
                 </div>
               </div>
             ))}
@@ -241,6 +272,7 @@ const ProjectDetail = () => {
           </div>
         </div>
       )}
+      <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
     </div>
   );
 };

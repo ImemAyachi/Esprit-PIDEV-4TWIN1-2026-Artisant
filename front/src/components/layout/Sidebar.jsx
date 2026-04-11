@@ -28,12 +28,14 @@ const ROLE_MENUS = {
     { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
     { label: 'Mes devis', icon: '', path: '/dashboard/quotes' },
     { label: 'Mes chantiers', icon: '', path: '/dashboard/projects' },
+    { label: 'Mes commandes', icon: '', path: '/dashboard/my-orders' },
     { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
   ],
   Fournisseur: [
-    { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
-    { label: 'Mes produits', icon: '', path: '/dashboard/my-products' },
-    { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
+    { label: 'Statistiques', icon: '', path: '/dashboard/supplier/stats' },
+    { label: 'Mon catalogue', icon: '', path: '/dashboard/my-products' },
+    { label: 'Commandes reçues', icon: '', path: '/dashboard/supplier/orders' },
+    { label: 'Catalogue public', icon: '', path: '/dashboard/catalog' },
   ],
 };
 

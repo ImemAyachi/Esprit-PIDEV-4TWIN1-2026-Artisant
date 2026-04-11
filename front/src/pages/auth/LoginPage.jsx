@@ -53,16 +53,6 @@ const LoginPage = () => {
           <h1 className="auth-title">Connexion</h1>
           <p className="auth-sub">Accédez à votre espace professionnel</p>
 
-          {/* Demo credentials */}
-          <div style={{
-            background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
-            borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', marginBottom: '1.5rem',
-            fontSize: '0.82rem', color: 'var(--clr-text-muted)',
-          }}>
-            <div style={{ fontWeight: 600, color: 'var(--clr-primary)', marginBottom: '0.4rem' }}>Comptes de démo</div>
-            <div>Admin : <code style={{ color: 'var(--clr-text)' }}>admin@artisanet.com</code> / <code>Admin123!</code></div>
-            <div>Artisan : <code style={{ color: 'var(--clr-text)' }}>hassen@artisanet.com</code> / <code>Artisan123!</code></div>
-          </div>
 
           <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div className="form-group">
@@ -71,6 +61,7 @@ const LoginPage = () => {
                 id="login-email"
                 className={`form-input ${errors.email ? 'is-error' : ''}`}
                 type="email"
+                autoComplete="email"
                 placeholder="votre@email.com"
                 {...register('email', { required: 'Email requis' })}
               />
@@ -83,6 +74,7 @@ const LoginPage = () => {
                 id="login-password"
                 className={`form-input ${errors.password ? 'is-error' : ''}`}
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 {...register('password', { required: 'Mot de passe requis' })}
               />

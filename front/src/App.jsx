@@ -2,7 +2,9 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
+import GestureController from './components/common/GestureController';
 import { store } from './store';
+import ChatbotWidget from './components/chatbot/ChatbotWidget';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -21,6 +23,9 @@ import QuoteDetail from './pages/quotes/QuoteDetail';
 import ProjectsPage from './pages/projects/ProjectsPage';
 import ProjectDetail from './pages/projects/ProjectDetail';
 import MyProductsPage from './pages/supplier/MyProductsPage';
+import SupplierOrdersPage from './pages/supplier/SupplierOrdersPage';
+import SupplierStatsPage from './pages/supplier/SupplierStatsPage';
+import MyOrdersPage from './pages/artisans/MyOrdersPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -45,6 +50,7 @@ function App() {
             },
           }}
         />
+        <GestureController />
         <Routes>
           {/* Pages publiques */}
           <Route path="/" element={<LandingPage />} />
@@ -69,6 +75,12 @@ function App() {
             <Route path="quotes" element={<QuotesPage />} />
             <Route path="quotes/:id" element={<QuoteDetail />} />
 
+            <Route path="my-orders" element={
+              <RoleRoute roles={['Artisan', 'Ingenieur']}>
+                <MyOrdersPage />
+              </RoleRoute>
+            } />
+
             {/* Projets / Chantiers */}
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="projects/:id" element={<ProjectDetail />} />
@@ -79,6 +91,16 @@ function App() {
                 <MyProductsPage />
               </RoleRoute>
             } />
+            <Route path="supplier/orders" element={
+              <RoleRoute roles={['Fournisseur', 'SuperAdmin']}>
+                <SupplierOrdersPage />
+              </RoleRoute>
+            } />
+            <Route path="supplier/stats" element={
+              <RoleRoute roles={['Fournisseur', 'SuperAdmin']}>
+                <SupplierStatsPage />
+              </RoleRoute>
+            } />
 
             {/* Profil commun */}
             <Route path="profile" element={<ProfilePage />} />
@@ -86,6 +108,7 @@ function App() {
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        <ChatbotWidget />
       </BrowserRouter>
     </Provider>
   );

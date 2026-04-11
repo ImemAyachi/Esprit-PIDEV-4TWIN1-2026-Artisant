@@ -43,30 +43,38 @@ const reviewSchema = new mongoose.Schema(
     isRecommended: { type: Boolean, default: false },
 
     // Commentaire structuré
-    title:      { type: String, maxlength: 100 },
-    comment:    { type: String, maxlength: 1500 },
-    pros:       [{ type: String }], // Points positifs
-    cons:       [{ type: String }], // Points négatifs
+    title: { type: String, maxlength: 100 },
+    comment: { type: String, maxlength: 1500 },
+    pros: [{ type: String }], // Points positifs
+    cons: [{ type: String }], // Points négatifs
 
     // Photos jointes à l'avis
     images: [{ type: String }], // URLs Cloudinary
 
     // Signalement d'abus
     isVerified: { type: Boolean, default: false }, // Achat vérifié ?
-    isFlagged:  { type: Boolean, default: false },
+    isFlagged: { type: Boolean, default: false },
+    isHidden: { type: Boolean, default: false }, // Pour la modération (SuperAdmin)
 
     // Réponse du fournisseur ou artisan
     reply: {
-      text:      { type: String, maxlength: 500 },
+      text: { type: String, maxlength: 500 },
       repliedAt: { type: Date },
     },
   },
   { timestamps: true }
 );
 
-// Un utilisateur ne peut laisser qu'un avis par produit
-reviewSchema.index({ author: 1, product: 1 }, { unique: true, sparse: true });
-reviewSchema.index({ author: 1, artisan: 1 }, { unique: true, sparse: true });
+// Un utilisateur ne peut laisser qu'un avis par produit/artisan
+reviewSchema.index({ author: 1, product: 1 }, { 
+  unique: true, 
+  partialFilterExpression: { product: { $exists: true, $ne: null } } 
+});
+
+reviewSchema.index({ author: 1, artisan: 1 }, { 
+  unique: true, 
+  partialFilterExpression: { artisan: { $exists: true, $ne: null } } 
+});
 
 /**
  * Après chaque sauvegarde d'un avis, on recalcule la note moyenne du produit
@@ -78,9 +86,9 @@ reviewSchema.statics.calcAverageRating = async function (productId) {
     {
       $group: {
         _id: '$product',
-        avgRating:    { $avg: '$rating' },
-        count:        { $sum: 1 },
-        recommended:  { $sum: { $cond: ['$isRecommended', 1, 0] } },
+        avgRating: { $avg: '$rating' },
+        count: { $sum: 1 },
+        recommended: { $sum: { $cond: ['$isRecommended', 1, 0] } },
       },
     },
   ]);
@@ -88,8 +96,8 @@ reviewSchema.statics.calcAverageRating = async function (productId) {
   const Product = mongoose.model('Product');
   if (stats.length > 0) {
     await Product.findByIdAndUpdate(productId, {
-      'rating.average':     Math.round(stats[0].avgRating * 10) / 10,
-      'rating.count':       stats[0].count,
+      'rating.average': Math.round(stats[0].avgRating * 10) / 10,
+      'rating.count': stats[0].count,
       'rating.recommended': stats[0].recommended,
     });
   } else {

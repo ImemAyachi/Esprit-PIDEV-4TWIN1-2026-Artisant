@@ -1,0 +1,488 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ProductsCarousel.css — Carousel dynamique & professionnel
+   Conçu pour le thème clair (BTP/Military Green)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Section wrapper ────────────────────────────────────────────────────────── */
+.pc-section {
+  padding: 6rem 0 4rem;
+  background: var(--clr-bg);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background orbs */
+.pc-section::before {
+  content: '';
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(74, 93, 35, 0.04) 0%, transparent 70%);
+  top: -100px;
+  left: -150px;
+  border-radius: 50%;
+  animation: pc-blob 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.pc-section::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(139, 90, 43, 0.04) 0%, transparent 70%);
+  bottom: -80px;
+  right: -100px;
+  border-radius: 50%;
+  animation: pc-blob 15s ease-in-out infinite alternate-reverse;
+  pointer-events: none;
+}
+
+@keyframes pc-blob {
+  from { transform: scale(1) translate(0, 0); }
+  to   { transform: scale(1.2) translate(30px, 20px); }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.pc-header {
+  text-align: center;
+  padding: 0 5%;
+  margin-bottom: 3rem;
+}
+
+.pc-title {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 800;
+  color: var(--clr-text);
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.pc-subtitle {
+  color: var(--clr-text-muted);
+  font-size: 1.05rem;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+/* ── Viewport (clipping container) ─────────────────────────────────────────── */
+.pc-viewport {
+  position: relative;
+  overflow: hidden;
+  padding: 1.5rem 0 2rem;
+}
+
+/* ── Gradient fades on sides ────────────────────────────────────────────────── */
+.pc-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 120px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.pc-fade-left {
+  left: 0;
+  background: linear-gradient(to right, var(--clr-bg) 10%, transparent);
+}
+
+.pc-fade-right {
+  right: 0;
+  background: linear-gradient(to left, var(--clr-bg) 10%, transparent);
+}
+
+/* ── Track (horizontal scroll) ─────────────────────────────────────────────── */
+.pc-track {
+  display: flex;
+  gap: 24px;
+  padding: 0 calc(5% + 60px);
+  transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+
+/* ── Card ───────────────────────────────────────────────────────────────────── */
+.pc-card {
+  position: relative;
+  flex: 0 0 300px;
+  width: 300px;
+  background: var(--clr-surface);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, border-color 0.3s;
+  cursor: default;
+}
+
+.pc-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(74, 93, 35, 0.3); /* Primary green */
+  box-shadow: var(--shadow-lg);
+}
+
+/* Glow ring on hover */
+.pc-card-glow {
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, var(--glow-color) 15%, transparent),
+    transparent 60%
+  );
+  transition: opacity 0.4s;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.pc-card:hover .pc-card-glow {
+  opacity: 1;
+}
+
+/* ── Card Image ─────────────────────────────────────────────────────────────── */
+.pc-img-wrap {
+  position: relative;
+  height: 190px;
+  overflow: hidden;
+  background: var(--clr-surface2);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.pc-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.pc-card:hover .pc-img {
+  transform: scale(1.05);
+}
+
+.pc-img-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  background: var(--clr-surface2);
+}
+
+/* Category badge */
+.pc-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background-color: var(--clr-bg);
+  z-index: 2;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Availability dot */
+.pc-available-dot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 10px;
+  height: 10px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  animation: pc-pulse 2s infinite;
+  z-index: 2;
+}
+
+@keyframes pc-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25); }
+  50%       { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.08); }
+}
+
+/* ── Card Content ───────────────────────────────────────────────────────────── */
+.pc-content {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  position: relative;
+  z-index: 2;
+  background: var(--clr-bg);
+}
+
+.pc-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.pc-desc {
+  font-size: 0.85rem;
+  color: var(--clr-text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* ── Stars ──────────────────────────────────────────────────────────────────── */
+.pc-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pc-star {
+  font-size: 0.9rem;
+  color: var(--clr-surface3);
+  transition: color 0.2s;
+}
+
+.pc-star.filled {
+  color: var(--clr-warning);
+}
+
+.pc-rating-num {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  margin-left: 4px;
+  font-weight: 600;
+}
+
+/* ── Specs ──────────────────────────────────────────────────────────────────── */
+.pc-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--clr-surface);
+  border-radius: 6px;
+  border: 1px solid var(--clr-border);
+}
+
+.pc-spec-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+.pc-spec-key {
+  color: var(--clr-text-faint);
+}
+
+.pc-spec-val {
+  color: var(--clr-text);
+  font-weight: 600;
+}
+
+/* ── Footer (price + button) ────────────────────────────────────────────────── */
+.pc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.pc-price {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.pc-price-amount {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--clr-primary);
+}
+
+.pc-price-unit {
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+}
+
+/* CTA Button on card */
+.pc-btn {
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--clr-primary);
+  color: var(--clr-primary);
+  background: transparent;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.pc-btn:hover {
+  background: var(--clr-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(74, 93, 35, 0.2);
+}
+
+/* ── Stock ─────────────────────────────────────────────────────────────────── */
+.pc-stock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--clr-text-muted);
+  margin-top: 4px;
+}
+
+.pc-stock-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+}
+
+/* ── Skeleton ───────────────────────────────────────────────────────────────── */
+.pc-skeleton {
+  pointer-events: none;
+}
+
+.pc-sk-img {
+  height: 190px;
+  background: linear-gradient(
+    90deg,
+    var(--clr-surface2) 25%,
+    var(--clr-surface3) 50%,
+    var(--clr-surface2) 75%
+  );
+  background-size: 200% 100%;
+  animation: pc-shimmer 1.8s infinite;
+}
+
+.pc-sk-line {
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--clr-surface2) 25%,
+    var(--clr-surface3) 50%,
+    var(--clr-surface2) 75%
+  );
+  background-size: 200% 100%;
+  animation: pc-shimmer 1.8s infinite;
+}
+
+@keyframes pc-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Controls (arrows + dots) ──────────────────────────────────────────────── */
+.pc-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.pc-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--clr-border);
+  background: var(--clr-bg);
+  color: var(--clr-text);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  line-height: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.pc-arrow:hover:not(:disabled) {
+  border-color: var(--clr-primary);
+  color: var(--clr-primary);
+  box-shadow: 0 4px 12px rgba(74, 93, 35, 0.15);
+  transform: scale(1.05);
+}
+
+.pc-arrow:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.pc-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 280px;
+}
+
+.pc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: var(--clr-border);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.pc-dot.active {
+  background: var(--clr-primary);
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* ── CTA bottom ─────────────────────────────────────────────────────────────── */
+.pc-cta {
+  text-align: center;
+  margin-top: 2.5rem;
+}
+
+/* ── Empty state ────────────────────────────────────────────────────────────── */
+.pc-empty {
+  text-align: center;
+  color: var(--clr-text-muted);
+  padding: 3rem;
+  font-style: italic;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .pc-card {
+    flex: 0 0 260px;
+    width: 260px;
+  }
+
+  .pc-fade {
+    width: 60px;
+  }
+
+  .pc-track {
+    padding: 0 calc(5% + 20px);
+    gap: 16px;
+  }
+
+  .pc-title {
+    font-size: 1.6rem;
+  }
+}

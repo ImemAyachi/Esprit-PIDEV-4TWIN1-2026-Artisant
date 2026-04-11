@@ -8,9 +8,10 @@
  */
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, getMe, updateMe, updatePassword } from '../controllers/auth.controller.js';
+import { register, login, verify2FA, getMe, updateMe, updatePassword, uploadAvatarController } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
+import { uploadAvatar } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
@@ -29,12 +30,21 @@ const loginRules = [
 ];
 
 router.post('/register', registerRules, validate, register);
-router.post('/login',    loginRules,    validate, login);
+router.post('/login', loginRules, validate, login);
+router.post('/verify-2fa',
+  [
+    body('email').isEmail().normalizeEmail().withMessage('Email invalide'),
+    body('code').isLength({ min: 6, max: 6 }).withMessage('Le code doit contenir 6 chiffres')
+  ],
+  validate,
+  verify2FA
+);
 
 // Routes protégées
 router.use(protect);
 router.get('/me',              getMe);
 router.put('/me',              updateMe);
+router.put('/me/avatar',       uploadAvatar.single('avatar'), uploadAvatarController);
 router.put('/me/password',     updatePassword);
 
 export default router;

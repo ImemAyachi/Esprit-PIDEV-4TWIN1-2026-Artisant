@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../../services/api';
 import { useState } from 'react';
 
@@ -156,6 +156,34 @@ const AdminDashboard = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Rentabilité Graph (Artisan/Ingenieur) */}
+      {['Artisan', 'Ingenieur'].includes(user?.role) && myProjects.length > 0 && (
+        <div className="card">
+          <h3 style={{ marginBottom: '1.5rem' }}> Rentabilité par Chantier</h3>
+          {myProjects.some(p => (p.financials?.profit || 0) < 0) && (
+            <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem', border: '1px solid #fecaca' }}>
+              Alerte : Vous avez des chantiers actuellement en déficit (Perte de rentabilité).
+            </div>
+          )}
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={myProjects}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="title" stroke="var(--clr-text-muted)" tick={{ fontSize: 11 }} />
+              <YAxis stroke="var(--clr-text-muted)" tick={{ fontSize: 11 }} />
+              <Tooltip
+                contentStyle={{ background: 'var(--clr-surface2)', border: '1px solid var(--clr-border)', borderRadius: 8 }}
+                formatter={(v, name) => [v ? `${v.toLocaleString()} DT` : '0 DT', name === 'Profit' ? 'Bénéfice/Perte' : 'Dépenses']}
+              />
+              <Bar dataKey="financials.profit" name="Profit" radius={[4,4,0,0]}>
+                {myProjects.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={(entry.financials?.profit || 0) < 0 ? '#ef4444' : '#10b981'} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       )}
 
       {/* Quick actions par rôle */}

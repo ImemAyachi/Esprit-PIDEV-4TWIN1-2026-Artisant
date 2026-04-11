@@ -18,6 +18,11 @@ const orderItemSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema(
   {
+    orderNumber: { 
+      type: String, 
+      unique: true, 
+      default: () => 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase() 
+    },
     // Acheteur (Artisan ou Architecte/Ingénieur)
     buyer: {
       type: mongoose.Schema.Types.ObjectId,

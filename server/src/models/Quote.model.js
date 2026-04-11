@@ -27,9 +27,18 @@ const attachmentSchema = new mongoose.Schema({
 
 const quoteSchema = new mongoose.Schema(
   {
+    // ── Identité ──────────────────────────────────────────────────────────
+    quoteNumber: {
+      type:     String,
+      unique:   true,
+      sparse:   true, // Permet d'éviter l'erreur d'index unique sur plusieurs 'null'
+      index:    true,
+    },
+
     // ── Participants ──────────────────────────────────────────────────────
     // Demandeur : Architecte ou Ingénieur
     requester: {
+
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -93,7 +102,15 @@ const quoteSchema = new mongoose.Schema(
 
 // ── Middleware pre-save : calcul automatique du total ─────────────────────────
 quoteSchema.pre('save', async function () {
+  // Générer un numéro de devis unique si absent
+  if (!this.quoteNumber) {
+    const year = new Date().getFullYear();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+    this.quoteNumber = `BM-QT-${year}-${random}`;
+  }
+
   if (this.items && this.items.length > 0) {
+
     this.items.forEach((item) => {
       item.total = item.quantity * item.unitPrice;
     });

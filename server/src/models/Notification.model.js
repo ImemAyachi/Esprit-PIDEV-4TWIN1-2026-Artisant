@@ -25,10 +25,13 @@ const notificationSchema = new mongoose.Schema(
         'quote_submitted',   // Un artisan a soumis un devis
         'quote_accepted',    // Le devis a été accepté
         'quote_refused',     // Le devis a été refusé
-        'order_placed',      // Nouvelle commande
+        'order_placed',      // Nouvelle commande reçue (fournisseur)
         'order_confirmed',   // Commande confirmée par le fournisseur
+        'order_processing',  // Commande en traitement
         'order_shipped',     // Commande expédiée
         'order_delivered',   // Commande livrée
+        'order_cancelled',   // Commande annulée
+        'invoice_generated', // Facture générée par le fournisseur
         'review_received',   // Nouvel avis reçu
         'account_verified',  // Compte validé par le SuperAdmin
         'new_message',       // Message reçu
