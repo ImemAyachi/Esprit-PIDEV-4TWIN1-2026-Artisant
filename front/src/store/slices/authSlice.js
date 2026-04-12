@@ -24,6 +24,15 @@ export const loginUser = createAsyncThunk('auth/login', async (credentials, { re
   }
 });
 
+export const verify2FACode = createAsyncThunk('auth/verify2FA', async ({ email, code }, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/auth/verify-2fa', { email, code });
+    return res.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Erreur vérification 2FA');
+  }
+});
+
 export const fetchMe = createAsyncThunk('auth/me', async (_, { rejectWithValue }) => {
   try {
     const res = await api.get('/auth/me');
@@ -61,6 +70,8 @@ const authSlice = createSlice({
     loading: false,
     error: null,
     isAuthenticated: !!savedToken,
+    require2FA: false,
+    tempEmail: null,
   },
   reducers: {
     logout: (state) => {
@@ -79,15 +90,21 @@ const authSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Register
-      .addCase(registerUser.pending, (s) => { s.loading = true; s.error = null; })
+      .addCase(registerUser.pending, (s) => { s.loading = true; s.error = null; s.require2FA = false; })
       .addCase(registerUser.fulfilled, (s, { payload }) => {
         s.loading = false;
-        s.token = payload.token;
-        s.user = payload.user;
-        s.isAuthenticated = true;
-        localStorage.setItem('token', payload.token);
-        localStorage.setItem('user', JSON.stringify(payload.user));
-        toast.success('Compte créé avec succès !');
+        if (payload.require2FA) {
+          s.require2FA = true;
+          s.tempEmail = payload.email;
+          toast.success(payload.message || 'Code de confirmation envoyé');
+        } else {
+          s.token = payload.token;
+          s.user = payload.user;
+          s.isAuthenticated = true;
+          localStorage.setItem('token', payload.token);
+          localStorage.setItem('user', JSON.stringify(payload.user));
+          toast.success('Compte créé avec succès !');
+        }
       })
       .addCase(registerUser.rejected, (s, { payload }) => { s.loading = false; s.error = payload; toast.error(payload); })
       // Login
@@ -99,9 +116,27 @@ const authSlice = createSlice({
         s.isAuthenticated = true;
         localStorage.setItem('token', payload.token);
         localStorage.setItem('user', JSON.stringify(payload.user));
+        toast.success(`Bienvenue, ${payload.user?.firstName || ''} !`);
+      })
+      .addCase(loginUser.rejected, (s, { payload }) => { 
+        s.loading = false; s.error = payload; toast.error(typeof payload === 'string' ? payload : 'Erreur réseau'); 
+      })
+      // Verify 2FA
+      .addCase(verify2FACode.pending, (s) => { s.loading = true; s.error = null; })
+      .addCase(verify2FACode.fulfilled, (s, { payload }) => {
+        s.loading = false;
+        s.require2FA = false;
+        s.tempEmail = null;
+        s.token = payload.token;
+        s.user = payload.user;
+        s.isAuthenticated = true;
+        localStorage.setItem('token', payload.token);
+        localStorage.setItem('user', JSON.stringify(payload.user));
         toast.success(`Bienvenue, ${payload.user.firstName} !`);
       })
-      .addCase(loginUser.rejected, (s, { payload }) => { s.loading = false; s.error = payload; toast.error(payload); })
+      .addCase(verify2FACode.rejected, (s, { payload }) => { 
+        s.loading = false; s.error = payload; toast.error(typeof payload === 'string' ? payload : 'Erreur code 2FA'); 
+      })
       // Fetch me
       .addCase(fetchMe.fulfilled, (s, { payload }) => {
         s.user = payload;

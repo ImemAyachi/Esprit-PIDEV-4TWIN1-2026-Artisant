@@ -9,6 +9,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.model.js';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
+import sendEmail from '../utils/mailer.js';
 
 // Génère un JWT signé avec l'ID utilisateur
 const generateToken = (id) =>
@@ -59,23 +60,38 @@ export const register = asyncHandler(async (req, res) => {
     isVerified: process.env.NODE_ENV === 'development',
   });
 
-  const token = generateToken(user._id);
+  // ── Vérification Email (OTP au moment de l'inscription) ───────────────
+  const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
+  user.twoFactorCode = twoFactorCode;
+  user.twoFactorExpire = Date.now() + 10 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+
+  console.log(`\n\n🔑 CODE D'INSCRIPTION POUR ${user.email} : ${twoFactorCode}\n\n`);
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Code de confirmation de votre inscription',
+      message: `Bienvenue sur Artisanet,\n\nVotre code pour activer votre compte est : ${twoFactorCode}\n\nCe code est valide pendant 10 minutes.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+          <h2 style="color: #4a5d23;">Bienvenue sur Artisanet !</h2>
+          <p>Bonjour ${user.firstName},</p>
+          <p>Pour finaliser votre inscription, veuillez saisir le code de vérification suivant :</p>
+          <div style="font-size: 24px; font-weight: bold; background: #f3f4f6; text-align: center; padding: 15px; letter-spacing: 5px; border-radius: 4px; color: #333;">
+            ${twoFactorCode}
+          </div>
+          <p style="color: #666; font-size: 14px; margin-top: 20px;">Ce code expirera dans 10 minutes.</p>
+        </div>
+      `
+    });
+  } catch (err) {}
 
   res.status(201).json({
     success: true,
-    message: role === 'SuperAdmin'
-      ? 'Compte créé'
-      : 'Compte créé — en attente de validation par l\'administrateur',
-    token,
-    user: {
-      _id: user._id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      avatar: user.avatar,
-    },
+    require2FA: true,
+    email: user.email,
+    message: 'Un code de confirmation a été envoyé à votre e-mail.',
   });
 });
 
@@ -118,6 +134,78 @@ export const login = asyncHandler(async (req, res) => {
     throw new AppError('Compte désactivé — contactez l\'administrateur', 403);
   }
 
+  // Si on a laissé le champ twoFactorCode au moment de l'inscription et qu'il force le login
+  if (user.twoFactorCode) {
+    throw new AppError('Veuillez d\'abord valider votre e-mail avec le code reçu lors de l\'inscription.', 403);
+  }
+
+  // Mettre à jour lastLogin
+  user.lastLogin = new Date();
+  await user.save({ validateBeforeSave: false });
+
+  const token = generateToken(user._id);
+
+  res.json({
+    success: true,
+    token,
+    user: {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+      isActive: user.isActive,
+      avatar: user.avatar,
+      craft: user.craft,
+      rating: user.rating,
+    },
+  });
+});
+
+/**
+ * @swagger
+ * /auth/verify-2fa:
+ *   post:
+ *     summary: Vérifier le code 2FA et obtenir le token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, code]
+ *             properties:
+ *               email: { type: string }
+ *               code:  { type: string }
+ */
+export const verify2FA = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    throw new AppError('Email et code de vérification requis', 400);
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new AppError('Utilisateur introuvable', 404);
+  }
+
+  // Vérifier le code et l'expiration
+  if (user.twoFactorCode !== code) {
+    throw new AppError('Code de vérification incorrect', 400);
+  }
+
+  if (Date.now() > user.twoFactorExpire) {
+    throw new AppError('Ce code a expiré. Veuillez vous reconnecter pour en recevoir un nouveau.', 400);
+  }
+
+  // Code valide : on le retire et on connecte l'utilisateur
+  user.twoFactorCode = undefined;
+  user.twoFactorExpire = undefined;
+  
   // Mettre à jour lastLogin
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });

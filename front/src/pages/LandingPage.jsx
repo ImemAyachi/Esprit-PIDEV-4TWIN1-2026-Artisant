@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import ProductsCarousel from '../components/landing/ProductsCarousel';
 
 const FEATURES = [
   {
@@ -147,6 +148,9 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* ─── Products Carousel ───────────────────────────────────── */}
+      <ProductsCarousel />
 
       {/* ─── Features ──────────────────────────────────────────────── */}
       <section className="features-section">
