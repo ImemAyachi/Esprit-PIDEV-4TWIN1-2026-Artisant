@@ -2,7 +2,9 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
+import GestureController from './components/common/GestureController';
 import { store } from './store';
+import ChatbotWidget from './components/chatbot/ChatbotWidget';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -48,6 +50,7 @@ function App() {
             },
           }}
         />
+        <GestureController />
         <Routes>
           {/* Pages publiques */}
           <Route path="/" element={<LandingPage />} />
@@ -105,6 +108,7 @@ function App() {
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        <ChatbotWidget />
       </BrowserRouter>
     </Provider>
   );
