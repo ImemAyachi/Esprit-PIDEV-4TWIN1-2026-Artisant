@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../../services/api';
@@ -13,13 +13,64 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { user } = useSelector((s) => s.auth);
   const [project, setProject] = useState(null);
+  const [jobReviews, setJobReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showExpense, setShowExpense] = useState(false);
   const [expense, setExpense] = useState({ description: '', amount: '', category: 'matériaux' });
   const [confirmConfig, setConfirmConfig] = useState(null);
+  /** architectId -> { rating, comment } draft keyed by artisan */
+  const [feedbackDraft, setFeedbackDraft] = useState({});
 
-  const load = async () => { try { const r = await api.get(`/projects/${id}`); setProject(r.data.project); } catch (_) { }; setLoading(false); };
+  const load = async () => {
+    try {
+      const [r, revRes] = await Promise.all([
+        api.get(`/projects/${id}`),
+        api.get(`/reviews/project/${id}`).catch(() => ({ data: { reviews: [] } })),
+      ]);
+      setProject(r.data.project);
+      setJobReviews(revRes.data?.reviews || []);
+    } catch (_) { /* keep UX */ }
+    setLoading(false);
+  };
   useEffect(() => { load(); }, [id]);
+
+  const feedbackMine = useMemo(() => {
+    if (!user?._id) return [];
+    return jobReviews.filter((r) => String(r.artisan?._id || r.artisan) === String(user._id));
+  }, [jobReviews, user?._id]);
+
+  const myJobFeedbackByArtisan = useMemo(() => {
+    const m = {};
+    if (!user?._id) return m;
+    jobReviews.forEach((r) => {
+      const authId = r.author?._id || r.author;
+      if (String(authId) !== String(user._id)) return;
+      const aid = r.artisan?._id || r.artisan;
+      if (aid) m[String(aid)] = r;
+    });
+    return m;
+  }, [jobReviews, user?._id]);
+
+  const submitJobFeedback = async (artisanId) => {
+    const d = feedbackDraft[artisanId] || { rating: 5, comment: '' };
+    if (!d.comment?.trim()) {
+      toast.error('Veuillez ajouter un commentaire');
+      return;
+    }
+    try {
+      await api.post('/reviews', {
+        projectId: id,
+        artisanId,
+        rating: d.rating,
+        comment: d.comment.trim(),
+      });
+      toast.success('Feedback enregistré');
+      setFeedbackDraft((prev) => ({ ...prev, [artisanId]: { rating: 5, comment: '' } }));
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Envoi impossible');
+    }
+  };
 
   const handleAddExpense = async () => {
     try { await api.post(`/projects/${id}/expenses`, expense); setShowExpense(false); setExpense({ description: '', amount: '', category: 'matériaux' }); load(); } catch (_) { }
@@ -45,6 +96,9 @@ const ProjectDetail = () => {
   const margin = financials?.profitMargin || 0;
   
   const isArtisan = user?.role === 'Artisan';
+  const mgrId = project?.manager?._id || project?.manager;
+  const isManager = user?._id && mgrId && String(mgrId) === String(user._id);
+  const canArchitectFeedback = user?.role === 'Architecte' && isManager;
   
   const personalExpenses = isArtisan 
     ? expenses.filter(e => e.addedBy?._id === user._id || e.addedBy === user._id)
@@ -109,6 +163,29 @@ const ProjectDetail = () => {
             </button>
           </div>
         </div>
+
+        {feedbackMine.length > 0 && (
+          <div className="card">
+            <h3 style={{ marginBottom: '1rem' }}>Feedback reçu sur ce chantier</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {feedbackMine.map((r) => (
+                <div key={r._id} style={{ padding: '1rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)', border: '1px solid var(--clr-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontWeight: 700 }}>
+                      {r.author?.firstName} {r.author?.lastName}
+                      {r.author?.role && <span style={{ color: 'var(--clr-text-muted)', fontWeight: 500, fontSize: '0.85rem' }}> · {r.author.role}</span>}
+                    </span>
+                    <span style={{ color: '#f59e0b', fontWeight: 800 }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
+                  </div>
+                  <p style={{ margin: 0, lineHeight: 1.6, color: 'var(--clr-text)' }}>{r.comment}</p>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--clr-text-muted)', marginTop: '0.5rem' }}>
+                    {new Date(r.createdAt).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {personalExpenses.length > 0 && (
           <div className="card">
@@ -231,19 +308,77 @@ const ProjectDetail = () => {
       {project.artisans?.length > 0 && (
         <div className="card">
           <h3 style={{ marginBottom: '1rem' }}> Équipe</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            {project.artisans.map((a, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--grad-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '0.85rem' }}>
-                  {a.artisan?.firstName?.[0]}{a.artisan?.lastName?.[0]}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {project.artisans.map((a, i) => {
+              const aid = a.artisan?._id || a.artisan;
+              const aidStr = aid ? String(aid) : '';
+              const canRateHere = canArchitectFeedback && aidStr && ['accepted', 'completed'].includes(a.status);
+              const existing = aidStr ? myJobFeedbackByArtisan[aidStr] : null;
+              const draft = feedbackDraft[aidStr] || { rating: 5, comment: '' };
+
+              return (
+                <div key={i} style={{ padding: '0.75rem', background: 'var(--clr-surface2)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--grad-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: '0.85rem' }}>
+                      {a.artisan?.firstName?.[0]}{a.artisan?.lastName?.[0]}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 600 }}>{a.artisan?.firstName} {a.artisan?.lastName}</span>
+                      {a.artisan?.craft && <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}> • {a.artisan.craft}</span>}
+                    </div>
+                    <span className={`badge ${a.status === 'accepted' ? 'badge-success' : a.status === 'rejected' ? 'badge-danger' : 'badge-info'}`}>{a.status}</span>
+                  </div>
+
+                  {canRateHere && (
+                    <div style={{ borderTop: '1px solid var(--clr-border)', paddingTop: '0.75rem' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--clr-text-muted)', marginBottom: '0.5rem' }}>Feedback sur ce job (note + commentaire)</div>
+                      {existing ? (
+                        <div style={{ padding: '0.75rem', background: 'var(--clr-surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--clr-border)' }}>
+                          <div style={{ color: '#f59e0b', marginBottom: '0.35rem' }}>{'★'.repeat(existing.rating)}{'☆'.repeat(5 - existing.rating)}</div>
+                          <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.5 }}>{existing.comment}</p>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)' }}>Envoyé le {new Date(existing.createdAt).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '0.5rem' }}>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                onClick={() => setFeedbackDraft((prev) => ({ ...prev, [aidStr]: { ...draft, rating: n } }))}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  fontSize: '1.35rem',
+                                  color: n <= draft.rating ? '#f59e0b' : '#d1d5db',
+                                  padding: 0,
+                                  lineHeight: 1,
+                                }}
+                                aria-label={`${n} sur 5`}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                          <textarea
+                            className="form-input"
+                            rows={3}
+                            placeholder="Commentaire sur le travail de cet artisan sur ce chantier…"
+                            value={draft.comment}
+                            onChange={(e) => setFeedbackDraft((prev) => ({ ...prev, [aidStr]: { ...draft, comment: e.target.value } }))}
+                            style={{ marginBottom: '0.5rem', resize: 'vertical' }}
+                          />
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => submitJobFeedback(aidStr)}>
+                            Envoyer le feedback
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontWeight: 600 }}>{a.artisan?.firstName} {a.artisan?.lastName}</span>
-                  {a.artisan?.craft && <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}> • {a.artisan.craft}</span>}
-                </div>
-                <span className={`badge ${a.status === 'accepted' ? 'badge-success' : a.status === 'rejected' ? 'badge-danger' : 'badge-info'}`}>{a.status}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

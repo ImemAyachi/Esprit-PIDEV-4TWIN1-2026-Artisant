@@ -9,6 +9,7 @@ const PAGE_TITLES = {
   home: 'Tableau de bord', users: 'Utilisateurs', catalog: 'Catalogue',
   artisans: 'Artisans', quotes: 'Devis', projects: 'Chantiers',
   'my-products': 'Mes produits', profile: 'Mon profil',
+  planner: 'Planificateur IA',
 };
 
 const Topbar = () => {

@@ -27,6 +27,8 @@ import reviewRoutes from './routes/review.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import chatRoutes from './routes/chat.routes.js';
+import aiRoutes from './routes/ai.routes.js';
+import workforceRoutes from './routes/workforce.routes.js';
 
 // ---- Routes (Yahya's unique architecture) ----
 // Note: These files will need to be converted to ES Modules (import/export)
@@ -42,10 +44,23 @@ import { errorHandler } from './middleware/error.middleware.js';
 const app = express();
 const httpServer = http.createServer(app);
 
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // server-to-server / curl / same-origin
+
+  const explicit = (process.env.CLIENT_URL || '').trim();
+  if (explicit && origin === explicit) return true;
+
+  // Allow local dev ports (Vite often auto-increments).
+  if (/^http:\/\/localhost:517\d$/.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1:517\d$/.test(origin)) return true;
+
+  return false;
+}
+
 // ─── Socket.io ────────────────────────────────────────────────────────────────
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     methods: ['GET', 'POST'],
   },
 });
@@ -57,7 +72,7 @@ initSocket(io);
 // ─── Middleware ────────────────────────────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,
 }));
 app.use(morgan('dev'));
@@ -95,6 +110,8 @@ app.use(`${API}/documents`, documentRoutes);
 app.use(`${API}/invoices`, invoiceRoutes);
 app.use(`${API}/public`, publicRoutes);
 app.use(`${API}/uploads`, uploadRoutes);
+app.use(`${API}/ai`, aiRoutes);
+app.use(`${API}/workforce`, workforceRoutes);
 
 // * Note: The following overlapping routes from Yahya were omitted to prevent conflicts:
 // * authRoutes.js, userRoutes.js, productRoutes.js, orderRoutes.js, projectRoutes.js, quoteRoutes.js
@@ -114,7 +131,13 @@ app.use(errorHandler);
 // ─── Démarrage ────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+connectDB().then((ok) => {
+  if (!ok) {
+    console.error('\n❌ Arrêt : MongoDB doit être connecté avant d’accepter des requêtes (inscription, etc.).');
+    console.error('   Vérifiez MONGO_URI dans server/.env et que MongoDB est accessible.\n');
+    process.exit(1);
+  }
+
   httpServer.listen(PORT, () => {
     console.log(`\n🚀 ARTISANET API démarrée sur http://localhost:${PORT}`);
     console.log(`📚 Documentation Swagger : http://localhost:${PORT}/api-docs`);

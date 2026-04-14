@@ -31,6 +31,13 @@ const reviewSchema = new mongoose.Schema(
       ref: 'User',
     },
 
+    // Chantier lié (feedback architecte → artisan pour un job / projet précis)
+    project: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      index: true,
+    },
+
     // Note de 1 à 5
     rating: {
       type: Number,
@@ -71,10 +78,29 @@ reviewSchema.index({ author: 1, product: 1 }, {
   partialFilterExpression: { product: { $exists: true, $ne: null } } 
 });
 
-reviewSchema.index({ author: 1, artisan: 1 }, { 
-  unique: true, 
-  partialFilterExpression: { artisan: { $exists: true, $ne: null } } 
-});
+// Un avis « général » par auteur par artisan (sans chantier)
+reviewSchema.index(
+  { author: 1, artisan: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      artisan: { $exists: true, $ne: null },
+      $or: [{ project: { $exists: false } }, { project: null }],
+    },
+  }
+);
+
+// Un feedback par auteur par artisan par chantier (job)
+reviewSchema.index(
+  { author: 1, artisan: 1, project: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      artisan: { $exists: true, $ne: null },
+      project: { $exists: true, $ne: null },
+    },
+  }
+);
 
 /**
  * Après chaque sauvegarde d'un avis, on recalcule la note moyenne du produit
@@ -107,12 +133,40 @@ reviewSchema.statics.calcAverageRating = async function (productId) {
   }
 };
 
-// Hook : recalcule la moyenne après save et après delete
+reviewSchema.statics.calcAverageArtisanRating = async function (artisanId) {
+  const stats = await this.aggregate([
+    { $match: { artisan: artisanId, isHidden: false } },
+    {
+      $group: {
+        _id: '$artisan',
+        avgRating: { $avg: '$rating' },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const User = mongoose.model('User');
+  if (stats.length > 0) {
+    await User.findByIdAndUpdate(artisanId, {
+      'rating.average': Math.round(stats[0].avgRating * 10) / 10,
+      'rating.count': stats[0].count,
+    });
+  } else {
+    await User.findByIdAndUpdate(artisanId, {
+      'rating.average': 0,
+      'rating.count': 0,
+    });
+  }
+};
+
+// Hook : recalcule les moyennes produit / artisan après save et delete
 reviewSchema.post('save', function () {
   if (this.product) this.constructor.calcAverageRating(this.product);
+  if (this.artisan) this.constructor.calcAverageArtisanRating(this.artisan);
 });
 reviewSchema.post('deleteOne', { document: true }, function () {
   if (this.product) this.constructor.calcAverageRating(this.product);
+  if (this.artisan) this.constructor.calcAverageArtisanRating(this.artisan);
 });
 
 const Review = mongoose.model('Review', reviewSchema);

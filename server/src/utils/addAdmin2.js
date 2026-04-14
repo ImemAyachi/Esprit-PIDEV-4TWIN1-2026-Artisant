@@ -5,8 +5,10 @@ import connectDB from '../config/db.js';
 import User from '../models/User.model.js';
 
 const addAdmin = async () => {
-  await connectDB();
-  
+  if (!(await connectDB())) {
+    console.error('❌ MongoDB non connecté.');
+    process.exit(1);
+  }
   const email = 'superadmin@test.tn';
   const plainPassword = 'Admin123';
   
