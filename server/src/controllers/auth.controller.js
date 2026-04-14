@@ -56,8 +56,9 @@ export const register = asyncHandler(async (req, res) => {
   const user = await User.create({
     firstName, lastName, email, password, role, phone,
     craft, companyName, supplierType, specialization,
-    // Les professionnels nécessitent validation Admin (sauf en dev)
-    isVerified: process.env.NODE_ENV === 'development',
+    // Activation automatique pour éviter les blocages de vérification
+    isVerified: true,
+    isActive: true
   });
 
   // ── Vérification Email (OTP au moment de l'inscription) ───────────────

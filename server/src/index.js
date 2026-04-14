@@ -27,6 +27,7 @@ import reviewRoutes from './routes/review.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import chatRoutes from './routes/chat.routes.js';
+import aiRoutes from './routes/ai.routes.js';
 
 // ---- Routes (Yahya's unique architecture) ----
 // Note: These files will need to be converted to ES Modules (import/export)
@@ -55,7 +56,22 @@ app.set('io', io);
 initSocket(io);
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https://images.unsplash.com", "https://images.pexels.com", "https://res.cloudinary.com", "https://placehold.co", "https://loremflickr.com"],
+      connectSrc: ["'self'", "https://generativelanguage.googleapis.com", "http://localhost:5000"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true,
@@ -89,6 +105,7 @@ app.use(`${API}/reviews`, reviewRoutes);
 app.use(`${API}/notifications`, notificationRoutes);
 app.use(`${API}/admin`, adminRoutes);
 app.use(`${API}/chat`, chatRoutes);
+app.use(`${API}/ai`, aiRoutes);
 
 // Yahya's specific routes
 app.use(`${API}/documents`, documentRoutes);

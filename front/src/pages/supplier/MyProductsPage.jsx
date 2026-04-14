@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/ConfirmModal';
+import { getProductImage } from '../../utils/imageUrl';
 
 const MyProductsPage = () => {
   const { user } = useSelector((s) => s.auth);
@@ -16,11 +17,52 @@ const MyProductsPage = () => {
   const defaultForm = { name: '', description: '', category: 'marbre', price: '', unit: 'm²', stock: 0, specifications: '', useCases: '', isAvailable: true };
   const [form, setForm] = useState(defaultForm);
   const [confirmConfig, setConfirmConfig] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // ─── Validation rules ───
+  const validate = (f) => {
+    const e = {};
+    if (!f.name.trim()) e.name = 'Le nom du produit est obligatoire.';
+    else if (f.name.trim().length < 3) e.name = 'Le nom doit contenir au moins 3 caractères.';
+    
+    if (!f.description.trim()) e.description = 'La description est obligatoire.';
+    else if (f.description.trim().length < 10) e.description = 'La description doit contenir au moins 10 caractères.';
+    
+    if (!f.price && f.price !== 0) e.price = 'Le prix est obligatoire.';
+    else if (Number(f.price) <= 0) e.price = 'Le prix doit être supérieur à 0.';
+    
+    if (f.stock !== '' && Number(f.stock) < 0) e.stock = 'Le stock ne peut pas être négatif.';
+    
+    return e;
+  };
+
+  const updateField = (field, value) => {
+    const newForm = { ...form, [field]: value };
+    // Special stock logic
+    if (field === 'stock') {
+      const numVal = Number(value);
+      newForm.isAvailable = numVal === 0 ? false : form.isAvailable;
+    }
+    setForm(newForm);
+    setTouched(t => ({ ...t, [field]: true }));
+    setErrors(validate(newForm));
+  };
+
+  const handleBlur = (field) => {
+    setTouched(t => ({ ...t, [field]: true }));
+    setErrors(validate(form));
+  };
+
+  const isFormValid = () => {
+    const e = validate(form);
+    return Object.keys(e).length === 0;
+  };
 
   const load = async () => { try { const r = await api.get('/products/my'); setProducts(r.data.products); } catch (_) { }; setLoading(false); };
   useEffect(() => { load(); }, []);
 
-  const openAddModal = () => { setEditId(null); setForm(defaultForm); setFiles([]); setShowModal(true); };
+  const openAddModal = () => { setEditId(null); setForm(defaultForm); setFiles([]); setErrors({}); setTouched({}); setShowModal(true); };
 
   const openEditModal = (p) => {
     setEditId(p._id);
@@ -35,6 +77,13 @@ const MyProductsPage = () => {
   };
 
   const handleSubmit = async () => {
+    const validationErrors = validate(form);
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      setTouched({ name: true, description: true, price: true, stock: true });
+      toast.error('Veuillez corriger les erreurs dans le formulaire.');
+      return;
+    }
     try {
       setUploading(true);
       let mediaUrls = [];
@@ -114,7 +163,7 @@ const MyProductsPage = () => {
               display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;
             }
             .premium-product-card {
-              background: #ffffff; border-radius: 20px; padding: 1.5rem;
+              background: #ffffff; border-radius: 20px;
               box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05);
               border: 1px solid rgba(226, 232, 240, 0.8);
               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -125,6 +174,24 @@ const MyProductsPage = () => {
               transform: translateY(-5px);
               box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
               border-color: rgba(59, 130, 246, 0.3);
+            }
+            .premium-card-img {
+              width: 100%; height: 180px; overflow: hidden;
+              background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+              display: flex; align-items: center; justify-content: center;
+            }
+            .premium-card-img img {
+              width: 100%; height: 100%; object-fit: cover;
+              transition: transform 0.4s ease;
+            }
+            .premium-product-card:hover .premium-card-img img {
+              transform: scale(1.05);
+            }
+            .premium-card-img-placeholder {
+              font-size: 2.5rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;
+            }
+            .premium-card-body {
+              padding: 1.5rem; display: flex; flex-direction: column; flex: 1;
             }
             .premium-card-header {
               display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;
@@ -182,6 +249,18 @@ const MyProductsPage = () => {
           `}</style>
           {products.map(p => (
             <div key={p._id} className="premium-product-card">
+              {/* Product Image */}
+              <div className="premium-card-img">
+                {getProductImage(p) ? (
+                  <img src={getProductImage(p)} alt={p.name} />
+                ) : (
+                  <div className="premium-card-img-placeholder">
+                    {p.category?.charAt(0) || '?'}
+                  </div>
+                )}
+              </div>
+
+              <div className="premium-card-body">
               <div className="premium-card-header">
                 <span className="premium-cat-badge">{p.category}</span>
                 <span className={`premium-status-dot ${p.isAvailable ? 'active' : 'inactive'}`}>
@@ -218,6 +297,7 @@ const MyProductsPage = () => {
                   Supprimer
                 </button>
               </div>
+              </div> {/* end premium-card-body */}
             </div>
           ))}
         </div>
@@ -268,6 +348,20 @@ const MyProductsPage = () => {
               box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
             }
             textarea.premium-input { resize: vertical; min-height: 80px; }
+            .premium-input.input-error {
+              border-color: #ef4444 !important;
+              background: #fef2f2 !important;
+            }
+            .premium-input.input-error:focus {
+              box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+              border-color: #ef4444 !important;
+            }
+            .field-error-msg {
+              color: #ef4444; font-size: 0.78rem; font-weight: 500; margin-top: 0.25rem;
+              display: flex; align-items: center; gap: 0.3rem;
+              animation: errorFadeIn 0.2s ease-out;
+            }
+            @keyframes errorFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
             
             .premium-status-badge {
               display: inline-flex; align-items: center; gap: 0.5rem;
@@ -311,12 +405,26 @@ const MyProductsPage = () => {
             <div className="premium-grid">
               <div className="premium-group full">
                 <label className="premium-label">Nom du Produit *</label>
-                <input className="premium-input" placeholder="Ex: Marbre Blanc Carrara Premium" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                <input
+                  className={`premium-input ${touched.name && errors.name ? 'input-error' : ''}`}
+                  placeholder="Ex: Marbre Blanc Carrara Premium"
+                  value={form.name}
+                  onChange={e => updateField('name', e.target.value)}
+                  onBlur={() => handleBlur('name')}
+                />
+                {touched.name && errors.name && <div className="field-error-msg">⚠ {errors.name}</div>}
               </div>
 
               <div className="premium-group full">
                 <label className="premium-label">Description *</label>
-                <textarea className="premium-input" placeholder="Décrivez les qualités de votre produit..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                <textarea
+                  className={`premium-input ${touched.description && errors.description ? 'input-error' : ''}`}
+                  placeholder="Décrivez les qualités de votre produit..."
+                  value={form.description}
+                  onChange={e => updateField('description', e.target.value)}
+                  onBlur={() => handleBlur('description')}
+                />
+                {touched.description && errors.description && <div className="field-error-msg">⚠ {errors.description}</div>}
               </div>
 
               <div className="premium-group">
@@ -335,20 +443,26 @@ const MyProductsPage = () => {
 
               <div className="premium-group">
                 <label className="premium-label">Prix (DT) *</label>
-                <input className="premium-input" type="number" min="0" placeholder="0.00" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+                <input
+                  className={`premium-input ${touched.price && errors.price ? 'input-error' : ''}`}
+                  type="number" min="0" step="0.01" placeholder="0.00"
+                  value={form.price}
+                  onChange={e => updateField('price', e.target.value)}
+                  onBlur={() => handleBlur('price')}
+                />
+                {touched.price && errors.price && <div className="field-error-msg">⚠ {errors.price}</div>}
               </div>
 
               <div className="premium-group">
                 <label className="premium-label">Stock Initial ({form.unit})</label>
-                <input className="premium-input" type="number" min="0" placeholder="0" value={form.stock} onChange={e => {
-                  const val = e.target.value;
-                  const numVal = Number(val);
-                  setForm(f => ({
-                    ...f,
-                    stock: val,
-                    isAvailable: numVal === 0 ? false : f.isAvailable
-                  }));
-                }} />
+                <input
+                  className={`premium-input ${touched.stock && errors.stock ? 'input-error' : ''}`}
+                  type="number" min="0" placeholder="0"
+                  value={form.stock}
+                  onChange={e => updateField('stock', e.target.value)}
+                  onBlur={() => handleBlur('stock')}
+                />
+                {touched.stock && errors.stock && <div className="field-error-msg">⚠ {errors.stock}</div>}
               </div>
 
               <div className="premium-group full">
@@ -388,7 +502,7 @@ const MyProductsPage = () => {
 
             <div className="premium-actions">
               <button className="premium-btn cancel" onClick={() => setShowModal(false)} disabled={uploading}>Annuler</button>
-              <button className="premium-btn submit" onClick={handleSubmit} disabled={!form.name || !form.description || !form.price || uploading}>
+              <button className="premium-btn submit" onClick={handleSubmit} disabled={uploading}>
                 {uploading ? 'Enregistrement...' : editId ? 'Enregistrer les modifications' : 'Créer le produit'}
               </button>
             </div>

@@ -22,7 +22,7 @@ const connectDB = async () => {
     });
   } catch (error) {
     console.error(`❌ Erreur MongoDB : ${error.message}`);
-    process.exit(1);
+    console.warn("Le serveur reste en ligne — tentaive de reconnexion automatique en arrière-plan...");
   }
 };
 

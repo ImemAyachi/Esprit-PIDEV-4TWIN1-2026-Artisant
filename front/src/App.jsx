@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import GestureController from './components/common/GestureController';
 import { store } from './store';
 import ChatbotWidget from './components/chatbot/ChatbotWidget';
+import AiProductRecommender from './components/catalog/AiProductRecommender';
 
 // Pages
 import LandingPage from './pages/LandingPage';
@@ -109,6 +110,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <ChatbotWidget />
+        <AiProductRecommender />
       </BrowserRouter>
     </Provider>
   );
