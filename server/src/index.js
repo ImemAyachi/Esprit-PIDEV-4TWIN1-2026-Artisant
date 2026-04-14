@@ -47,12 +47,29 @@ const httpServer = http.createServer(app);
 function isAllowedOrigin(origin) {
   if (!origin) return true; // server-to-server / curl / same-origin
 
-  const explicit = (process.env.CLIENT_URL || '').trim();
-  if (explicit && origin === explicit) return true;
+  const norm = (u) => String(u || '').trim().replace(/\/$/, '');
+  const explicit = norm(process.env.CLIENT_URL);
+  if (explicit && norm(origin) === explicit) return true;
+  const extras = (process.env.CORS_EXTRA_ORIGINS || '')
+    .split(',')
+    .map((s) => norm(s))
+    .filter(Boolean);
+  if (extras.length && extras.includes(norm(origin))) return true;
 
-  // Allow local dev ports (Vite often auto-increments).
+  // Local Vite (ports 5170–5179).
   if (/^http:\/\/localhost:517\d$/.test(origin)) return true;
   if (/^http:\/\/127\.0\.0\.1:517\d$/.test(origin)) return true;
+
+  // Vite preview
+  if (/^http:\/\/localhost:4173$/.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1:4173$/.test(origin)) return true;
+
+  // Dev: same machine + LAN when Vite uses `server.host: true` (other PCs / phones on Wi-Fi).
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    const lanVite = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):(517[0-9]|4173)$/;
+    if (lanVite.test(origin)) return true;
+  }
 
   return false;
 }

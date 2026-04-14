@@ -87,10 +87,17 @@ export default function ChatbotWidget() {
           parts: [{ text: m.text }]
         }));
 
-      const res = await fetch('http://localhost:5000/api/chat', {
+      const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+      const chatUrl = `${apiBase}/chat`;
+
+      const token = localStorage.getItem('token');
+      const res = await fetch(chatUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages })
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ messages: apiMessages }),
       });
 
       const data = await res.json();
