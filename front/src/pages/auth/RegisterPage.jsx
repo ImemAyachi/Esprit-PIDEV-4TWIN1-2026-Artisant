@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { registerUser, verify2FACode } from '../../store/slices/authSlice';
+import FaceCapture from '../../components/auth/FaceCapture';
 
 const ROLES = [
   { value: 'Architecte', label: 'Architecte', emoji: '' },
@@ -17,6 +18,8 @@ const RegisterPage = () => {
   const { loading, error, require2FA, tempEmail } = useSelector((s) => s.auth);
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({ defaultValues: { role: '' } });
   const [selectedRole, setSelectedRole] = useState('');
+  const [faceDescriptor, setFaceDescriptor] = useState(null);
+  const [showFaceCapture, setShowFaceCapture] = useState(true);
 
   const watchRole = watch('role');
 
@@ -32,7 +35,9 @@ const RegisterPage = () => {
         navigate('/dashboard/home');
       }
     } else {
-      const result = await dispatch(registerUser(data));
+      const payload = { ...data };
+      if (faceDescriptor) payload.faceDescriptor = faceDescriptor;
+      const result = await dispatch(registerUser(payload));
       if (result.meta.requestStatus === 'fulfilled' && !result.payload.require2FA) {
         navigate('/dashboard/home');
       }
@@ -151,6 +156,25 @@ const RegisterPage = () => {
                 {errors.password && <span className="form-error">{errors.password.message}</span>}
               </div>
 
+              {/* ── Optional Face Enrollment ─────────────────────── */}
+              {showFaceCapture && (
+                <FaceCapture
+                  onCapture={(descriptor) => setFaceDescriptor(descriptor)}
+                  onSkip={() => setShowFaceCapture(false)}
+                />
+              )}
+
+              {!showFaceCapture && faceDescriptor && (
+                <div className="face-capture-success" style={{ fontSize: '0.8rem' }}>
+                  <div className="face-capture-check">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                  Visage enregistré
+                </div>
+              )}
+
               {error && (
                 <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius-md)', padding: '0.875rem 1rem', color: '#ef4444', fontSize: '0.9rem' }}>
                   {error}
@@ -162,7 +186,7 @@ const RegisterPage = () => {
               </button>
             </form>
           ) : (
-            // Formulaire Étape 2 : Vérification du Code
+            // Étape 2 : Vérification du Code 2FA
             <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <p style={{ color: 'var(--clr-text-muted)', fontSize: '0.9rem' }}>
                 Un e-mail de confirmation contenant un code à 6 chiffres a été envoyé à <strong>{tempEmail}</strong>.<br/>Veuillez le saisir ci-dessous pour finaliser votre inscription.

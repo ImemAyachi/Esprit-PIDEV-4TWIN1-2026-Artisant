@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import GestureController from './components/common/GestureController';
+import ScreenReader from './components/common/ScreenReader';
 import { store } from './store';
 import ChatbotWidget from './components/chatbot/ChatbotWidget';
 
@@ -55,6 +56,7 @@ function App() {
           }}
         />
         <GestureController />
+        <ScreenReader />
         <Routes>
           {/* Pages publiques */}
           <Route path="/" element={<LandingPage />} />

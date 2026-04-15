@@ -544,3 +544,298 @@ tbody tr:hover { background: var(--clr-surface2); }
   .role-selector  { grid-template-columns: 1fr 1fr; }
   .features-grid  { grid-template-columns: 1fr; }
 }
+
+/* ── Facial Recognition — FaceCapture (Signup) ───────────────────── */
+.face-capture-widget {
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: var(--clr-surface2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.face-capture-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.face-capture-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(74,93,35,0.12);
+  border: 1px solid rgba(74,93,35,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--clr-primary);
+  flex-shrink: 0;
+}
+
+.face-capture-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--clr-text);
+}
+
+.face-capture-sub {
+  font-size: 0.775rem;
+  color: var(--clr-text-faint);
+}
+
+.face-capture-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.face-capture-skip {
+  background: none;
+  border: none;
+  font-size: 0.8rem;
+  color: var(--clr-text-faint);
+  cursor: pointer;
+  text-align: center;
+  padding: 0.25rem;
+  transition: var(--transition);
+  font-family: inherit;
+}
+.face-capture-skip:hover { color: var(--clr-text-muted); }
+
+.face-capture-viewport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.face-capture-video-wrap {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--clr-border);
+  background: #000;
+  width: 320px;
+  height: 240px;
+}
+
+.face-capture-overlay {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.75rem;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.face-capture-spinner {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(74,93,35,0.3);
+  border-top-color: var(--clr-primary);
+  border-radius: 50%;
+  animation: face-spin 0.9s linear infinite;
+}
+@keyframes face-spin { to { transform: rotate(360deg); } }
+
+.face-capture-msg {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  text-align: center;
+}
+
+.face-capture-countdown {
+  font-weight: 600;
+  color: var(--clr-primary);
+}
+
+.face-capture-success {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--clr-success);
+}
+
+.face-capture-check {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.12);
+  border: 1px solid rgba(16,185,129,0.3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ── Facial Recognition — FaceLogin (Signin modal) ───────────────── */
+.face-login-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.face-login-modal {
+  background: var(--clr-bg);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.face-login-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.face-login-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.face-login-icon {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  background: rgba(74,93,35,0.1);
+  border: 1px solid rgba(74,93,35,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--clr-primary);
+}
+
+.face-login-title { font-size: 0.9rem; font-weight: 700; color: var(--clr-text); }
+.face-login-sub   { font-size: 0.775rem; color: var(--clr-text-faint); }
+
+.face-login-close {
+  color: var(--clr-text-muted);
+  padding: 0.4rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.face-login-close:hover { background: var(--clr-surface2); color: var(--clr-text); }
+
+.face-login-viewport {
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  background: #000;
+}
+
+.face-login-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.85rem;
+}
+
+/* Corner frame decorators */
+.face-corner {
+  position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--clr-primary);
+  border-style: solid;
+  pointer-events: none;
+}
+.face-corner.tl { top: 8px; left: 8px;  border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; }
+.face-corner.tr { top: 8px; right: 8px; border-width: 2px 2px 0 0; border-radius: 0 3px 0 0; }
+.face-corner.bl { bottom: 8px; left: 8px;  border-width: 0 0 2px 2px; border-radius: 0 0 0 3px; }
+.face-corner.br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; }
+
+.face-login-footer {
+  padding: 0.875rem 1.25rem 1.25rem;
+  border-top: 1px solid var(--clr-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.face-scan-bar {
+  height: 3px;
+  background: var(--clr-border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.face-scan-progress {
+  height: 100%;
+  background: var(--clr-primary);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.face-login-msg {
+  font-size: 0.8rem;
+  color: var(--clr-text-muted);
+  text-align: center;
+}
+
+.face-login-cancel {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--clr-text-faint);
+  cursor: pointer;
+  text-align: center;
+  transition: var(--transition);
+  padding: 0.25rem;
+}
+.face-login-cancel:hover { color: var(--clr-text-muted); }
+
+/* Face auth trigger button on login page */
+.face-auth-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+  background: var(--clr-surface2);
+  color: var(--clr-text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.face-auth-btn:hover {
+  border-color: rgba(74,93,35,0.4);
+  color: var(--clr-primary);
+  background: rgba(74,93,35,0.04);
+}
+.face-auth-btn .face-auth-icon {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  background: rgba(74,93,35,0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--clr-primary);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--clr-text-faint);
+  font-size: 0.775rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--clr-border);
+}

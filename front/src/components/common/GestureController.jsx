@@ -403,7 +403,7 @@ export default function GestureController() {
             </AnimatePresence>
 
             {/* ═══ FAB ═══════════════════════════════════════════════ */}
-            <div className="fixed bottom-8 right-8 z-[9999] flex flex-col items-end gap-3">
+            <div data-sr-ignore className="fixed bottom-8 right-8 z-[9999] flex flex-col items-end gap-3">
 
                 {/* Floating gesture pill – visible when live + panel closed */}
                 <AnimatePresence>

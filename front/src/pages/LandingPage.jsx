@@ -198,7 +198,7 @@ const LandingPage = () => {
           <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '24px' }} />
           <span>Artisanet</span>
         </div>
-        <div>© 2024 Artisanet — Plateforme marketplace BTP Tunisie</div>
+        <div>© 2026 Artisanet — Plateforme marketplace Tunisie</div>
       </footer>
     </div>
   );

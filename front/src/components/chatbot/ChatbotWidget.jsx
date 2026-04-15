@@ -139,6 +139,7 @@ export default function ChatbotWidget() {
     <>
       {/* ── FAB ── */}
       <button
+        data-sr-ignore
         id="chatbot-fab"
         className={`ac-fab ${open ? 'ac-fab--open' : ''}`}
         onClick={() => setOpen(o => !o)}
@@ -164,6 +165,7 @@ export default function ChatbotWidget() {
 
       {/* ── Chat Window ── */}
       <div
+        data-sr-ignore
         className={`ac-window ${open ? 'ac-window--open' : ''}`}
         role="dialog"
         aria-label="ArtiChat — Votre guide Artisanet"

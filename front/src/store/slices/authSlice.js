@@ -24,6 +24,15 @@ export const loginUser = createAsyncThunk('auth/login', async (credentials, { re
   }
 });
 
+export const faceLoginUser = createAsyncThunk('auth/face-login', async (descriptor, { rejectWithValue }) => {
+  try {
+    const res = await api.post('/auth/face-login', { descriptor });
+    return res.data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Visage non reconnu');
+  }
+});
+
 export const verify2FACode = createAsyncThunk('auth/verify2FA', async ({ email, code }, { rejectWithValue }) => {
   try {
     const res = await api.post('/auth/verify-2fa', { email, code });
@@ -62,6 +71,17 @@ export const updateAvatar = createAsyncThunk('auth/updateAvatar', async (formDat
   }
 });
 
+// Helper — persist logged-in user to localStorage
+const persistSession = (state, payload) => {
+  state.loading = false;
+  state.error = null;
+  state.token = payload.token;
+  state.user = payload.user;
+  state.isAuthenticated = true;
+  localStorage.setItem('token', payload.token);
+  localStorage.setItem('user', JSON.stringify(payload.user));
+};
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -89,7 +109,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Register
+      // ── Register ──────────────────────────────────────────────────
       .addCase(registerUser.pending, (s) => { s.loading = true; s.error = null; s.require2FA = false; })
       .addCase(registerUser.fulfilled, (s, { payload }) => {
         s.loading = false;
@@ -98,46 +118,48 @@ const authSlice = createSlice({
           s.tempEmail = payload.email;
           toast.success(payload.message || 'Code de confirmation envoyé');
         } else {
-          s.token = payload.token;
-          s.user = payload.user;
-          s.isAuthenticated = true;
-          localStorage.setItem('token', payload.token);
-          localStorage.setItem('user', JSON.stringify(payload.user));
+          persistSession(s, payload);
           toast.success('Compte créé avec succès !');
         }
       })
       .addCase(registerUser.rejected, (s, { payload }) => { s.loading = false; s.error = payload; toast.error(payload); })
-      // Login
+
+      // ── Login ─────────────────────────────────────────────────────
       .addCase(loginUser.pending, (s) => { s.loading = true; s.error = null; })
       .addCase(loginUser.fulfilled, (s, { payload }) => {
-        s.loading = false;
-        s.token = payload.token;
-        s.user = payload.user;
-        s.isAuthenticated = true;
-        localStorage.setItem('token', payload.token);
-        localStorage.setItem('user', JSON.stringify(payload.user));
+        persistSession(s, payload);
         toast.success(`Bienvenue, ${payload.user?.firstName || ''} !`);
       })
-      .addCase(loginUser.rejected, (s, { payload }) => { 
-        s.loading = false; s.error = payload; toast.error(typeof payload === 'string' ? payload : 'Erreur réseau'); 
+      .addCase(loginUser.rejected, (s, { payload }) => {
+        s.loading = false; s.error = payload;
+        toast.error(typeof payload === 'string' ? payload : 'Erreur réseau');
       })
-      // Verify 2FA
+
+      // ── Face Login ────────────────────────────────────────────────
+      .addCase(faceLoginUser.pending, (s) => { s.loading = true; s.error = null; })
+      .addCase(faceLoginUser.fulfilled, (s, { payload }) => {
+        persistSession(s, payload);
+        toast.success(`Bienvenue, ${payload.user?.firstName || ''} !`);
+      })
+      .addCase(faceLoginUser.rejected, (s, { payload }) => {
+        s.loading = false; s.error = payload;
+        toast.error(typeof payload === 'string' ? payload : 'Visage non reconnu');
+      })
+
+      // ── Verify 2FA ────────────────────────────────────────────────
       .addCase(verify2FACode.pending, (s) => { s.loading = true; s.error = null; })
       .addCase(verify2FACode.fulfilled, (s, { payload }) => {
-        s.loading = false;
         s.require2FA = false;
         s.tempEmail = null;
-        s.token = payload.token;
-        s.user = payload.user;
-        s.isAuthenticated = true;
-        localStorage.setItem('token', payload.token);
-        localStorage.setItem('user', JSON.stringify(payload.user));
+        persistSession(s, payload);
         toast.success(`Bienvenue, ${payload.user.firstName} !`);
       })
-      .addCase(verify2FACode.rejected, (s, { payload }) => { 
-        s.loading = false; s.error = payload; toast.error(typeof payload === 'string' ? payload : 'Erreur code 2FA'); 
+      .addCase(verify2FACode.rejected, (s, { payload }) => {
+        s.loading = false; s.error = payload;
+        toast.error(typeof payload === 'string' ? payload : 'Erreur code 2FA');
       })
-      // Fetch me
+
+      // ── Fetch me ──────────────────────────────────────────────────
       .addCase(fetchMe.fulfilled, (s, { payload }) => {
         s.user = payload;
         localStorage.setItem('user', JSON.stringify(payload));

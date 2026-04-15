@@ -18,6 +18,7 @@ import {
   updateMe,
   updatePassword,
   uploadAvatarController,
+  faceLogin,
 } from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
@@ -39,8 +40,13 @@ const loginRules = [
   body('password').notEmpty().withMessage('Mot de passe requis'),
 ];
 
+const facLoginRules = [
+  body('descriptor').isArray({ min: 128, max: 128 }).withMessage('Descripteur facial invalide (128 valeurs requises)'),
+];
+
 router.post('/register', registerRules, validate, register);
 router.post('/login', loginRules, validate, login);
+router.post('/face-login', facLoginRules, validate, faceLogin);
 router.post('/verify-2fa',
   [
     body('email').isEmail().normalizeEmail().withMessage('Email invalide'),

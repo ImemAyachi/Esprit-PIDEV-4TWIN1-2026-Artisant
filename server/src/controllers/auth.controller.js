@@ -44,7 +44,7 @@ const generateToken = (id) =>
  *         description: Compte créé avec succès (en attente de validation)
  */
 export const register = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, password, role, phone, craft, companyName, supplierType, specialization } = req.body;
+  const { firstName, lastName, email, password, role, phone, craft, companyName, supplierType, specialization, faceDescriptor } = req.body;
 
   // Le SuperAdmin ne peut pas s'inscrire via l'API publique
   if (role === 'SuperAdmin') {
@@ -54,12 +54,19 @@ export const register = asyncHandler(async (req, res) => {
   const userExists = await User.findOne({ email });
   if (userExists) throw new AppError('Email déjà utilisé', 400);
 
-  const user = await User.create({
+  const createPayload = {
     firstName, lastName, email, password, role, phone,
     craft, companyName, supplierType, specialization,
     // Les professionnels nécessitent validation Admin (sauf en dev)
     isVerified: process.env.NODE_ENV === 'development',
-  });
+  };
+
+  // Store face descriptor if provided and valid (128-element array)
+  if (Array.isArray(faceDescriptor) && faceDescriptor.length === 128) {
+    createPayload.faceDescriptor = faceDescriptor;
+  }
+
+  const user = await User.create(createPayload);
 
   // ── Vérification Email (OTP au moment de l'inscription) ───────────────
   const twoFactorCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -381,3 +388,77 @@ export const uploadAvatarController = asyncHandler(async (req, res) => {
 
   res.json({ success: true, user });
 });
+
+/**
+ * POST /auth/face-login
+ * Authenticate user by comparing the incoming face descriptor against all stored descriptors.
+ * Uses Euclidean distance — threshold 0.55 (face-api.js default is 0.6, we're slightly stricter).
+ */
+export const faceLogin = asyncHandler(async (req, res) => {
+  const { descriptor } = req.body;
+
+  if (!descriptor || !Array.isArray(descriptor) || descriptor.length === 0) {
+    throw new AppError('Descripteur facial manquant', 400);
+  }
+
+  // Fetch ALL users who have enrolled a face descriptor (field is select:false so we must be explicit)
+  const users = await User.find({ faceDescriptor: { $exists: true, $not: { $size: 0 } } }).select('+faceDescriptor');
+
+  if (!users.length) {
+    throw new AppError('Aucun utilisateur avec reconnaissance faciale enregistrée', 404);
+  }
+
+  // Euclidean distance between two Float32Arrays / plain arrays
+  const euclidean = (a, b) => {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+      const diff = a[i] - b[i];
+      sum += diff * diff;
+    }
+    return Math.sqrt(sum);
+  };
+
+  const THRESHOLD = 0.55;
+  let bestMatch = null;
+  let bestDist = Infinity;
+
+  for (const user of users) {
+    const dist = euclidean(descriptor, user.faceDescriptor);
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestMatch = user;
+    }
+  }
+
+  if (!bestMatch || bestDist > THRESHOLD) {
+    throw new AppError('Visage non reconnu. Veuillez utiliser email/mot de passe.', 401);
+  }
+
+  if (!bestMatch.isActive) {
+    throw new AppError('Compte désactivé — contactez l\'administrateur', 403);
+  }
+
+  // Update last login
+  bestMatch.lastLogin = new Date();
+  await bestMatch.save({ validateBeforeSave: false });
+
+  const token = generateToken(bestMatch._id);
+
+  res.json({
+    success: true,
+    token,
+    user: {
+      _id: bestMatch._id,
+      firstName: bestMatch.firstName,
+      lastName: bestMatch.lastName,
+      email: bestMatch.email,
+      role: bestMatch.role,
+      isVerified: bestMatch.isVerified,
+      isActive: bestMatch.isActive,
+      avatar: bestMatch.avatar,
+      craft: bestMatch.craft,
+      rating: bestMatch.rating,
+    },
+  });
+});
+
