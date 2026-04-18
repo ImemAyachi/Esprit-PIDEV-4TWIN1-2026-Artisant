@@ -32,6 +32,7 @@ import ProfilePage from './pages/profile/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
 import ProjectPlannerPage from './pages/ProjectPlannerPage';
 import DashboardPlannerPage from './pages/dashboard/DashboardPlannerPage';
+import Ai2DPlanPage from './pages/Ai2DPlanPage';
 
 // Guards
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -114,6 +115,9 @@ function App() {
 
             {/* Planificateur IA — tous les rôles authentifiés */}
             <Route path="planner" element={<DashboardPlannerPage />} />
+
+            {/* Texte -> Plan 2D — tous les rôles authentifiés */}
+            <Route path="ai-2d-plan" element={<Ai2DPlanPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />

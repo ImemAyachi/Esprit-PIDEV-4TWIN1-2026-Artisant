@@ -5,11 +5,13 @@ import { logout } from '../../store/slices/authSlice';
 import { toggleSidebar } from '../../store/slices/uiSlice';
 
 const PLANNER_ITEM = { label: 'Planificateur IA', icon: '', path: '/dashboard/planner' };
+const AI2D_ITEM = { label: 'IA 2D', icon: '', path: '/dashboard/ai-2d-plan' };
 
 const ROLE_MENUS = {
   SuperAdmin: [
     { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
     PLANNER_ITEM,
+    AI2D_ITEM,
     { label: 'Utilisateurs', icon: '', path: '/dashboard/users' },
     { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
     { label: 'Artisans', icon: '', path: '/dashboard/artisans' },
@@ -17,6 +19,7 @@ const ROLE_MENUS = {
   Architecte: [
     { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
     PLANNER_ITEM,
+    AI2D_ITEM,
     { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
     { label: 'Artisans', icon: '', path: '/dashboard/artisans' },
     { label: 'Mes devis', icon: '', path: '/dashboard/quotes' },
@@ -24,6 +27,7 @@ const ROLE_MENUS = {
   Ingenieur: [
     { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
     PLANNER_ITEM,
+    AI2D_ITEM,
     { label: 'Mes chantiers', icon: '', path: '/dashboard/projects' },
     { label: 'Artisans', icon: '', path: '/dashboard/artisans' },
     { label: 'Catalogue', icon: '', path: '/dashboard/catalog' },
@@ -32,6 +36,7 @@ const ROLE_MENUS = {
   Artisan: [
     { label: 'Tableau de bord', icon: '', path: '/dashboard/home' },
     PLANNER_ITEM,
+    AI2D_ITEM,
     { label: 'Mes devis', icon: '', path: '/dashboard/quotes' },
     { label: 'Mes chantiers', icon: '', path: '/dashboard/projects' },
     { label: 'Mes commandes', icon: '', path: '/dashboard/my-orders' },
@@ -40,6 +45,7 @@ const ROLE_MENUS = {
   Fournisseur: [
     { label: 'Statistiques', icon: '', path: '/dashboard/supplier/stats' },
     PLANNER_ITEM,
+    AI2D_ITEM,
     { label: 'Mon catalogue', icon: '', path: '/dashboard/my-products' },
     { label: 'Commandes reçues', icon: '', path: '/dashboard/supplier/orders' },
     { label: 'Catalogue public', icon: '', path: '/dashboard/catalog' },

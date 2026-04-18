@@ -9,3 +9,6 @@ build/
 tmp_*.js
 *.tmp
 clean_notifs.js
+
+__pycache__/
+*.py[cod]
