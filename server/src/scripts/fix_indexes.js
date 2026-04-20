@@ -31,6 +31,13 @@ const dropIndexes = async () => {
             console.log('Index author_1_artisan_1 not found or already dropped');
         }
 
+        try {
+            await collection.dropIndex('author_1_artisan_1_project_1');
+            console.log('Dropped author_1_artisan_1_project_1');
+        } catch (e) {
+            console.log('Index author_1_artisan_1_project_1 not found or already dropped');
+        }
+
         console.log('Indexes dropped. They will be recreated with the new partialFilterExpression on next server start.');
         process.exit(0);
     } catch (err) {

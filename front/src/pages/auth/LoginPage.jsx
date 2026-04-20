@@ -69,7 +69,15 @@ const LoginPage = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Mot de passe</label>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '1rem' }}>
+                <label className="form-label" htmlFor="login-password">Mot de passe</label>
+                <Link
+                  to="/forgot-password"
+                  style={{ color: 'var(--clr-primary)', fontWeight: 600, fontSize: '0.85rem' }}
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
               <input
                 id="login-password"
                 className={`form-input ${errors.password ? 'is-error' : ''}`}

@@ -20,10 +20,12 @@ const sendEmail = async (options) => {
 
   try {
     await transporter.sendMail(message);
-    console.log(`Email 2FA envoyé à ${options.email}`);
+    console.log(`Email envoyé à ${options.email}`);
+    return true;
   } catch (error) {
     console.warn(`[Avertissement] Impossible d'envoyer l'email : ${error.message}`);
     console.log('--- Êtes-vous sûr(e) que SMTP_EMAIL et SMTP_PASSWORD sont configurés dans votre fichier .env ? ---');
+    return false;
   }
 };
 

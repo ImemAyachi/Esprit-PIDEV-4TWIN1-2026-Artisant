@@ -76,8 +76,6 @@ const QuoteDetail = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 860, margin: '0 auto' }}>
       <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ width: 'fit-content' }}>Retour</button>
 
-
-      {/* Header */}
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
@@ -97,7 +95,6 @@ const QuoteDetail = () => {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-        {/* Description */}
         <div className="card">
           <h3 style={{ marginBottom: '0.875rem' }}> Description</h3>
           <p style={{ color: 'var(--clr-text-muted)', lineHeight: 1.7, fontSize: '0.95rem' }}>{quote.description}</p>
@@ -108,7 +105,6 @@ const QuoteDetail = () => {
           )}
         </div>
 
-        {/* Interlocuteur */}
         <div className="card">
           <h3 style={{ marginBottom: '0.875rem' }}>{isRequester ? ' Artisan' : ' Demandeur'}</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
@@ -125,7 +121,6 @@ const QuoteDetail = () => {
         </div>
       </div>
 
-      {/* Détail du devis soumis */}
       {quote.items?.length > 0 && (
         <div className="card">
           <h3 style={{ marginBottom: '1rem' }}> Détail du devis</h3>
@@ -153,22 +148,18 @@ const QuoteDetail = () => {
         </div>
       )}
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-        {/* Architecte : accepter / refuser si pending */}
         {isRequester && quote.status === 'pending' && (
           <>
             <button className="btn btn-primary" onClick={handleAccept}>Accepter Accepter le devis</button>
             <button className="btn btn-danger"   onClick={handleRefuse}>Refuser Refuser</button>
           </>
         )}
-        {/* Artisan : soumettre si open */}
         {isArtisan && quote.status === 'open' && (
           <button className="btn btn-primary" onClick={() => setShowSubmit(true)}> Soumettre mon devis</button>
         )}
       </div>
 
-      {/* Submit devis modal */}
       {showSubmit && (
         <div className="modal-overlay" onClick={() => setShowSubmit(false)}>
           <div className="modal" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>

@@ -19,7 +19,10 @@ import User from '../models/User.model.js';
 import Product from '../models/Product.model.js';
 
 const seed = async () => {
-  await connectDB();
+  if (!(await connectDB())) {
+    console.error('❌ Seed annulé : MongoDB non connecté.');
+    process.exit(1);
+  }
 
   console.log('🌱 Suppression des données existantes...');
   await Promise.all([

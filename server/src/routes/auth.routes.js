@@ -8,7 +8,17 @@
  */
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, verify2FA, getMe, updateMe, updatePassword, uploadAvatarController } from '../controllers/auth.controller.js';
+import {
+  register,
+  login,
+  verify2FA,
+  forgotPassword,
+  resetPassword,
+  getMe,
+  updateMe,
+  updatePassword,
+  uploadAvatarController,
+} from '../controllers/auth.controller.js';
 import { protect } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { uploadAvatar } from '../middleware/upload.middleware.js';
@@ -39,6 +49,19 @@ router.post('/verify-2fa',
   validate,
   verify2FA
 );
+
+const forgotPasswordRules = [
+  body('email').isEmail().normalizeEmail().withMessage('Email invalide'),
+];
+
+const resetPasswordRules = [
+  body('email').optional({ checkFalsy: true }).isEmail().normalizeEmail().withMessage('Email invalide'),
+  body('token').notEmpty().trim().isLength({ min: 32, max: 128 }).withMessage('Token invalide'),
+  body('password').isLength({ min: 8 }).withMessage('Mot de passe min 8 caractères'),
+];
+
+router.post('/forgot-password', forgotPasswordRules, validate, forgotPassword);
+router.post('/reset-password', resetPasswordRules, validate, resetPassword);
 
 // Routes protégées
 router.use(protect);

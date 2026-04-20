@@ -10,6 +10,8 @@ import ChatbotWidget from './components/chatbot/ChatbotWidget';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import DashboardLayout from './layouts/DashboardLayout';
 
 // Dashboard pages par rôle
@@ -28,6 +30,9 @@ import SupplierStatsPage from './pages/supplier/SupplierStatsPage';
 import MyOrdersPage from './pages/artisans/MyOrdersPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import NotFoundPage from './pages/NotFoundPage';
+import ProjectPlannerPage from './pages/ProjectPlannerPage';
+import DashboardPlannerPage from './pages/dashboard/DashboardPlannerPage';
+import Ai2DPlanPage from './pages/Ai2DPlanPage';
 
 // Guards
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -54,8 +59,11 @@ function App() {
         <Routes>
           {/* Pages publiques */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/project-planner" element={<ProjectPlannerPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Dashboard protégé */}
           <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
@@ -104,6 +112,12 @@ function App() {
 
             {/* Profil commun */}
             <Route path="profile" element={<ProfilePage />} />
+
+            {/* Planificateur IA — tous les rôles authentifiés */}
+            <Route path="planner" element={<DashboardPlannerPage />} />
+
+            {/* Texte -> Plan 2D — tous les rôles authentifiés */}
+            <Route path="ai-2d-plan" element={<Ai2DPlanPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
