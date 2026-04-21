@@ -23,7 +23,9 @@ const safeParseJson = (raw) => {
 // Small delay to avoid per-minute token rate limits
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const callAgent = async (agentName, systemPrompt, userContent) => {
+
+//utilisation de l'api groq
+const callAgent = async (agentName, systemPrompt, userContent, maxTokens = 1200) => {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   const res = await groq.chat.completions.create({
     model: 'llama-3.1-8b-instant',
@@ -32,7 +34,7 @@ const callAgent = async (agentName, systemPrompt, userContent) => {
       { role: 'user', content: userContent },
     ],
     temperature: 0.1,
-    max_tokens: 1000,
+    max_tokens: maxTokens,
   });
   const raw = res.choices[0]?.message?.content || '{}';
   const parsed = safeParseJson(raw);
@@ -85,9 +87,9 @@ Réponds UNIQUEMENT en JSON valide:
     );
 
     if (a1 && a1.isConsistent === false) {
-      return res.status(200).json({ 
-        success: false, 
-        message: 'L\'IA détecte une description incohérente ou hors contexte BTP. Veuillez préciser votre besoin technique.' 
+      return res.status(200).json({
+        success: false,
+        message: 'L\'IA détecte une description incohérente ou hors contexte BTP. Veuillez préciser votre besoin technique.'
       });
     }
 
@@ -109,7 +111,7 @@ Réponds UNIQUEMENT en JSON valide:
       realProducts = await Product.find({ $text: { $search: searchQuery } })
         .limit(5).select('name price category unit').lean();
     }
-  } catch (_) {}
+  } catch (_) { }
 
   let agent2 = { totalEstimatedCost: 0, breakdown: [], budgetFeasibility: 'Non calculé', budgetGapDT: 0, savingsTips: [] };
   try {
@@ -173,12 +175,12 @@ Localisation: ${ctx.location}`
   // Infer crafts from phases + project description (no extra API call)
   const fullText = (JSON.stringify(agent1.phases) + ' ' + projectDescription).toLowerCase();
   const craftMap = {
-    'maçon':       ['mur', 'béton', 'fondation', 'gros oeuvre', 'brique', 'extension', 'construction'],
-    'plombier':    ['plomb', 'tuyau', 'sanitaire', 'eau', 'salle de bain', 'wc', 'cuisine'],
+    'maçon': ['mur', 'béton', 'fondation', 'gros oeuvre', 'brique', 'extension', 'construction'],
+    'plombier': ['plomb', 'tuyau', 'sanitaire', 'eau', 'salle de bain', 'wc', 'cuisine'],
     'électricien': ['électr', 'câble', 'tableau', 'prises', 'éclairage', 'spot', 'led', 'réseau', 'rj45', 'clim'],
-    'peintre':     ['peint', 'enduit', 'peinture'],
-    'carreleur':   ['carrelage', 'faïence', 'sol', 'grès', 'cérame'],
-    'menuisier':   ['porte', 'fenêtre', 'menuiserie', 'parquet', 'vitré'],
+    'peintre': ['peint', 'enduit', 'peinture'],
+    'carreleur': ['carrelage', 'faïence', 'sol', 'grès', 'cérame'],
+    'menuisier': ['porte', 'fenêtre', 'menuiserie', 'parquet', 'vitré'],
   };
   const craftsNeeded = Object.entries(craftMap)
     .filter(([, kws]) => kws.some(kw => fullText.includes(kw)))
@@ -189,7 +191,7 @@ Localisation: ${ctx.location}`
   try {
     realArtisans = await User.find({ role: 'Artisan', isActive: true, craft: { $in: craftsNeeded } })
       .limit(6).select('firstName lastName craft rating location experience').lean();
-  } catch (_) {}
+  } catch (_) { }
 
   let agent4 = { teamStructure: [], totalLaborDays: 0, teamCoordination: '' };
   try {
@@ -214,9 +216,16 @@ Artisans dispo: ${JSON.stringify(realArtisans.map(a => ({ craft: a.craft, name: 
   await sleep(800);
 
 
+  // Case-insensitive partial craft match (AI may return "Maçon Principal" vs DB "maçon")
+  const matchCraft = (memberCraft, artisanCraft) => {
+    if (!memberCraft || !artisanCraft) return false;
+    const m = memberCraft.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const a = artisanCraft.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return m.includes(a) || a.includes(m);
+  };
   const enrichedTeam = (agent4.teamStructure || []).map(member => ({
     ...member,
-    realArtisan: realArtisans.find(a => a.craft === member.craft) || null,
+    realArtisan: realArtisans.find(a => matchCraft(member.craft, a.craft)) || null,
   }));
 
   // ── AGENT 5 — Timeline Architect ──────────────────────────────────────────
@@ -233,19 +242,21 @@ Artisans dispo: ${JSON.stringify(realArtisans.map(a => ({ craft: a.craft, name: 
 RÈGLES:
 - N'utilise JAMAIS le mot "site" — utilise le vrai contexte (ex: "salle de bain", "appartement", "bureau", "villa"...)
 - Tâches précises et adaptées au projet
-- Maximum 6 semaines représentatives
-JSON requis:
+- Exactement 5 semaines représentatives
+- Chaque semaine : maximum 2 tâches courtes, 1 matériau max
+JSON requis (compact):
 {
   "totalDurationWeeks": 8,
-  "startRecommendation": "Conseil de démarrage adapté",
+  "startRecommendation": "Conseil court",
   "weeks": [
-    { "weekNumber": 1, "phase": "Nom exact", "tasks": ["Tâche précise 1", "Tâche précise 2"], "materialsToOrder": ["Matériau"], "milestone": "Jalon ou null" }
+    { "weekNumber": 1, "phase": "Nom", "tasks": ["Tâche 1", "Tâche 2"], "materialsToOrder": ["Matériau"], "milestone": null }
   ],
   "criticalPath": ["Phase critique"]
 }`,
       `Type de projet: ${agent1.projectType}
 Phases: ${phaseSummary}
-Durée totale: ${agent1.phases.reduce((s, p) => s + (p.durationWeeks || 0), 0) || 8} semaines`
+Durée totale: ${agent1.phases.reduce((s, p) => s + (p.durationWeeks || 0), 0) || 8} semaines`,
+      2000  // Planning needs more tokens to generate full weekly breakdown
     );
     if (a5 && Array.isArray(a5.weeks) && a5.weeks.length > 0) agent5 = a5;
   } catch (err) { console.error('[Brain] Agent 5 non-fatal:', err.message); }

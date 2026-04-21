@@ -3,14 +3,14 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const AGENTS = [
-  { key: 'architectBrain',   label: 'Agent 1 — Architect Brain',     desc: 'Décompose le projet en phases professionnelles' },
-  { key: 'costIntelligence', label: 'Agent 2 — Cost Intelligence',    desc: 'Calcule les coûts avec les prix réels du marché' },
-  { key: 'riskAnalysis',     label: 'Agent 3 — Risk Predictor',       desc: 'Identifie les risques avant le chantier' },
-  { key: 'teamBuilder',      label: 'Agent 4 — Smart Team Builder',   desc: "Compose l'équipe idéale depuis la plateforme" },
-  { key: 'timeline',         label: 'Agent 5 — Timeline Architect',   desc: 'Génère le planning semaine par semaine' },
+  { key: 'architectBrain', label: 'Agent 1 — Architect Brain', desc: 'Décompose le projet en phases professionnelles' },
+  { key: 'costIntelligence', label: 'Agent 2 — Cost Intelligence', desc: 'Calcule les coûts avec les prix réels du marché' },
+  { key: 'riskAnalysis', label: 'Agent 3 — Risk Predictor', desc: 'Identifie les risques avant le chantier' },
+  { key: 'teamBuilder', label: 'Agent 4 — Smart Team Builder', desc: "Compose l'équipe idéale depuis la plateforme" },
+  { key: 'timeline', label: 'Agent 5 — Timeline Architect', desc: 'Génère le planning semaine par semaine' },
 ];
 
-const SEVERITY_COLOR   = { 'Élevé': '#ef4444', 'Moyen': '#f59e0b', 'Faible': '#22c55e' };
+const SEVERITY_COLOR = { 'Élevé': '#ef4444', 'Moyen': '#f59e0b', 'Faible': '#22c55e' };
 const FEASIBILITY_COLOR = { 'Réalisable': '#22c55e', 'Tendu': '#f59e0b', 'Insuffisant': '#ef4444' };
 
 function Badge({ label, color }) {
@@ -64,12 +64,12 @@ function Collapsible({ title, children, defaultOpen = false }) {
 
 export default function AiChantierBrainPage() {
   const [projectDescription, setProjectDescription] = useState('');
-  const [budget, setBudget]         = useState('');
-  const [location, setLocation]     = useState('');
-  const [loading, setLoading]       = useState(false);
+  const [budget, setBudget] = useState('');
+  const [location, setLocation] = useState('');
+  const [loading, setLoading] = useState(false);
   const [activeAgent, setActiveAgent] = useState(-1);
-  const [report, setReport]         = useState(null);
-  const [error, setError]           = useState(null);
+  const [report, setReport] = useState(null);
+  const [error, setError] = useState(null);
 
   const runAnalysis = async (e) => {
     e.preventDefault();
@@ -82,9 +82,9 @@ export default function AiChantierBrainPage() {
     try {
       const { data } = await api.post('/ai/chantier-brain', { projectDescription, budget, location });
       clearInterval(interval); setActiveAgent(5);
-      if (data.success) { 
-        setReport(data.report); 
-        toast.success('Rapport généré avec succès !'); 
+      if (data.success) {
+        setReport(data.report);
+        toast.success('Rapport généré avec succès !');
       } else {
         setError(data.message);
         toast.error(data.message);
@@ -140,7 +140,7 @@ export default function AiChantierBrainPage() {
               boxShadow: '0 4px 12px rgba(239, 68, 68, 0.05)'
             }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               <span>{error}</span>
             </div>
@@ -184,7 +184,7 @@ export default function AiChantierBrainPage() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {AGENTS.map((agent, idx) => {
-              const isDone   = idx < activeAgent;
+              const isDone = idx < activeAgent;
               const isActive = idx === activeAgent;
               return (
                 <div key={agent.key} style={{
@@ -199,7 +199,7 @@ export default function AiChantierBrainPage() {
                     <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--clr-text)' }}>{agent.label}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--clr-text-muted)' }}>{agent.desc}</div>
                   </div>
-                  {isDone   && <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 700 }}>Complété</span>}
+                  {isDone && <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: 700 }}>Complété</span>}
                   {isActive && <span style={{ fontSize: '0.75rem', color: 'var(--clr-primary)', fontWeight: 700 }}>En cours...</span>}
                 </div>
               );
@@ -215,10 +215,10 @@ export default function AiChantierBrainPage() {
           {/* Summary Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: '0.75rem' }}>
             {[
-              { label: 'Coût Estimé',   value: `${(report.costIntelligence?.totalEstimatedCost || 0).toLocaleString()} DT`, color: '#22c55e' },
-              { label: 'Durée Projet',  value: `${report.timeline?.totalDurationWeeks || '?'} semaines`,                   color: '#3b82f6' },
-              { label: 'Risque',        value: report.riskAnalysis?.riskLevel || '?',                                       color: '#f59e0b' },
-              { label: 'Complexité',    value: report.architectBrain?.complexity || '?',                                    color: '#8b5cf6' },
+              { label: 'Coût Estimé', value: `${(report.costIntelligence?.totalEstimatedCost || 0).toLocaleString()} DT`, color: '#22c55e' },
+              { label: 'Durée Projet', value: `${report.timeline?.totalDurationWeeks || '?'} semaines`, color: '#3b82f6' },
+              { label: 'Risque', value: report.riskAnalysis?.riskLevel || '?', color: '#f59e0b' },
+              { label: 'Complexité', value: report.architectBrain?.complexity || '?', color: '#8b5cf6' },
             ].map((stat, i) => (
               <div key={i} className="card" style={{ padding: '1rem' }}>
                 <div style={{ fontSize: '0.7rem', color: 'var(--clr-text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</div>

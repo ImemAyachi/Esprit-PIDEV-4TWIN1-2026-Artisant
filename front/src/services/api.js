@@ -10,7 +10,7 @@ const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const api = axios.create({
   baseURL: apiUrl,
-  timeout: 15000,
+  timeout: 90000, // 90s — AI Chantier Brain runs 5 agents in chain (~30-35s)
   headers: { 'Content-Type': 'application/json' },
 });
 
