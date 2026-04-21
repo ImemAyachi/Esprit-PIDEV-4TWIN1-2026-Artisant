@@ -33,6 +33,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ProjectPlannerPage from './pages/ProjectPlannerPage';
 import DashboardPlannerPage from './pages/dashboard/DashboardPlannerPage';
 import Ai2DPlanPage from './pages/Ai2DPlanPage';
+import AiChantierBrainPage from './pages/AiChantierBrainPage';
 
 // Guards
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -118,6 +119,9 @@ function App() {
 
             {/* Texte -> Plan 2D — tous les rôles authentifiés */}
             <Route path="ai-2d-plan" element={<Ai2DPlanPage />} />
+
+            {/* 🧠 AI Chantier Brain — Multi-Agent Intelligence */}
+            <Route path="chantier-brain" element={<AiChantierBrainPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
