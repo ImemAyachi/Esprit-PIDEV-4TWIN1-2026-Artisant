@@ -140,8 +140,8 @@ const AiProductRecommender = () => {
             <>
               <p style={{ margin: '0 0 8px 0', fontWeight: 600 }}>Bonjour !</p>
               <p style={{ margin: 0 }}>
-                Je suis <strong>BatiBot</strong>, votre assistant expert en matériaux de construction.
-                Décrivez-moi votre projet et je trouverai les meilleurs produits du catalogue !
+                Je suis <strong>BatiBot</strong>, votre conseiller expert en <strong>matériaux de construction</strong>.
+                Je peux vous aider à trouver les meilleurs produits (ciment, marbre, outils...) pour vos travaux.
               </p>
               <div style={{
                 marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 6

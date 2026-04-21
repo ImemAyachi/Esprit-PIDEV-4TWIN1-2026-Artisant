@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Product from "../models/Product.model.js";
 
 export const recommendProducts = async (req, res) => {
+  console.log(`[AI] Recommend request received: "${req.body?.need}"`);
   try {
     const { need } = req.body;
     if (!need) return res.status(400).json({ success: false, message: "Le besoin est requis" });
@@ -24,33 +25,42 @@ export const recommendProducts = async (req, res) => {
 
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // ─── Fallback local intelligent (sans limite) ───
-    const performLocalFallback = (reason) => {
+    // ─── Fallback local intelligent (uniquement si pertinent) ───
+    const performLocalFallback = (reason, isIrrelevant = false) => {
       console.log(`[AI] Fallback local activé. Raison: ${reason}`);
-      const keywords = need.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      
+      if (isIrrelevant) {
+        return res.status(200).json({ 
+          success: true, 
+          data: [], 
+          message: "Je suis BatiBot, spécialisé uniquement dans la recommandation de matériaux. N'hésitez pas à me décrire vos travaux !" 
+        });
+      }
 
+      const keywords = need.toLowerCase().split(/\s+/).filter(w => w.length > 2);
       let matched = existingProducts.filter(p => {
         const haystack = `${p.name} ${p.category} ${p.description || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
         return keywords.some(k => haystack.includes(k));
       });
 
-      // Si aucun mot clé ne matche, proposer des produits variés
       if (matched.length === 0) {
-        const shuffled = [...existingProducts].sort(() => 0.5 - Math.random());
-        matched = shuffled.slice(0, 4);
-      } else {
-        // Trier par pertinence (nombre de mots clés matchés)
-        matched = matched
-          .map(p => {
-            const haystack = `${p.name} ${p.category} ${p.description || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
-            const score = keywords.filter(k => haystack.includes(k)).length;
-            return { ...p, _score: score };
-          })
-          .sort((a, b) => b._score - a._score)
-          .slice(0, 5);
+        return res.status(200).json({ 
+          success: true, 
+          data: [], 
+          message: "Désolé, je n'ai pas trouvé de produits correspondant à votre recherche. Essayez d'être plus spécifique sur les matériaux (ex: marbre, ciment...)." 
+        });
       }
 
-      // Grouper par catégorie
+      // Trier par pertinence (nombre de mots clés matchés)
+      matched = matched
+        .map(p => {
+          const haystack = `${p.name} ${p.category} ${p.description || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
+          const score = keywords.filter(k => haystack.includes(k)).length;
+          return { ...p, _score: score };
+        })
+        .sort((a, b) => b._score - a._score)
+        .slice(0, 5);
+
       const grouped = {};
       matched.forEach(p => {
         const cat = p.category || 'Autre';
@@ -70,7 +80,6 @@ export const recommendProducts = async (req, res) => {
       return res.status(200).json({ success: true, data: enrichedData });
     };
 
-    // Si pas de clé API → fallback
     if (!apiKey) return performLocalFallback("Clé API manquante");
 
     // ─── Tentative Gemini ───
@@ -78,21 +87,28 @@ export const recommendProducts = async (req, res) => {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "models/gemini-flash-latest" });
 
-      const prompt = `Agis comme un conseiller expert en BTP.
-      Besoin : "${need}"
-      CATALOGUE :
+      const prompt = `Tu es BatiBot, un assistant qui recommande UNIQUEMENT des MATÉRIAUX DE CONSTRUCTION du catalogue.
+      
+      RÈGLES STRICTES :
+      1. Si l'utilisateur pose une question sur le fonctionnement du site, sur son compte, ou toute question générale qui n'est pas une recherche de matériaux, retourne EXCLUSIVEMENT un tableau VIDE : [].
+      2. Ne réponds jamais par du texte en dehors du JSON.
+      3. Si l'utilisateur cherche des matériaux, propose les meilleurs IDs du catalogue.
+
+      Besoin utilisateur : "${need}"
+      
+      CATALOGUE DISPONIBLE :
       ${catalogContext}
 
-      Réponds UNIQUEMENT en JSON :
+      Format de réponse attendu :
       [
         {
-          "title": "Catégorie",
-          "advice": "Conseil",
-          "matchedProductIds": ["ID1"]
+          "title": "Nom de la sélection (ex: Fondations)",
+          "advice": "Un conseil court et expert",
+          "matchedProductIds": ["ID1", "ID2"]
         }
       ]`;
 
-      console.log(`[AI] Envoi requête à Gemini...`);
+      console.log(`[AI] Envoi requête à Gemini pour: "${need}"...`);
       const result = await model.generateContent(prompt);
 
       if (!result || !result.response) {
@@ -102,8 +118,9 @@ export const recommendProducts = async (req, res) => {
       const responseText = result.response.text();
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);
 
-      if (!jsonMatch) {
-        return performLocalFallback("Format de réponse invalide");
+      // Si Gemini retourne [] ou rien du tout, on considère que c'est hors-sujet ou sans résultat
+      if (!jsonMatch || jsonMatch[0] === "[]") {
+        return performLocalFallback("Requête hors-sujet ou sans produits", true);
       }
 
       const recommendation = JSON.parse(jsonMatch[0]);
@@ -123,7 +140,6 @@ export const recommendProducts = async (req, res) => {
         };
       }).filter(item => item.products.length > 0);
 
-      // Si Gemini ne retourne rien d'utile → fallback
       if (enrichedData.length === 0) {
         return performLocalFallback("Gemini n'a trouvé aucun produit correspondant");
       }
@@ -131,7 +147,6 @@ export const recommendProducts = async (req, res) => {
       return res.status(200).json({ success: true, data: enrichedData });
 
     } catch (apiError) {
-      // ⚡ Quota épuisé, 429, 404, ou toute erreur API → fallback silencieux
       console.error("[AI] Erreur API Gemini:", apiError.message);
       return performLocalFallback(apiError.message);
     }
