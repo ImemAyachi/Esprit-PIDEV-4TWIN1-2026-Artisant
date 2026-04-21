@@ -8,8 +8,9 @@ import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import 'dotenv/config';
 import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 import connectDB from './config/db.js';
 import { setupSwagger } from './config/swagger.js';
@@ -28,6 +29,8 @@ import notificationRoutes from './routes/notification.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import aiRoutes from './routes/ai.routes.js';
+import workforceRoutes from './routes/workforce.routes.js';
+
 
 // ---- Routes (Yahya's unique architecture) ----
 // Note: These files will need to be converted to ES Modules (import/export)
@@ -43,10 +46,46 @@ import { errorHandler } from './middleware/error.middleware.js';
 const app = express();
 const httpServer = http.createServer(app);
 
+// Ensure `.env` is loaded from the `server/` folder even if the process
+// is started from another working directory.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // server-to-server / curl / same-origin
+
+  const norm = (u) => String(u || '').trim().replace(/\/$/, '');
+  const explicit = norm(process.env.CLIENT_URL);
+  if (explicit && norm(origin) === explicit) return true;
+  const extras = (process.env.CORS_EXTRA_ORIGINS || '')
+    .split(',')
+    .map((s) => norm(s))
+    .filter(Boolean);
+  if (extras.length && extras.includes(norm(origin))) return true;
+
+  // Local Vite (ports 5170–5179).
+  if (/^http:\/\/localhost:517\d$/.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1:517\d$/.test(origin)) return true;
+
+  // Vite preview
+  if (/^http:\/\/localhost:4173$/.test(origin)) return true;
+  if (/^http:\/\/127\.0\.0\.1:4173$/.test(origin)) return true;
+
+  // Dev: same machine + LAN when Vite uses `server.host: true` (other PCs / phones on Wi-Fi).
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    const lanVite = /^http:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}):(517[0-9]|4173)$/;
+    if (lanVite.test(origin)) return true;
+  }
+
+  return false;
+}
+
 // ─── Socket.io ────────────────────────────────────────────────────────────────
 const io = new SocketServer(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     methods: ['GET', 'POST'],
   },
 });
@@ -73,7 +112,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
   credentials: true,
 }));
 app.use(morgan('dev'));
@@ -112,6 +151,8 @@ app.use(`${API}/documents`, documentRoutes);
 app.use(`${API}/invoices`, invoiceRoutes);
 app.use(`${API}/public`, publicRoutes);
 app.use(`${API}/uploads`, uploadRoutes);
+app.use(`${API}/ai`, aiRoutes);
+app.use(`${API}/workforce`, workforceRoutes);
 
 // * Note: The following overlapping routes from Yahya were omitted to prevent conflicts:
 // * authRoutes.js, userRoutes.js, productRoutes.js, orderRoutes.js, projectRoutes.js, quoteRoutes.js
@@ -129,13 +170,55 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // ─── Démarrage ────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const BASE_PORT = Number(process.env.PORT) || 5000;
 
-connectDB().then(() => {
-  httpServer.listen(PORT, () => {
-    console.log(`\n🚀 ARTISANET API démarrée sur http://localhost:${PORT}`);
-    console.log(`📚 Documentation Swagger : http://localhost:${PORT}/api-docs`);
-    console.log(`🔌 Socket.io actif`);
-    console.log(`🗄️  MongoDB : ${process.env.MONGO_URI}\n`);
+function listenWithFallback(server, port, { maxAttempts = 20 } = {}) {
+  return new Promise((resolve, reject) => {
+    let attempt = 0;
+
+    const tryListen = (p) => {
+      const onError = (err) => {
+        // If port is busy, try the next one.
+        if (err && err.code === 'EADDRINUSE' && attempt < maxAttempts) {
+          attempt += 1;
+          server.removeListener('listening', onListening);
+          console.warn(`⚠️  Port ${p} occupé. Tentative sur ${p + 1}...`);
+          return tryListen(p + 1);
+        }
+        return reject(err);
+      };
+
+      const onListening = () => {
+        server.removeListener('error', onError);
+        resolve(p);
+      };
+
+      // Ensure handlers only apply to this attempt.
+      server.once('error', onError);
+      server.once('listening', onListening);
+      server.listen(p);
+    };
+
+    tryListen(port);
   });
+}
+
+connectDB().then((ok) => {
+  if (!ok) {
+    console.warn('\n⚠️  MongoDB indisponible — démarrage en mode dégradé.');
+    console.warn('   - Les routes nécessitant la DB peuvent échouer');
+    console.warn('   - Certaines fonctionnalités peuvent être limitées sans persistance\n');
+  }
+
+  listenWithFallback(httpServer, BASE_PORT)
+    .then((port) => {
+      console.log(`\n🚀 ARTISANET API démarrée sur http://localhost:${port}`);
+      console.log(`📚 Documentation Swagger : http://localhost:${port}/api-docs`);
+      console.log(`🔌 Socket.io actif`);
+      console.log(`🗄️  MongoDB : ${ok ? process.env.MONGO_URI : 'OFFLINE'}\n`);
+    })
+    .catch((err) => {
+      console.error('❌ Impossible de démarrer le serveur.', err);
+      process.exit(1);
+    });
 });

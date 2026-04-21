@@ -190,15 +190,39 @@ const LandingPage = () => {
 
       {/* Footer */}
       <footer style={{
-        borderTop: '1px solid var(--clr-border)', padding: '2rem 5%',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        flexWrap: 'wrap', gap: '1rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem',
+        borderTop: '1px solid var(--clr-border)', padding: '3rem 5%',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        flexWrap: 'wrap', gap: '2rem', color: 'var(--clr-text-muted)', fontSize: '0.85rem',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--clr-primary)', fontWeight: 700, fontSize: '1rem' }}>
-          <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '24px' }} />
-          <span>Artisanet</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--clr-primary)', fontWeight: 700, fontSize: '1.2rem' }}>
+            <img src="/Logo-artisanet.png" alt="Artisanet" style={{ height: '32px' }} />
+            <span>Artisanet</span>
+          </div>
+          <div style={{ maxWidth: 300, lineHeight: 1.6 }}>
+            La première marketplace BTP en Tunisie connectant professionnels, artisans et fournisseurs.
+          </div>
         </div>
-        <div>© 2024 Artisanet — Plateforme marketplace BTP Tunisie</div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ color: 'var(--clr-text)', fontWeight: 700, marginBottom: '0.25rem' }}>Contact Professionnel</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <a href="mailto:artisanetcommunity@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>artisanetcommunity@gmail.com</a>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>+216 71 800 900</span>
+          </div>
+        </div>
+
+        <div style={{ alignSelf: 'flex-end', width: '100%', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem', marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>© 2026 Artisanet — Plateforme marketplace en Tunisie</div>
+          <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <Link to="/login" style={{ color: 'inherit', textDecoration: 'none' }}>Connexion</Link>
+            <Link to="/register" style={{ color: 'inherit', textDecoration: 'none' }}>Inscription</Link>
+          </div>
+        </div>
       </footer>
     </div>
   );

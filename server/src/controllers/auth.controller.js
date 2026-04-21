@@ -6,6 +6,7 @@
  * GET  /api/auth/me        — Profil courant
  * PUT  /api/auth/me        — Mise à jour du profil
  */
+import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.model.js';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
@@ -247,13 +248,11 @@ export const getMe = asyncHandler(async (req, res) => {
 });
 
 export const updateMe = asyncHandler(async (req, res) => {
-  // Champs non modifiables via ce endpoint
   const forbidden = ['password', 'role', 'email', 'isVerified', 'isActive', 'rating'];
   forbidden.forEach((field) => delete req.body[field]);
 
-  // Nettoyage des données pour éviter les erreurs d'enum (ex: si craft est renvoyé vide par un non-artisan)
   if (req.body.craft === '') delete req.body.craft;
-  if (!req.body.firstName) delete req.body.firstName; // Ne pas vider si requis
+  if (!req.body.firstName) delete req.body.firstName;
   if (!req.body.lastName) delete req.body.lastName;
 
   const user = await User.findByIdAndUpdate(req.user._id, req.body, {
@@ -277,6 +276,96 @@ export const updatePassword = asyncHandler(async (req, res) => {
 
   const token = generateToken(user._id);
   res.json({ success: true, message: 'Mot de passe mis à jour', token });
+});
+
+/**
+ * POST /api/auth/forgot-password — envoie un lien de réinitialisation (réponse identique si l’email est inconnu)
+ */
+export const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const generic =
+    'Si un compte existe pour cet e-mail, un lien de réinitialisation a été envoyé.';
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.json({ success: true, message: generic });
+  }
+
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  user.resetPasswordExpire = Date.now() + 24 * 60 * 60 * 1000;
+  await user.save({ validateBeforeSave: false });
+
+  const baseUrl = (process.env.CLIENT_URL || 'http://localhost:5176').replace(/\/$/, '');
+  const resetUrl = `${baseUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
+
+  const localhostHint =
+    /localhost|127\.0\.0\.1/i.test(baseUrl)
+      ? `
+        <p style="color:#92400e;font-size:12px;border:1px solid #fcd34d;padding:12px;border-radius:8px;background:#fffbeb;margin-top:16px;">
+          <strong>Lien « localhost » :</strong> il n’ouvre l’app que sur la machine où le front tourne (<code>npm run dev</code> dans <code>front/</code>).
+          Depuis un téléphone ou un autre PC, définissez dans <code>server/.env</code> une URL joignable, par ex.
+          <code>CLIENT_URL=http://192.168.x.x:5176</code> (IP de votre PC sur le réseau), puis relancez l’API et renvoyez un nouveau mail.
+        </p>`
+      : '';
+
+  const sent = await sendEmail({
+    email: user.email,
+    subject: 'Réinitialisation de votre mot de passe — Artisanet',
+    message: `Bonjour ${user.firstName},\n\nPour choisir un nouveau mot de passe, ouvrez ce lien (valide 24 heures) :\n${resetUrl}\n\nSi vous n'avez pas demandé cette réinitialisation, ignorez cet e-mail.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px;">
+        <h2 style="color: #4a5d23;">Réinitialisation du mot de passe</h2>
+        <p>Bonjour ${user.firstName},</p>
+        <p>Cliquez sur le bouton ci-dessous pour définir un nouveau mot de passe (lien valide 24 heures).</p>
+        <p><a href="${resetUrl}" style="display:inline-block;background:#4a5d23;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;">Réinitialiser mon mot de passe</a></p>
+        <p style="color:#666;font-size:12px;">Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :<br/>${resetUrl}</p>
+        ${localhostHint}
+      </div>
+    `,
+  });
+
+  if (!sent && process.env.NODE_ENV === 'development') {
+    console.log('\n📧 SMTP indisponible — lien de reset (dev uniquement) :\n', resetUrl, '\n');
+  }
+
+  res.json({ success: true, message: generic });
+});
+
+/**
+ * POST /api/auth/reset-password — définit un nouveau mot de passe via token reçu par e-mail
+ */
+export const resetPassword = asyncHandler(async (req, res) => {
+  const { token, password } = req.body;
+  const incoming = String(token ?? '').trim();
+  if (!incoming) {
+    throw new AppError('Lien incomplet. Demandez un nouveau lien.', 400);
+  }
+
+  const hashed = crypto.createHash('sha256').update(incoming).digest('hex');
+  const now = Date.now();
+
+  const user = await User.findOne({
+    resetPasswordExpire: { $gt: now },
+    $or: [{ resetPasswordToken: incoming }, { resetPasswordToken: hashed }],
+  });
+
+  if (!user) {
+    throw new AppError(
+      'Lien invalide, expiré ou déjà utilisé. Un nouveau mail « mot de passe oublié » annule l’ancien lien — demandez-en un nouveau si besoin.',
+      400
+    );
+  }
+
+  user.password = password;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Mot de passe mis à jour. Vous pouvez vous connecter.',
+  });
 });
 
 /**
