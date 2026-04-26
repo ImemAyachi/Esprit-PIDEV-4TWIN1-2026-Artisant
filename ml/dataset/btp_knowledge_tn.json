@@ -1,0 +1,23 @@
+{
+  "market_prices_2026_tn": {
+    "ciment": {"sac_50kg": "18.500 - 22.000 TND", "ton": "380 - 420 TND"},
+    "acier": {"ton": "2800 - 3200 TND", "barre_12": "35 TND"},
+    "brique": {"brique_8": "0.650 TND", "brique_12": "0.950 TND"},
+    "beton_pret": {"m3": "180 - 220 TND"},
+    "marbre": {"thala_beige": "45 - 65 TND/m2", "blanc_carrara": "180 - 350 TND/m2"}
+  },
+  "conversions": {
+    "1_malyoun": "1000 TND",
+    "budget_200_malyoun": "200,000 TND"
+  },
+  "construction_phases": [
+    "Terrassement & Fouilles",
+    "Gros Œuvre (Fondations, Poteaux, Dalles)",
+    "Maçonnerie (Briques)",
+    "Étanchéité",
+    "Plomberie & Électricité (Encastré)",
+    "Revêtement (Carrelage/Marbre)",
+    "Menuiserie (Alu/Bois)",
+    "Finition (Peinture/Déco)"
+  ]
+}

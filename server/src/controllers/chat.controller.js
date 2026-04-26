@@ -1,81 +1,120 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { callLocalLLM } from '../utils/aiClient.js';
+import { callCloudAI } from '../utils/cloudAiClient.js';
+import Product from '../models/Product.model.js';
+import ChatSession from '../models/ChatSession.model.js';
+import fs from 'fs';
 
-// System prompt — gives Gemini full context about the BuildMarket / Artisanet platform
-const SYSTEM_PROMPT = `You are ArtiChat, the official AI assistant for Artisanet BuildMarket — a construction marketplace platform built for the Tunisian market.
+// Load Expert BTP Knowledge (Safely)
+let btpKnowledge = {};
+try {
+    btpKnowledge = JSON.parse(fs.readFileSync('C:\\Users\\hp elite\\Desktop\\test1\\Esprit-PIDEV-4TWIN1-2026-Artisant\\ml\\dataset\\btp_knowledge_tn.json', 'utf8'));
+} catch (e) {
+    console.error("Failed to load knowledge base:", e.message);
+}
 
-Your role is to help users with anything related to:
-- The BuildMarket / Artisanet platform (how to use it, its features, navigation)
-- The construction and building industry (chantiers, travaux, matériaux, gestion de projets)
-- Roles on the platform: Artisan, Ingénieur, Architecte, Fournisseur, Admin (SuperAdmin)
-- Platform features: Projects management, Product catalog, Quotes (devis), Orders, Reviews, Budget tracking, Invoices, Documents, Supplier statistics
+const SYSTEM_PROMPT = `You are ArtiChat, an ELITE construction AI expert for Artisanet BuildMarket (Tunisia).
+KNOWLEDGE BASE:
+${JSON.stringify(btpKnowledge, null, 2)}
 
-Platform context:
-- Users can register as: Artisan, Ingénieur, Architecte, Fournisseur, or Admin
-- Artisans: execute work orders, receive project assignments
-- Ingénieurs: create and manage construction projects, place orders, request quotes
-- Architectes: oversee project design and planning
-- Fournisseurs: sell construction materials in the catalog, manage their products and orders
-- Admin (SuperAdmin): manage all users, platform settings
-- The platform has: a product catalog, project management system, quote/devis system, order tracking, artisan directory, budget management, document management, invoice generation, real-time notifications
-- Navigation is done through a sidebar in the dashboard
-- To add a project: connect as Ingénieur or Architecte → Projects in sidebar → Add button → fill form → submit
-- To add a product: connect as Fournisseur → My Products → Add Product → fill form → save
-- To browse catalog: Dashboard → Catalog in sidebar → filter/search → click product
-- To manage orders: Dashboard → My Orders (artisan/ingenieur) or Supplier Orders (fournisseur)
-- To manage quotes/devis: Dashboard → Quotes in sidebar
-- To find artisans: Dashboard → Artisans in sidebar
-- Budget is managed per-project in the project detail page → Budget tab
+CORE RULES:
+1. You provide technical and financial advice for construction in Tunisia.
+2. 1 Malyoun = 1000 TND. Budget 200 Malyoun = 200,000 TND.
+3. For large budgets (like 200M), explain phases: Foundation, Gros Œuvre, Finition.
+4. Always suggest relevant products from our Catalog.
+5. Use natural Tunisian Arabizi/Darija (e.g., 'mrigla', 'bch', 'famma', 'lhne').
 
-You can also discuss general topics about:
-- Construction techniques, materials, building regulations
-- Project management in construction
-- The Tunisian construction market
-- Best practices for working with artisans
+PLATFORM NAVIGATION:
+- Catalog: Dashboard -> Catalog
+- Quotes: Dashboard -> Quotes -> Add
+- Projects: Dashboard -> Projects -> Add
+- Artisans: Dashboard -> Artisans
 
-Always be friendly, helpful and professional. You can respond in French, English, or Arabic depending on what language the user writes in. Keep your answers concise and practical.
-
-If a user asks something completely unrelated to construction or the platform, politely redirect them to topics you can help with.`;
+Be precise, expert, and never repeat the same generic intro.`;
 
 /**
- * POST /api/chat
- * Body: { messages: [{role: 'user'|'model', parts: [{text: string}]}] }
+ * Optimized Chat Controller
  */
 export const chat = async (req, res) => {
   try {
     const { messages } = req.body;
+    const userId = req.user?._id;
+    if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({ error: 'Messages array is required' });
+    const userText = messages[messages.length - 1]?.parts?.[0]?.text || "";
+    
+    // 1. Contextual Product Retrieval
+    let recommendations = [];
+    try {
+        recommendations = await Product.find({ 
+            $text: { $search: userText }, 
+            isAvailable: true 
+        }).limit(3).lean();
+    } catch (e) { /* ignore search errors */ }
+
+    const recContext = recommendations.length > 0 
+        ? `Catalog Highlights: ${recommendations.map(r => `${r.name} (${r.price} ${r.priceUnit})`).join(', ')}`
+        : "No specific products found for this query in catalog.";
+
+    // 2. Persistent Memory Management
+    let session = await ChatSession.findOne({ user: userId });
+    if (!session) {
+        session = await ChatSession.create({ 
+            user: userId, 
+            turns: [{ role: 'system', content: SYSTEM_PROMPT }] 
+        });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    // 3. Prompt Construction
+    const promptMessages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...session.turns.slice(-12).map(t => ({ role: t.role, content: t.content })),
+      { role: 'user', content: `${userText} (Grounding Context: ${recContext})` }
+    ];
+
+    // 4. Multi-Provider AI Execution
+    let reply = "";
+    let provider = "cloud-ai";
+
+    try {
+      console.log(`[Chat] Calling Cloud AI for: ${userText.slice(0, 30)}...`);
+      reply = await callCloudAI(promptMessages, { temperature: 0.7 });
+    } catch (e) {
+      console.error("[Chat] Cloud AI failed, falling back to local:", e.message);
+      provider = "local-ai";
+      try {
+        reply = await callLocalLLM(promptMessages, { temperature: 0.6 });
+      } catch (e2) {
+        console.error("[Chat] Local AI also failed:", e2.message);
+        provider = "fallback-expert";
+        reply = "Sama7ni, famech mouchkla techinque sghira. Ama lel budget mte3ek, nenshek tatleb **Devis** mel les experts mte3na fi Dashboard -> Quotes.";
+      }
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
-      systemInstruction: SYSTEM_PROMPT,
+    if (!reply) reply = "Nnajem n3awnek fi ay 7aja tkhoss el chantiers walla el matériaux. Chnowa t7eb ta3ref?";
+
+    // 5. Save and Return
+    session.turns.push({ role: 'user', content: userText });
+    session.turns.push({ role: 'assistant', content: reply });
+    
+    // Keep turns history bounded
+    if (session.turns.length > 20) session.turns = session.turns.slice(-20);
+    
+    await session.save();
+
+    return res.json({
+      reply,
+      provider,
+      recommendations: recommendations.map(p => ({
+        id: p._id,
+        name: p.name,
+        price: p.price,
+        unit: p.unit,
+        category: p.category
+      }))
     });
 
-    // Build chat history (all but the last message)
-    const history = messages.slice(0, -1).map(msg => ({
-      role: msg.role,
-      parts: msg.parts,
-    }));
-
-    const chatSession = model.startChat({ history });
-
-    // Last message is the new user input
-    const lastMessage = messages[messages.length - 1];
-    const userText = lastMessage.parts[0].text;
-
-    const result = await chatSession.sendMessage(userText);
-    const responseText = result.response.text();
-
-    res.json({ reply: responseText });
   } catch (err) {
-    console.error('Chat error:', err.message);
-    res.status(500).json({ error: 'Failed to get response from AI', details: err.message });
+    console.error('[Chat Error]:', err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 };

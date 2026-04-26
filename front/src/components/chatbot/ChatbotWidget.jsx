@@ -10,6 +10,12 @@ const SUGGESTIONS = [
   '🛒 My orders',
 ];
 
+function stripCatalogRecommendationsBlock(text) {
+  const s = String(text || '');
+  const idx = s.indexOf('\n\n---\n**Recommandations du catalogue :**');
+  return idx >= 0 ? s.slice(0, idx) : s;
+}
+
 function formatMessage(text) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
@@ -78,16 +84,58 @@ export default function ChatbotWidget() {
     setTyping(true);
 
     try {
+      const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
+
+      // Preprocess last user message (typos + Arabizi + language detection) before sending to chat AI.
+      let normalizedLastUserText = trimmed;
+      let nlpMeta = null;
+      try {
+        const nlpUrl = `${apiBase}/nlp/process`;
+        const nlpRes = await fetch(nlpUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: trimmed,
+            context: { domain: 'artisant_chatbot' },
+            options: {
+              correct_errors: true,
+              extract_entities: true,
+              extract_sentiment: false,
+              language_fallback: 'fr',
+              confidence_threshold: 0.55,
+            },
+          }),
+        });
+        const nlpJson = await nlpRes.json().catch(() => null);
+        const payload = nlpJson?.data || null;
+        const corrected = nlpJson?.data?.corrected_text;
+        if (nlpRes.ok && typeof corrected === 'string' && corrected.trim()) {
+          normalizedLastUserText = corrected.trim();
+        }
+        if (nlpRes.ok && payload) {
+          nlpMeta = {
+            language: payload.language,
+            corrected_text: payload.corrected_text,
+            intent: payload.intent,
+            intent_confidence: payload.intent_confidence,
+            entities: payload.entities,
+            correction_detail: payload.correction_detail,
+            original_text: payload.original_text,
+          };
+        }
+      } catch {
+        // If NLP is unavailable, continue with raw text.
+      }
+
       // Prepare history to send to Gemini API
       // We must filter out the initial welcome message because Gemini history MUST start with a 'user' message
       const apiMessages = updatedMessages
         .filter((m, i) => !(i === 0 && m.from === 'bot'))
         .map(m => ({
           role: m.from === 'bot' ? 'model' : 'user',
-          parts: [{ text: m.text }]
+          parts: [{ text: m.id === userMsg.id ? normalizedLastUserText : m.text }]
         }));
 
-      const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/$/, '');
       const chatUrl = `${apiBase}/chat`;
 
       const token = localStorage.getItem('token');
@@ -97,22 +145,38 @@ export default function ChatbotWidget() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, nlp: nlpMeta }),
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+      let data = null;
+      try {
+        data = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        data = { raw: rawText };
+      }
       
       if (!res.ok) {
-        throw new Error(data.error || 'Erreur API');
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("Session expirée. Reconnectez-vous puis réessayez.");
+        }
+        throw new Error(data?.error || data?.message || 'Erreur API');
       }
 
-      setMessages(prev => [...prev, { id: Date.now() + 1, from: 'bot', text: data.reply, time: new Date() }]);
+      const botMsg = {
+        id: Date.now() + 1,
+        from: 'bot',
+        text: stripCatalogRecommendationsBlock(data.reply),
+        time: new Date(),
+        recommendations: Array.isArray(data.recommendations) ? data.recommendations : [],
+      };
+      setMessages((prev) => [...prev, botMsg]);
     } catch (err) {
       console.error(err);
       setMessages(prev => [...prev, { 
         id: Date.now() + 1, 
         from: 'bot', 
-        text: `⚠️ **Erreur de connexion**\nAvez-vous configuré GEMINI_API_KEY dans le backend ?\n\nDétails: ${err.message}`, 
+        text: `⚠️ **Erreur de connexion**\nLe chatbot n'a pas pu joindre le backend ou le service NLP.\n\nVérifiez :\n- \`front/.env\` → \`VITE_API_URL\` pointe vers le bon port (ex: \`http://localhost:5001/api\` si le serveur a basculé sur 5001)\n- le serveur Node est démarré\n- le service NLP est démarré (si vous utilisez le proxy \`/api/nlp/process\`)\n\nDétails: ${err.message}`, 
         time: new Date() 
       }]);
     } finally {
@@ -210,6 +274,28 @@ export default function ChatbotWidget() {
               )}
               <div className="ac-msg-body">
                 <div className="ac-bubble">{formatMessage(msg.text)}</div>
+                {msg.from === 'bot' && Array.isArray(msg.recommendations) && msg.recommendations.length > 0 && (
+                  <div className="ac-recos" aria-label="Recommandations produits">
+                    {msg.recommendations.map((p) => {
+                      const img = p.mainImage || `https://placehold.co/120x90?text=${encodeURIComponent('Produit')}`;
+                      const price = typeof p.price === 'number' ? p.price : p.price ? Number(p.price) : null;
+                      return (
+                        <div key={p.id || p.name} className="ac-reco-card">
+                          <img className="ac-reco-img" src={img} alt={p.name || 'Produit recommandé'} loading="lazy" />
+                          <div className="ac-reco-meta">
+                            <div className="ac-reco-name">{p.name}</div>
+                            <div className="ac-reco-sub">
+                              <span className="ac-reco-cat">{p.category}</span>
+                              {price !== null && (
+                                <span className="ac-reco-price">{price} TND{p.unit ? ` / ${p.unit}` : ''}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 <div className="ac-msg-time">{fmt(msg.time)}</div>
               </div>
             </div>

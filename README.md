@@ -46,6 +46,17 @@ cp .env.example .env
 npm run dev
 ```
 
+## 🌍 NLP (langues + Arabizi + fautes)
+
+Le chatbot du frontend (`front/`) peut pré-traiter chaque message via un service NLP (FastAPI) pour :
+- Détecter la langue (y compris **Arabizi / Darija**)
+- Corriger les fautes / mots mal écrits
+- Normaliser le texte avant envoi au backend `/api/chat`
+
+Backend `server/.env` (optionnel) :
+
+- `NLP_PROCESSOR_URL` (défaut: `http://localhost:8000/api/v1/process`)
+
 ## 🔧 Variables d'environnement
 
 ### server/.env

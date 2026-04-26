@@ -4,6 +4,7 @@ data/
 dist/
 build/
 .DS_Store
+client/
 
 *.log
 tmp_*.js
