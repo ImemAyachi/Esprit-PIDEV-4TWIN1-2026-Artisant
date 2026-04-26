@@ -4,6 +4,33 @@ function getProcessUrl() {
   return process.env.NLP_PROCESSOR_URL || DEFAULT_PROCESS_URL;
 }
 
+function applyLocalArabiziFallback(inputText) {
+  const text = String(inputText || '').trim();
+  if (!text) return text;
+
+  // Very lightweight arabizi/typo fallback to keep BatiBot useful
+  // even when the external NLP processor is unavailable.
+  const replacements = [
+    [/\bkoujina\b/gi, 'cuisine'],
+    [/\bkawjina\b/gi, 'cuisine'],
+    [/\bcosina\b/gi, 'cuisine'],
+    [/\b7ammem\b/gi, 'salle de bain'],
+    [/\bhammem\b/gi, 'salle de bain'],
+    [/\bsdb\b/gi, 'salle de bain'],
+    [/\bmatriel\b/gi, 'materiel'],
+    [/\bmateriel\b/gi, 'matériaux'],
+    [/\boutil\b/gi, 'outils'],
+    [/\brobiny\b/gi, 'robinet'],
+    [/\bevier\b/gi, 'évier'],
+  ];
+
+  let corrected = text;
+  for (const [pattern, value] of replacements) {
+    corrected = corrected.replace(pattern, value);
+  }
+  return corrected;
+}
+
 async function postJsonWithTimeout(url, body, timeoutMs) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -69,7 +96,25 @@ export async function processText(req, res, next) {
       timeoutErr.status = 504;
       return next(timeoutErr);
     }
-    return next(err);
+
+    // Graceful fallback when the external NLP service is down/unreachable.
+    const original = String(req?.body?.text || '').trim();
+    const corrected = applyLocalArabiziFallback(original);
+    return res.status(200).json({
+      success: true,
+      data: {
+        original_text: original,
+        corrected_text: corrected,
+        language: 'unknown',
+        intent: 'unknown',
+        intent_confidence: 0,
+        entities: [],
+        correction_detail: {
+          source: 'local_fallback',
+          reason: err?.message || 'upstream unavailable',
+        },
+      },
+    });
   }
 }
 
