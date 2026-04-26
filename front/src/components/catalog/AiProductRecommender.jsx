@@ -57,7 +57,43 @@ const AiProductRecommender = () => {
     setLoading(true);
 
     try {
-      const res = await api.post('/ai/recommend', { need: text });
+      // Normalize user input with NLP processor (Arabizi/typos/mixed language).
+      let normalizedNeed = text;
+      let nlpMeta = null;
+      try {
+        const nlpRes = await api.post('/nlp/process', {
+          text,
+          context: { domain: 'batibot_recommendation' },
+          options: {
+            correct_errors: true,
+            extract_entities: true,
+            extract_sentiment: false,
+            language_fallback: 'fr',
+            confidence_threshold: 0.55,
+          },
+        });
+
+        const payload = nlpRes?.data?.data;
+        const corrected = payload?.corrected_text;
+        if (typeof corrected === 'string' && corrected.trim()) {
+          normalizedNeed = corrected.trim();
+        }
+        if (payload) {
+          nlpMeta = {
+            language: payload.language,
+            corrected_text: payload.corrected_text,
+            intent: payload.intent,
+            intent_confidence: payload.intent_confidence,
+            entities: payload.entities,
+            correction_detail: payload.correction_detail,
+            original_text: payload.original_text,
+          };
+        }
+      } catch {
+        // Keep going with raw text if NLP service is unavailable.
+      }
+
+      const res = await api.post('/ai/recommend', { need: normalizedNeed, nlp: nlpMeta });
       if (res.data.success && res.data.data?.length) {
         setMessages(prev => [...prev, {
           id: Date.now() + 1, role: 'bot', type: 'recommendations',

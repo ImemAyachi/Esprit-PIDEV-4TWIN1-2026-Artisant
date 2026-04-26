@@ -61,12 +61,13 @@ export async function processText(req, res, next) {
       },
     };
 
-    const data = await postJsonWithTimeout(getProcessUrl(), payload, 8000);
+    const data = await postJsonWithTimeout(getProcessUrl(), payload, 20000);
     return res.status(200).json({ success: true, data });
   } catch (err) {
     if (err?.name === 'AbortError') {
-      err.status = 504;
-      err.message = 'NLP processor timeout';
+      const timeoutErr = new Error('NLP processor timeout');
+      timeoutErr.status = 504;
+      return next(timeoutErr);
     }
     return next(err);
   }

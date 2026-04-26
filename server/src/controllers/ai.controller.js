@@ -1,11 +1,43 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { callLocalLLM } from "../utils/aiClient.js";
 import Product from "../models/Product.model.js";
 
 export const recommendProducts = async (req, res) => {
   console.log(`[AI] Recommend request received: "${req.body?.need}"`);
   try {
-    const { need } = req.body;
+    const { need, nlp } = req.body;
     if (!need) return res.status(400).json({ success: false, message: "Le besoin est requis" });
+
+    const normalizeText = (s) =>
+      String(s || '')
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '');
+
+    const inferPreferredCategories = (text) => {
+      const t = normalizeText(text);
+      const has = (arr) => arr.some((x) => t.includes(normalizeText(x)));
+
+      if (has(['cuisine', 'kitchen', 'koujina', 'kawjina', 'evier', 'évier', 'robinet', 'mitigeur'])) {
+        return ['plomberie', 'électricité', 'carrelage', 'bois', 'peinture', 'autre'];
+      }
+      if (has(['salle de bain', 'bathroom', 'hammem', '7ammem', 'douche', 'wc'])) {
+        return ['plomberie', 'carrelage', 'peinture', 'verre', 'autre'];
+      }
+      if (has(['outil', 'outils', 'tools', 'materiel', 'matériel', 'hardware'])) {
+        return ['plomberie', 'électricité', 'autre', 'bois'];
+      }
+      if (has(['construction', 'batiment', 'bâtiment', 'maison', 'fondation', 'beton', 'béton'])) {
+        return ['ciment', 'sable', 'brique', 'acier', 'bois', 'autre'];
+      }
+      return [];
+    };
+
+    const effectiveNeed = (
+      nlp &&
+      typeof nlp.corrected_text === 'string' &&
+      nlp.corrected_text.trim()
+    ) ? nlp.corrected_text.trim() : need;
+    const preferredCategories = inferPreferredCategories(effectiveNeed);
 
     // Récupérer les produits disponibles
     const existingProducts = await Product.find({ isAvailable: true })
@@ -19,11 +51,13 @@ export const recommendProducts = async (req, res) => {
       return res.status(200).json({ success: true, data: [], message: "Catalogue vide ou inaccessible" });
     }
 
-    const catalogContext = existingProducts.map(p =>
+    const productsForPreferredContext = preferredCategories.length
+      ? existingProducts.filter((p) => preferredCategories.includes(p.category))
+      : existingProducts;
+
+    const catalogContext = (productsForPreferredContext.length ? productsForPreferredContext : existingProducts).map(p =>
       `[ID: ${p._id}] ${p.name} (Catégorie: ${p.category}, Prix: ${p.price} ${p.priceUnit})`
     ).join('\n');
-
-    const apiKey = process.env.GEMINI_API_KEY;
 
     // ─── Fallback local intelligent (uniquement si pertinent) ───
     const performLocalFallback = (reason, isIrrelevant = false) => {
@@ -37,17 +71,43 @@ export const recommendProducts = async (req, res) => {
         });
       }
 
-      const keywords = need.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const keywords = effectiveNeed.toLowerCase().split(/\s+/).filter(w => w.length > 2);
       let matched = existingProducts.filter(p => {
         const haystack = `${p.name} ${p.category} ${p.description || ''} ${(p.tags || []).join(' ')}`.toLowerCase();
         return keywords.some(k => haystack.includes(k));
       });
 
+      if (preferredCategories.length) {
+        const preferredMatched = matched.filter((p) => preferredCategories.includes(p.category));
+        if (preferredMatched.length > 0) matched = preferredMatched;
+      }
+
       if (matched.length === 0) {
-        return res.status(200).json({ 
-          success: true, 
-          data: [], 
-          message: "Désolé, je n'ai pas trouvé de produits correspondant à votre recherche. Essayez d'être plus spécifique sur les matériaux (ex: marbre, ciment...)." 
+        const topFallback = existingProducts
+          .filter((p) => !preferredCategories.length || preferredCategories.includes(p.category))
+          .sort((a, b) => (b?.rating?.average || 0) - (a?.rating?.average || 0))
+          .slice(0, 5);
+
+        const groupedFallback = {};
+        topFallback.forEach((p) => {
+          const cat = p.category || 'Autre';
+          if (!groupedFallback[cat]) groupedFallback[cat] = [];
+          groupedFallback[cat].push({
+            ...p,
+            mainImage: p.media?.[0]?.url || 'https://loremflickr.com/800/600/construction'
+          });
+        });
+
+        const data = Object.entries(groupedFallback).map(([cat, products]) => ({
+          title: cat.charAt(0).toUpperCase() + cat.slice(1),
+          advice: `Sélection recommandée pour "${effectiveNeed}"`,
+          products
+        }));
+
+        return res.status(200).json({
+          success: true,
+          data,
+          message: "Aucune correspondance exacte, voici les produits les plus pertinents."
         });
       }
 
@@ -70,7 +130,7 @@ export const recommendProducts = async (req, res) => {
 
       const enrichedData = Object.entries(grouped).map(([cat, products]) => ({
         title: cat.charAt(0).toUpperCase() + cat.slice(1),
-        advice: `Sélection basée sur votre recherche « ${need} »`,
+        advice: `Sélection basée sur votre recherche « ${effectiveNeed} »`,
         products: products.map(p => ({
           ...p,
           mainImage: p.media?.[0]?.url || 'https://loremflickr.com/800/600/construction'
@@ -80,13 +140,8 @@ export const recommendProducts = async (req, res) => {
       return res.status(200).json({ success: true, data: enrichedData });
     };
 
-    if (!apiKey) return performLocalFallback("Clé API manquante");
-
-    // ─── Tentative Gemini ───
+    // ─── Local LLM Logic ───
     try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "models/gemini-flash-latest" });
-
       const prompt = `Tu es BatiBot, un assistant qui recommande UNIQUEMENT des MATÉRIAUX DE CONSTRUCTION du catalogue.
       
       RÈGLES STRICTES :
@@ -94,7 +149,7 @@ export const recommendProducts = async (req, res) => {
       2. Ne réponds jamais par du texte en dehors du JSON.
       3. Si l'utilisateur cherche des matériaux, propose les meilleurs IDs du catalogue.
 
-      Besoin utilisateur : "${need}"
+      Besoin utilisateur : "${effectiveNeed}"
       
       CATALOGUE DISPONIBLE :
       ${catalogContext}
@@ -108,17 +163,18 @@ export const recommendProducts = async (req, res) => {
         }
       ]`;
 
-      console.log(`[AI] Envoi requête à Gemini pour: "${need}"...`);
-      const result = await model.generateContent(prompt);
+      console.log(`[AI] Envoi requête au LLM Local pour: "${effectiveNeed}"...`);
+      const responseText = await callLocalLLM([
+        { role: 'system', content: prompt }
+      ], { temperature: 0.1 });
 
-      if (!result || !result.response) {
-        return performLocalFallback("Pas de réponse de l'IA");
+      if (!responseText) {
+        return performLocalFallback("Pas de réponse du LLM local");
       }
 
-      const responseText = result.response.text();
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);
 
-      // Si Gemini retourne [] ou rien du tout, on considère que c'est hors-sujet ou sans résultat
+      // Si le LLM retourne [] ou rien du tout, on considère que c'est hors-sujet ou sans résultat
       if (!jsonMatch || jsonMatch[0] === "[]") {
         return performLocalFallback("Requête hors-sujet ou sans produits", true);
       }
@@ -141,14 +197,14 @@ export const recommendProducts = async (req, res) => {
       }).filter(item => item.products.length > 0);
 
       if (enrichedData.length === 0) {
-        return performLocalFallback("Gemini n'a trouvé aucun produit correspondant");
+        return performLocalFallback("Le LLM n'a trouvé aucun produit correspondant");
       }
 
       return res.status(200).json({ success: true, data: enrichedData });
 
-    } catch (apiError) {
-      console.error("[AI] Erreur API Gemini:", apiError.message);
-      return performLocalFallback(apiError.message);
+    } catch (llmError) {
+      console.error("[AI] Erreur LLM Local:", llmError.message);
+      return performLocalFallback(llmError.message);
     }
 
   } catch (error) {
