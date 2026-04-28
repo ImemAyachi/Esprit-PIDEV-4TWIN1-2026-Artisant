@@ -20,6 +20,9 @@ export const loginUser = createAsyncThunk('auth/login', async (credentials, { re
     const res = await api.post('/auth/login', credentials);
     return res.data;
   } catch (err) {
+    if (err.response?.status === 403 && err.response?.data?.require2FA) {
+      return rejectWithValue(err.response.data);
+    }
     return rejectWithValue(err.response?.data?.message || 'Erreur connexion');
   }
 });
@@ -119,7 +122,15 @@ const authSlice = createSlice({
         toast.success(`Bienvenue, ${payload.user?.firstName || ''} !`);
       })
       .addCase(loginUser.rejected, (s, { payload }) => { 
-        s.loading = false; s.error = payload; toast.error(typeof payload === 'string' ? payload : 'Erreur réseau'); 
+        s.loading = false;
+        if (payload?.require2FA) {
+          s.require2FA = true;
+          s.tempEmail = payload.email;
+          toast.error(payload.message);
+        } else {
+          s.error = payload;
+          toast.error(typeof payload === 'string' ? payload : 'Erreur réseau');
+        }
       })
       // Verify 2FA
       .addCase(verify2FACode.pending, (s) => { s.loading = true; s.error = null; })

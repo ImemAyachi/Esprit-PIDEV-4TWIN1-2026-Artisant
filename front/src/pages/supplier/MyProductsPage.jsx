@@ -3,6 +3,16 @@ import { useSelector } from 'react-redux';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../../components/ConfirmModal';
+import PriceRadarModal from '../../components/supplier/PriceRadarModal';
+import { ShieldCheck, AlertCircle, TrendingDown, BrainCircuit } from 'lucide-react';
+
+// Add this style for the skeleton animation
+const skeletonStyles = `
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+`;
 
 const MyProductsPage = () => {
   const { user } = useSelector((s) => s.auth);
@@ -13,14 +23,24 @@ const MyProductsPage = () => {
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState([]);
 
-  const defaultForm = { name: '', description: '', category: 'marbre', price: '', unit: 'm²', stock: 0, specifications: '', useCases: '', isAvailable: true };
+  const defaultForm = { name: '', description: '', category: 'marbre', price: '', unit: 'm²', stock: 0, specifications: '', useCases: '', tags: '', isAvailable: true };
   const [form, setForm] = useState(defaultForm);
   const [confirmConfig, setConfirmConfig] = useState(null);
+  const [suggestedPrice, setSuggestedPrice] = useState(null);
+  const [isPriceLocked, setIsPriceLocked] = useState(true);
+  const [suggesting, setSuggesting] = useState(false);
 
   const load = async () => { try { const r = await api.get('/products/my'); setProducts(r.data.products); } catch (_) { }; setLoading(false); };
   useEffect(() => { load(); }, []);
 
-  const openAddModal = () => { setEditId(null); setForm(defaultForm); setFiles([]); setShowModal(true); };
+  const openAddModal = () => { 
+    setEditId(null); 
+    setForm(defaultForm); 
+    setFiles([]); 
+    setSuggestedPrice(null);
+    setIsPriceLocked(true);
+    setShowModal(true); 
+  };
 
   const openEditModal = (p) => {
     setEditId(p._id);
@@ -28,15 +48,79 @@ const MyProductsPage = () => {
       name: p.name || '', description: p.description || '', category: p.category || 'marbre',
       price: p.price || '', unit: p.unit || 'm²', stock: p.stock?.quantity || 0, isAvailable: p.isAvailable ?? true,
       specifications: p.specifications?.length ? p.specifications.map(s => `${s.key}:${s.value}`).join('\n') : '',
-      useCases: p.useCases?.length ? p.useCases.join('\n') : ''
+      useCases: p.useCases?.length ? p.useCases.join('\n') : '',
+      tags: p.tags?.length ? p.tags.join(', ') : ''
     });
     setFiles([]);
+    setSuggestedPrice(null);
+    setIsPriceLocked(false);
     setShowModal(true);
   };
 
-  const handleSubmit = async () => {
+  const [radarData, setRadarData] = useState(null);
+
+  const handleGetSuggestion = async () => {
+    if (!form.name || !form.description) return toast.error("Veuillez remplir le nom et la description");
+    try {
+      setSuggesting(true);
+      const res = await fetch('http://localhost:8002/suggest-price', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          category: form.category,
+          description: form.description,
+          specifications: form.specifications,
+          tags: form.tags,
+          city: user.location?.city || 'Tunis',
+          stock: Number(form.stock)
+        })
+      });
+      const data = await res.json();
+      setSuggestedPrice(data.suggestedPrice);
+      setForm(f => ({ ...f, price: data.suggestedPrice }));
+      toast.success("IA: Prix suggéré avec succès !");
+    } catch (e) {
+      toast.error("IA: Erreur lors de la suggestion");
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
+  const handleSubmit = async (bypassRadar = false) => {
     try {
       setUploading(true);
+      
+      // --- INTEGRATION PRICERADAR 2.0 ---
+      let radarInfo = null;
+      if (!bypassRadar) {
+        const radarRes = await fetch('http://localhost:8002/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name,
+            category: form.category,
+            price: Number(form.price),
+            supplierId: user._id,
+            stock: Number(form.stock),
+            description: form.description,
+            specifications: form.specifications,
+            city: user.location?.city || 'Tunis'
+          })
+        });
+        radarInfo = await radarRes.json();
+        
+        if (radarInfo.status === 'high') {
+          setRadarData(radarInfo);
+          setUploading(false);
+          return; // On bloque uniquement pour les prix trop élevés
+        }
+        
+        // Si c'est 'low' ou 'normal', on continue avec les données de l'IA
+        setRadarData(radarInfo);
+      }
+      // ---------------------------------
+
       let mediaUrls = [];
       if (files.length > 0) {
         const formData = new FormData();
@@ -50,11 +134,22 @@ const MyProductsPage = () => {
         url: url
       }));
 
+      const currentRadar = radarData || radarInfo;
+
       const payload = {
         ...form,
         stock: { quantity: Number(form.stock) || 0 },
         specifications: form.specifications ? form.specifications.split('\n').map(l => { const [k, ...v] = l.split(':'); return { key: k?.trim(), value: v.join(':').trim() }; }).filter(s => s.key && s.value) : [],
         useCases: form.useCases ? form.useCases.split('\n').filter(Boolean) : [],
+        tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        priceRadar: currentRadar ? {
+          status: currentRadar.status,
+          marketAvg: currentRadar.marketAvg,
+          deviationPercent: currentRadar.deviationPercent,
+          opportunityScore: currentRadar.opportunityScore,
+          hasAcceptedHighPrice: currentRadar.status === 'high',
+          isAcceptedSuggestion: suggestedPrice === Number(form.price)
+        } : { status: 'normal', isAcceptedSuggestion: suggestedPrice === Number(form.price) }
       };
 
       if (parsedMedia.length > 0) payload.media = parsedMedia;
@@ -66,7 +161,14 @@ const MyProductsPage = () => {
         await api.post('/products', payload);
         toast.success('Produit créé !');
       }
-      setShowModal(false); load();
+      
+      // Update trust score if needed
+      if (radarData) {
+        const action = radarData.status === 'high' ? 'ignored_warning' : 'extraordinary_offer';
+        await fetch(`http://localhost:8002/update-trust-score?supplierId=${user._id}&actionType=${action}`, { method: 'POST' });
+      }
+
+      setShowModal(false); setRadarData(null); load();
     } catch (e) { toast.error(e.response?.data?.message || 'Erreur'); }
     finally { setUploading(false); }
   };
@@ -91,6 +193,7 @@ const MyProductsPage = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <style>{skeletonStyles}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2> Mes produits</h2>
@@ -187,6 +290,14 @@ const MyProductsPage = () => {
                 <span className={`premium-status-dot ${p.isAvailable ? 'active' : 'inactive'}`}>
                   {p.isAvailable ? 'Disponible' : 'Indisponible'}
                 </span>
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  {p.priceRadar?.status === 'low' && (
+                    <span className="badge badge-success" style={{ fontSize: '0.65rem', fontWeight: 800 }}>✨ Chance</span>
+                  )}
+                  {p.priceRadar?.status === 'high' && (
+                    <span className="badge badge-danger" style={{ fontSize: '0.65rem', fontWeight: 800 }}>⚠️ Prix Élevé</span>
+                  )}
+                </div>
               </div>
 
               <h3 className="premium-card-title">{p.name}</h3>
@@ -335,7 +446,70 @@ const MyProductsPage = () => {
 
               <div className="premium-group">
                 <label className="premium-label">Prix (DT) *</label>
-                <input className="premium-input" type="number" min="0" placeholder="0.00" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    className="premium-input" 
+                    type="number" 
+                    min="0" 
+                    placeholder="En attente de l'IA..." 
+                    value={form.price} 
+                    onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                    disabled={isPriceLocked}
+                    style={{ paddingRight: isPriceLocked ? '80px' : '1rem' }}
+                  />
+                  {isPriceLocked && !editId && (
+                    <button 
+                      type="button"
+                      onClick={handleGetSuggestion}
+                      disabled={suggesting || !form.name?.trim() || !form.description?.trim() || form.stock === '' || form.stock === undefined}
+                      style={{
+                        position: 'absolute', right: '5px', top: '5px', bottom: '5px',
+                        background: (suggesting || !form.name?.trim() || !form.description?.trim() || form.stock === '' || form.stock === undefined) ? '#94a3b8' : 'var(--clr-primary)', 
+                        color: 'white', border: 'none',
+                        borderRadius: '8px', padding: '0 10px', fontSize: '0.75rem', fontWeight: 700,
+                        cursor: (suggesting || !form.name?.trim() || !form.description?.trim() || form.stock === '' || form.stock === undefined) ? 'not-allowed' : 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      title={(!form.name?.trim() || !form.description?.trim() || form.stock === '' || form.stock === undefined) ? "Veuillez remplir tous les champs (Nom, Description, Stock) avant de demander une prédiction" : "Prédire le prix"}
+                    >
+                      {suggesting ? (
+                        <div className="flex items-center gap-1">
+                          <div className="animate-bounce" style={{ width: '4px', height: '4px', background: 'white', borderRadius: '50%' }}></div>
+                          <div className="animate-bounce" style={{ width: '4px', height: '4px', background: 'white', borderRadius: '50%', animationDelay: '0.2s' }}></div>
+                          <div className="animate-bounce" style={{ width: '4px', height: '4px', background: 'white', borderRadius: '50%', animationDelay: '0.4s' }}></div>
+                        </div>
+                      ) : 'IA Predict'}
+                    </button>
+                  )}
+                </div>
+                {suggesting && (
+                  <div style={{ marginTop: '0.5rem', height: '40px', background: 'linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.5s infinite', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>PriceSeer analyse les détails...</span>
+                  </div>
+                )}
+                {suggestedPrice && isPriceLocked && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <button 
+                      className="btn btn-sm btn-success" 
+                      style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem' }}
+                      onClick={() => setIsPriceLocked(false)}
+                    >
+                      ✓ Accepter
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-ghost" 
+                      style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', color: '#64748b' }}
+                      onClick={() => { setIsPriceLocked(false); setForm(f => ({...f, price: ''})); }}
+                    >
+                      ✎ Modifier
+                    </button>
+                  </div>
+                )}
+                {isPriceLocked && !suggestedPrice && !editId && (
+                  <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.25rem' }}>
+                    Remplissez les détails puis cliquez sur "IA Predict" pour débloquer.
+                  </p>
+                )}
               </div>
 
               <div className="premium-group">
@@ -346,7 +520,7 @@ const MyProductsPage = () => {
                   setForm(f => ({
                     ...f,
                     stock: val,
-                    isAvailable: numVal === 0 ? false : f.isAvailable
+                    isAvailable: numVal > 0
                   }));
                 }} />
               </div>
@@ -370,7 +544,12 @@ const MyProductsPage = () => {
               </div>
 
               <div className="premium-group full">
-                <label className="premium-label">Mots & Spécifications clés (Optionnel)</label>
+                <label className="premium-label">Mots-clés & Caractéristiques (Optionnel)</label>
+                <textarea className="premium-input" rows={1} placeholder="Ex: Luxe, Résistant, Importé d'Italie" value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} />
+              </div>
+
+              <div className="premium-group full">
+                <label className="premium-label">Spécifications techniques (IA Predict se base sur ceci)</label>
                 <textarea className="premium-input" placeholder={"Épaisseur:2cm\nFormat:60x60cm\nFinition:Poli brillant"} value={form.specifications} onChange={e => setForm(f => ({ ...f, specifications: e.target.value }))} />
               </div>
 
@@ -388,7 +567,7 @@ const MyProductsPage = () => {
 
             <div className="premium-actions">
               <button className="premium-btn cancel" onClick={() => setShowModal(false)} disabled={uploading}>Annuler</button>
-              <button className="premium-btn submit" onClick={handleSubmit} disabled={!form.name || !form.description || !form.price || uploading}>
+              <button className="premium-btn submit" onClick={() => handleSubmit()} disabled={!form.name || !form.description || !form.price || uploading}>
                 {uploading ? 'Enregistrement...' : editId ? 'Enregistrer les modifications' : 'Créer le produit'}
               </button>
             </div>
@@ -397,6 +576,18 @@ const MyProductsPage = () => {
       )}
 
       <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
+
+      {radarData && (
+        <PriceRadarModal 
+          data={radarData}
+          onCancel={() => setRadarData(null)}
+          onConfirm={() => handleSubmit(true)}
+          onModify={() => {
+            setRadarData(null);
+            // On peut scroller vers le champ prix ou simplement fermer
+          }}
+        />
+      )}
     </div>
   );
 };

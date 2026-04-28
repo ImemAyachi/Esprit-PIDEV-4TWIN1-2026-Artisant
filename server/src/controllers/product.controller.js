@@ -97,7 +97,20 @@ export const createProduct = asyncHandler(async (req, res) => {
     specifications,
     useCases,
     tags,
+    priceHistory: [{ price: req.body.price, date: new Date() }]
   });
+
+  // Emit Socket alert for lucky deals
+  if (product.priceRadar?.status === 'low') {
+    const io = req.app.get('io');
+    io.emit('new_lucky_deal', {
+        id: product._id,
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        deviation: product.priceRadar.deviationPercent
+    });
+  }
 
   res.status(201).json({ success: true, product });
 });
@@ -109,6 +122,11 @@ export const updateProduct = asyncHandler(async (req, res) => {
   // Seul le fournisseur propriétaire ou le SuperAdmin peut modifier
   if (!product.supplier.equals(req.user._id) && req.user.role !== 'SuperAdmin') {
     throw new AppError('Non autorisé', 403);
+  }
+
+  // Update price history if price changed
+  if (req.body.price && Number(req.body.price) !== product.price) {
+    req.body.$push = { priceHistory: { price: Number(req.body.price), date: new Date() } };
   }
 
   product = await Product.findByIdAndUpdate(req.params.id, req.body, {
@@ -142,5 +160,14 @@ export const getTopByCategory = asyncHandler(async (req, res) => {
 // Mes produits (pour le fournisseur connecté)
 export const getMyProducts = asyncHandler(async (req, res) => {
   const products = await Product.find({ supplier: req.user._id }).sort({ createdAt: -1 });
+  res.json({ success: true, products, count: products.length });
+});
+
+// Produits Chance (Opportunités)
+export const getLuckyDeals = asyncHandler(async (req, res) => {
+  const products = await Product.find({ 'priceRadar.status': 'low', isAvailable: true })
+    .sort({ 'priceRadar.opportunityScore': -1, 'priceRadar.deviationPercent': 1 })
+    .populate('supplier', 'firstName lastName companyName avatar location');
+    
   res.json({ success: true, products, count: products.length });
 });

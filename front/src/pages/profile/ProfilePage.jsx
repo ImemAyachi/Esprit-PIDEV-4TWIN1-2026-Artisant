@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateProfile, fetchMe } from '../../store/slices/authSlice';
 import api from '../../services/api';
-import { Edit3, Save, X, User as UserIcon, Briefcase, MessageSquareText } from 'lucide-react';
+import { Edit3, Save, X, User as UserIcon, Briefcase, MessageSquareText, ShieldCheck } from 'lucide-react';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -192,17 +192,35 @@ const ProfilePage = () => {
         </div>
       )}
 
-      {user.rating?.count > 0 && (
+      {(user.rating?.count > 0 || user.role === 'Fournisseur') && (
         <div className="card" style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '2rem' }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>{user.rating.average?.toFixed(1)}</div>
-            <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Note moyenne</div>
-          </div>
-          <div style={{ width: 1, height: 60, background: 'var(--clr-border)' }} />
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>{user.rating.count}</div>
-            <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Avis reçus</div>
-          </div>
+          {user.rating?.count > 0 && (
+            <>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>{user.rating.average?.toFixed(1)}</div>
+                <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Note moyenne</div>
+              </div>
+              <div style={{ width: 1, height: 60, background: 'var(--clr-border)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>{user.rating.count}</div>
+                <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem' }}>Avis reçus</div>
+              </div>
+            </>
+          )}
+          
+          {user.role === 'Fournisseur' && (
+            <>
+              {user.rating?.count > 0 && <div style={{ width: 1, height: 60, background: 'var(--clr-border)' }} />}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 900, color: (user.supplierTrustScore || 80) >= 80 ? '#10b981' : (user.supplierTrustScore || 80) >= 50 ? '#f59e0b' : '#ef4444' }}>
+                  {user.supplierTrustScore || 80}%
+                </div>
+                <div style={{ color: 'var(--clr-text-muted)', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <ShieldCheck size={14} /> Confiance Tarifaire
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 

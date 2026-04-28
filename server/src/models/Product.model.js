@@ -107,6 +107,19 @@ const productSchema = new mongoose.Schema(
       recommended: { type: Number, default: 0 }, // Nombre de "je recommande"
     },
 
+    // ── PriceRadar 2.0 Integration ─────────────────────────────────────────
+    priceHistory: [{
+      price: { type: Number, required: true },
+      date: { type: Date, default: Date.now }
+    }],
+    priceRadar: {
+      status: { type: String, enum: ['normal', 'high', 'low'], default: 'normal' },
+      marketAvg: { type: Number },
+      deviationPercent: { type: Number },
+      hasAcceptedHighPrice: { type: Boolean, default: false }, // Si le fournisseur assume le prix élevé
+      opportunityScore: { type: Number, default: 0 },         // Pour la page "Produits Chance"
+    },
+
     // ── SEO / Recherche ───────────────────────────────────────────────────
     tags: [{ type: String }], // ex: ['résistant', 'luxe', 'importé']
     views: { type: Number, default: 0 },
