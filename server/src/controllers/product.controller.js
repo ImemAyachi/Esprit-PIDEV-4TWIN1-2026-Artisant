@@ -28,7 +28,12 @@ export const getProducts = asyncHandler(async (req, res) => {
     if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
   if (search) {
-    filter.$text = { $search: search }; // Utilise l'index texte
+    // 🧠 AI Search Integration: Search by keyword and FORCE AI sorting
+    filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { tags: { $regex: search, $options: 'i' } },
+      { description: { $regex: search, $options: 'i' } }
+    ];
   }
 
   // Tri : -createdAt, -rating.average, price, -price
@@ -38,7 +43,12 @@ export const getProducts = asyncHandler(async (req, res) => {
     '-price':    { price: -1 },
     '-createdAt':{ createdAt: -1 },
   };
-  const sortObj = sortMap[sort] || { createdAt: -1 };
+  
+  // 🧠 Si recherche active et que l'utilisateur n'a pas forcé de tri manuel, l'IA force le tri optimal
+  let sortObj = sortMap[sort] || { createdAt: -1 };
+  if (search && sort === '-createdAt') {
+     sortObj = { 'rating.average': -1, price: 1 };
+  }
 
   const skip = (Number(page) - 1) * Number(limit);
   const [products, total] = await Promise.all([

@@ -57,7 +57,7 @@ const productSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ['marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'verre', 'peinture', 'plomberie', 'électricité', 'autre'],
+      enum: ['marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'verre', 'peinture', 'plomberie', 'électricité', 'isolation', 'quincaillerie', 'maconnerie', 'etancheite', 'menuiserie', 'autre'],
     },
     subCategory: { type: String },
 

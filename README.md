@@ -75,6 +75,25 @@ npm run dev
 - Backend API : http://localhost:5000/api
 - Swagger docs : http://localhost:5000/api-docs
 
+## 🧠 Geometry service (FastAPI + Shapely)
+
+Le générateur de plan 2D “ready-to-use” peut s’appuyer sur un service Python dédié (géométrie + contraintes strictes).
+
+### Lancer le service
+
+```bash
+cd server/geometry
+python -m venv .venv
+# Windows:
+.venv\\Scripts\\activate
+pip install -r requirements.txt
+python -m uvicorn app:app --reload --port 8008
+```
+
+### Variables d’environnement (server/.env)
+
+- `GEOMETRY_SERVICE_URL`: ex. `http://localhost:8008`
+
 ## 🗄️ MongoDB Compass
 
 Connectez-vous avec : `mongodb://localhost:27017`

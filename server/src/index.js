@@ -8,8 +8,9 @@ import { Server as SocketServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import 'dotenv/config';
 import path from 'path';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
 import connectDB from './config/db.js';
 import { setupSwagger } from './config/swagger.js';
@@ -40,9 +41,16 @@ import uploadRoutes from './routes/uploadRoutes.js';
 
 // Middleware global d'erreurs
 import { errorHandler } from './middleware/error.middleware.js';
+import { getMetrics, httpRequestDurationMicroseconds } from './controllers/metrics.controller.js';
 
 const app = express();
 const httpServer = http.createServer(app);
+
+// Ensure `.env` is loaded from the `server/` folder even if the process
+// is started from another working directory.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 function isAllowedOrigin(origin) {
   if (!origin) return true; // server-to-server / curl / same-origin
@@ -96,6 +104,18 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ─── Metrics Middleware ──────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestDurationMicroseconds
+      .labels(req.method, req.path, res.statusCode)
+      .observe(duration);
+  });
+  next();
+});
+
 // Static folder for uploads (from Yahya branch)
 app.use('/uploads', express.static(path.join(path.resolve(), '/uploads'), {
   setHeaders: (res) => {
@@ -138,6 +158,9 @@ app.use(`${API}/workforce`, workforceRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Prometheus metrics
+app.get('/api/metrics', getMetrics);
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Artisant API' });
 });
@@ -146,19 +169,55 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // ─── Démarrage ────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000;
+const BASE_PORT = Number(process.env.PORT) || 5000;
+
+function listenWithFallback(server, port, { maxAttempts = 20 } = {}) {
+  return new Promise((resolve, reject) => {
+    let attempt = 0;
+
+    const tryListen = (p) => {
+      const onError = (err) => {
+        // If port is busy, try the next one.
+        if (err && err.code === 'EADDRINUSE' && attempt < maxAttempts) {
+          attempt += 1;
+          server.removeListener('listening', onListening);
+          console.warn(`⚠️  Port ${p} occupé. Tentative sur ${p + 1}...`);
+          return tryListen(p + 1);
+        }
+        return reject(err);
+      };
+
+      const onListening = () => {
+        server.removeListener('error', onError);
+        resolve(p);
+      };
+
+      // Ensure handlers only apply to this attempt.
+      server.once('error', onError);
+      server.once('listening', onListening);
+      server.listen(p);
+    };
+
+    tryListen(port);
+  });
+}
 
 connectDB().then((ok) => {
   if (!ok) {
-    console.error('\n❌ Arrêt : MongoDB doit être connecté avant d’accepter des requêtes (inscription, etc.).');
-    console.error('   Vérifiez MONGO_URI dans server/.env et que MongoDB est accessible.\n');
-    process.exit(1);
+    console.warn('\n⚠️  MongoDB indisponible — démarrage en mode dégradé.');
+    console.warn('   - Les routes nécessitant la DB peuvent échouer');
+    console.warn('   - Certaines fonctionnalités peuvent être limitées sans persistance\n');
   }
 
-  httpServer.listen(PORT, () => {
-    console.log(`\n🚀 ARTISANET API démarrée sur http://localhost:${PORT}`);
-    console.log(`📚 Documentation Swagger : http://localhost:${PORT}/api-docs`);
-    console.log(`🔌 Socket.io actif`);
-    console.log(`🗄️  MongoDB : ${process.env.MONGO_URI}\n`);
-  });
+  listenWithFallback(httpServer, BASE_PORT)
+    .then((port) => {
+      console.log(`\n🚀 ARTISANET API démarrée sur http://localhost:${port}`);
+      console.log(`📚 Documentation Swagger : http://localhost:${port}/api-docs`);
+      console.log(`🔌 Socket.io actif`);
+      console.log(`🗄️  MongoDB : ${ok ? process.env.MONGO_URI : 'OFFLINE'}\n`);
+    })
+    .catch((err) => {
+      console.error('❌ Impossible de démarrer le serveur.', err);
+      process.exit(1);
+    });
 });

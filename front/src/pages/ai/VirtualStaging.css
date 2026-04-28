@@ -1,0 +1,481 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Smart Renovation Concept AI
+   High-end, dynamic and immersive design
+═══════════════════════════════════════════════════════════════════ */
+
+.vs-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--clr-bg);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--clr-text);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.vs-header {
+  padding: 1.5rem 2rem;
+  background: var(--clr-surface);
+  border-bottom: 1px solid var(--clr-border);
+  flex-shrink: 0;
+}
+
+.vs-header-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.vs-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(139, 90, 43, 0.12);
+  border: 1px solid rgba(139, 90, 43, 0.35);
+  color: #c98a4b;
+  padding: 0.3rem 0.75rem;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.vs-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c98a4b;
+  box-shadow: 0 0 8px #c98a4b;
+  animation: p3d-pulse 2s ease-in-out infinite;
+}
+
+.vs-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0 0 0.25rem 0;
+  line-height: 1.2;
+}
+
+.vs-subtitle {
+  font-size: 0.9rem;
+  color: var(--clr-text-muted);
+  margin: 0;
+}
+
+/* ── Container Layout ── */
+.vs-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.vs-sidebar {
+  width: 380px;
+  background: var(--clr-surface);
+  border-right: 1px solid var(--clr-border);
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vs-main {
+  flex: 1;
+  background: #0f1117;
+  padding: 2rem;
+  position: relative;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/* ── Sidebar Elements ── */
+.vs-panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--clr-text);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.vs-divider {
+  height: 1px;
+  background: var(--clr-border);
+  margin: 1.5rem 0;
+}
+
+.vs-dropzone {
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: var(--radius-xl);
+  background: rgba(255,255,255,0.02);
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.vs-dropzone:hover, .vs-dropzone.drag-over {
+  border-color: var(--clr-primary);
+  background: rgba(139, 90, 43, 0.06);
+}
+
+.vs-dropzone-content {
+  text-align: center;
+  color: var(--clr-text-muted);
+  padding: 1.5rem;
+}
+
+.vs-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.vs-dropzone-content p {
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
+  color: var(--clr-text);
+}
+
+.vs-dropzone-content span {
+  font-size: 0.75rem;
+}
+
+.vs-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.vs-style-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.vs-style-btn {
+  background: var(--clr-surface2);
+  border: 1px solid var(--clr-border);
+  padding: 0.85rem 0.5rem;
+  border-radius: var(--radius-md);
+  color: var(--clr-text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.vs-style-btn:hover {
+  background: rgba(139, 90, 43, 0.05);
+  border-color: rgba(139, 90, 43, 0.3);
+  color: var(--clr-text);
+}
+
+.vs-style-btn.active {
+  background: rgba(139, 90, 43, 0.15);
+  border-color: var(--clr-primary);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(139, 90, 43, 0.2);
+}
+
+.vs-style-icon {
+  font-size: 1.2rem;
+}
+
+.vs-style-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vs-generate-btn {
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #a67b5b, #8b5a2b);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 16px rgba(139, 90, 43, 0.3);
+  margin-top: auto;
+}
+
+.vs-generate-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 90, 43, 0.5);
+}
+
+.vs-generate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Main Area States ── */
+.vs-placeholder {
+  text-align: center;
+  max-width: 400px;
+  margin-top: 10vh;
+}
+
+.vs-placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.vs-placeholder h2 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--clr-text);
+}
+
+.vs-placeholder p {
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
+
+/* Loading State */
+.vs-loading {
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+  margin-top: 10vh;
+}
+
+.vs-loading-spinner {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.5rem auto;
+  border: 4px solid rgba(255,255,255,0.05);
+  border-top-color: #a67b5b;
+  border-radius: 50%;
+  animation: vs-spin 1s linear infinite;
+}
+
+@keyframes vs-spin { to { transform: rotate(360deg); } }
+
+.vs-loading h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.35rem;
+}
+
+.vs-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.vs-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #a67b5b, #c98a4b);
+  border-radius: 99px;
+  transition: width 0.1s linear;
+}
+
+.vs-loading-text {
+  font-size: 0.85rem;
+  color: var(--clr-text-muted);
+}
+
+/* ── New AI Report Grid View ── */
+.vs-result-grid-view {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.vs-result-header-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 1rem;
+}
+
+.vs-result-header-action h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #fff, #c98a4b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.vs-reset-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+}
+
+.vs-reset-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Compare Cards */
+.vs-compare-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.vs-compare-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #1a1d24;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  aspect-ratio: 4/3;
+}
+
+.vs-compare-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.vs-compare-card:hover img {
+  transform: scale(1.03);
+}
+
+.vs-compare-badge {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  z-index: 10;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* Expert Report */
+.vs-expert-report {
+  background: var(--clr-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--clr-border);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.vs-report-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem 0;
+  color: #fff;
+}
+
+.vs-report-section p {
+  color: var(--clr-text-muted);
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.vs-report-meta {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 1.5rem;
+}
+
+.vs-meta-box h4 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 1rem 0;
+  color: #a67b5b;
+}
+
+.vs-meta-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.vs-meta-box ul li {
+  background: rgba(255,255,255,0.03);
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--clr-text);
+  border-left: 2px solid #a67b5b;
+}
+
+.budget-box {
+  background: rgba(139, 90, 43, 0.08);
+  border: 1px solid rgba(139, 90, 43, 0.2);
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vs-budget-val {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.25rem;
+}
+
+.vs-budget-sub {
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.5);
+}
+
+@media (max-width: 900px) {
+  .vs-container { flex-direction: column; }
+  .vs-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--clr-border); }
+  .vs-compare-cards { grid-template-columns: 1fr; }
+  .vs-report-meta { grid-template-columns: 1fr; }
+}

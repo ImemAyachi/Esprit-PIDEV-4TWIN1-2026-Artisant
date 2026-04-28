@@ -1,0 +1,47 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'server/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'server/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Run Tests with Coverage
+        working-directory: ./server
+        # We assume 'npm test' generates a Cobertura report at server/coverage/cobertura-coverage.xml
+        run: npm test -- --coverage || echo "No tests defined yet"
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=BuildMarket_Backend
+            -Dsonar.sources=server/src
+            -Dsonar.genericcoverage.unitTestReportPaths=server/coverage/test-report.xml

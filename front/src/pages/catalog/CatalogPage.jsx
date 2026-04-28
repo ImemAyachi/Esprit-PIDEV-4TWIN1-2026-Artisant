@@ -8,9 +8,9 @@ const CATEGORIES = ['', 'marbre', 'granit', 'ciment', 'sable', 'carrelage', 'bri
 const CAT_ICONS  = { marbre: '', granit: '', ciment: '', sable: '', carrelage: '', brique: '', bois: '', acier: '', peinture: '', plomberie: '', électricité: '', autre: '' };
 
 const StarRating = ({ value }) => (
-  <div className="stars">
+  <div className="stars" style={{ display: 'flex', gap: '2px' }}>
     {[1,2,3,4,5].map(n => (
-      <span key={n} style={{ color: n <= Math.round(value) ? 'var(--clr-primary)' : 'var(--clr-surface3)', fontSize: '0.8rem' }}></span>
+      <span key={n} style={{ color: n <= Math.round(value || 0) ? '#f59e0b' : '#d1d5db', fontSize: '1.1rem' }}>★</span>
     ))}
   </div>
 );
@@ -25,12 +25,29 @@ const CatalogPage = () => {
   }, [filters]);
 
   const updateFilter = (key, value) => {
-    dispatch(setFilters({ [key]: value }));
+    dispatch(setFilters({ [key]: value, page: 1 })); // Also reset page to 1 on new filter
   };
+
+  // ⚡ Live Search (Debounced) - Recherche IA instantanée
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearch !== filters.search) {
+        updateFilter('search', localSearch);
+      }
+    }, 300); // Se déclenche 300ms après avoir fini de taper
+    return () => clearTimeout(timer);
+  }, [localSearch]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     updateFilter('search', localSearch);
+  };
+
+  const getPaginationRange = (current, total) => {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    if (current <= 4) return [1, 2, 3, 4, 5, '...', total];
+    if (current >= total - 3) return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+    return [1, '...', current - 1, current, current + 1, '...', total];
   };
 
   return (
@@ -111,7 +128,7 @@ const CatalogPage = () => {
                 </div>
                 <div className="product-card-body">
                   <div className="product-card-cat">{CAT_ICONS[p.category]} {p.category}</div>
-                  <div className="product-card-name">{p.name}</div>
+                  <div className="product-card-name">{p.name.replace(/\s*\(\d+\s*étoiles\)/, '')}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '0.5rem 0' }}>
                     <StarRating value={p.rating?.average || 0} />
                     <span style={{ color: 'var(--clr-text-muted)', fontSize: '0.8rem' }}>({p.rating?.count || 0})</span>
@@ -139,12 +156,32 @@ const CatalogPage = () => {
 
       {/* Pagination */}
       {pagination.pages > 1 && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem' }}>
-          {Array.from({ length: pagination.pages }, (_, i) => i + 1).map((p) => (
-            <button key={p} className={`btn btn-sm ${p === filters.page ? 'btn-primary' : 'btn-secondary'}`} onClick={() => dispatch(setFilters({ page: p }))}>
-              {p}
-            </button>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn btn-sm btn-secondary" 
+            disabled={(filters.page || 1) === 1}
+            onClick={() => dispatch(setFilters({ page: (filters.page || 1) - 1 }))}
+          >
+            &laquo;
+          </button>
+          
+          {getPaginationRange(filters.page || 1, pagination.pages).map((p, index) => (
+            p === '...' ? (
+              <span key={`dots-${index}`} style={{ padding: '0.5rem', color: 'var(--clr-text-muted)' }}>...</span>
+            ) : (
+              <button key={p} className={`btn btn-sm ${p === (filters.page || 1) ? 'btn-primary' : 'btn-secondary'}`} onClick={() => dispatch(setFilters({ page: p }))}>
+                {p}
+              </button>
+            )
           ))}
+
+          <button 
+            className="btn btn-sm btn-secondary" 
+            disabled={(filters.page || 1) === pagination.pages}
+            onClick={() => dispatch(setFilters({ page: (filters.page || 1) + 1 }))}
+          >
+            &raquo;
+          </button>
         </div>
       )}
     </div>

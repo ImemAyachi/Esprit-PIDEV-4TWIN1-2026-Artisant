@@ -1,0 +1,36 @@
+name: Backend CD
+
+on:
+  workflow_run:
+    workflows: ["Backend CI"]
+    branches: [main]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/buildmarket-backend:latest
+          
+      - name: Build and push Geometry image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server/geometry
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/buildmarket-geometry:latest

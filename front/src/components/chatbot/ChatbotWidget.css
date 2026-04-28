@@ -8,8 +8,8 @@
 /* ── FAB ─────────────────────────────────────────────────────── */
 .ac-fab {
   position: fixed;
-  bottom: 32px;
-  right: 104px;
+  bottom: 28px;
+  right: 104px; /* Moved left to stay next to Gesture button */
   z-index: 9000;
   display: flex;
   align-items: center;
@@ -84,8 +84,8 @@
 /* ── Chat Window ─────────────────────────────────────────────── */
 .ac-window {
   position: fixed;
-  bottom: 100px;
-  right: 104px;
+  bottom: 94px;
+  right: 104px; /* Aligned with the moved FAB */
   z-index: 8999;
   width: 380px;
   max-height: 600px;
@@ -487,7 +487,7 @@
     max-height: 75vh;
   }
   .ac-fab {
-    right: 14px;
+    right: 104px; /* Maintain side-by-side on mobile if possible, or adjust as needed */
     bottom: 18px;
     height: 48px;
     min-width: 48px;
