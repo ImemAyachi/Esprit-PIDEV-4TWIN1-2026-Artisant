@@ -141,16 +141,28 @@ function suggestFixFromWarnings(plan, warnings) {
   const W = Number(plan?.width_m);
   const H = Number(plan?.height_m);
   if (Number.isFinite(W) && Number.isFinite(H) && Array.isArray(warnings) && warnings.length) {
-    if (warnings.some((w) => String(w).toLowerCase().includes('kitchen too far'))) {
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('cuisine trop loin') || s.includes('kitchen too far');
+    })) {
       out.push('Rapprocher la cuisine du séjour (mur commun ou ouverture large) pour améliorer la zone jour.');
     }
-    if (warnings.some((w) => String(w).toLowerCase().includes('bathroom too far'))) {
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('salle de bain trop loin') || s.includes('bathroom too far');
+    })) {
       out.push('Rapprocher la salle de bain des chambres (regrouper la zone nuit et les pièces d’eau).');
     }
-    if (warnings.some((w) => String(w).toLowerCase().includes('wc is not near'))) {
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('wc n\'est pas proche') || s.includes('wc is not near');
+    })) {
       out.push('Déplacer le WC plus près de l’entrée (WC invités) ou créer un petit sas.');
     }
-    if (warnings.some((w) => String(w).toLowerCase().includes('scattered'))) {
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('éparpillée') || s.includes('scattered');
+    })) {
       out.push('Regrouper les pièces par zones (jour/nuit/service) pour réduire la circulation et améliorer la cohérence.');
     }
   }
@@ -167,7 +179,7 @@ function buildExplain({ plan, intent = null, architectural = null, layoutWarning
   if (Array.isArray(enforced)) constraints_applied.push(...enforced);
   if (intent?.canonicalConstraints && typeof intent.canonicalConstraints === 'object') {
     const c = intent.canonicalConstraints;
-    const push = (x) => constraints_applied.push(`intent: ${x}`);
+    const push = (x) => constraints_applied.push(`demandé : ${x}`);
     if (c.kitchen_open_to_living === true) push('cuisine ouverte sur séjour');
     if (c.wc_near === 'entry') push('WC près de l’entrée');
     if (c.wc_not_visible === true) push('WC non visible depuis l’entrée');

@@ -39,13 +39,7 @@ export default function Ai2DPlanPage() {
   const [estimate, setEstimate] = useState(null);
   const [estimating, setEstimating] = useState(false);
   const [showEstimate, setShowEstimate] = useState(true);
-  const [stylePresets, setStylePresets] = useState([]);
-  const [styleLoading, setStyleLoading] = useState(false);
-  const [renderView, setRenderView] = useState('interior');
-  const [selectedStyleId, setSelectedStyleId] = useState('');
-  const [rendering, setRendering] = useState(false);
-  const [renderOut, setRenderOut] = useState(null);
-  const [renderMeta, setRenderMeta] = useState(null);
+
 
   const dimsText = useMemo(() => {
     const w = plan?.plan?.width_m;
@@ -67,34 +61,13 @@ export default function Ai2DPlanPage() {
       if (!data?.data?.svg) throw new Error('SVG manquant dans la réponse');
       setPlan(data.data);
       setEstimate(null);
-      setStylePresets([]);
-      setSelectedStyleId('');
-      setRenderOut(null);
-      setRenderMeta(null);
 
-      setStyleLoading(true);
-      try {
-        const resp = await api.post('/ai/plan-2d/style-suggest', { plan: data.data.plan, input: trimmed });
-        const presets = resp?.data?.data?.presets;
-        if (Array.isArray(presets)) {
-          setStylePresets(presets.slice(0, 8));
-          setSelectedStyleId(String(presets?.[0]?.id || ''));
-        }
-      } catch {
-        
-      } finally {
-        setStyleLoading(false);
-      }
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || 'Erreur génération plan 2D';
       setError(msg);
       toast.error(msg);
       setPlan(null);
       setEstimate(null);
-      setStylePresets([]);
-      setSelectedStyleId('');
-      setRenderOut(null);
-      setRenderMeta(null);
     } finally {
       setBusy(false);
     }
@@ -103,7 +76,7 @@ export default function Ai2DPlanPage() {
   const formatTnd = (n) => {
     const v = Number(n);
     if (!Number.isFinite(v)) return '';
-    return `${Math.round(v).toLocaleString('fr-TN')} د.ت`;
+    return `${Math.round(v).toLocaleString('fr-TN')} DT`;
   };
 
   const onEstimate = async () => {
@@ -123,35 +96,7 @@ export default function Ai2DPlanPage() {
     }
   };
 
-  const selectedStyle = useMemo(() => {
-    if (!Array.isArray(stylePresets) || !stylePresets.length) return null;
-    return stylePresets.find((s) => String(s?.id) === String(selectedStyleId)) || stylePresets[0] || null;
-  }, [stylePresets, selectedStyleId]);
 
-  const onRenderStyle = async () => {
-    if (!plan?.plan || !selectedStyle) return;
-    setRendering(true);
-    try {
-      const style = String(selectedStyle.promptStyle || selectedStyle.name || '').trim().slice(0, 90);
-      const { data } = await api.post('/ai/plan-2d/render', {
-        plan: plan.plan,
-        svg: plan.svg,
-        style,
-        view: renderView,
-      });
-      if (!data?.success) throw new Error(data?.message || 'Réponse serveur invalide');
-      if (!data?.data?.url) throw new Error('URL image manquante');
-      setRenderOut(data.data);
-      setRenderMeta(data.meta || null);
-    } catch (err) {
-      const msg = err?.response?.data?.message || err?.message || 'Erreur rendu style';
-      toast.error(msg);
-      setRenderOut(null);
-      setRenderMeta(null);
-    } finally {
-      setRendering(false);
-    }
-  };
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', padding: '1.5rem 1rem' }}>
@@ -271,7 +216,7 @@ export default function Ai2DPlanPage() {
           {plan?.explain && (
             <div style={{ marginTop: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                <div style={{ fontWeight: 900 }}>Reasoning / Checks</div>
+                <div style={{ fontWeight: 900 }}>Analyse / Vérifications</div>
                 <button
                   type="button"
                   className="btn btn-secondary"
@@ -346,124 +291,7 @@ export default function Ai2DPlanPage() {
             </div>
           )}
 
-          <div style={{ marginTop: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-              <div style={{ fontWeight: 900 }}>Styles IA</div>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <select
-                  className="form-input"
-                  value={renderView}
-                  onChange={(e) => setRenderView(e.target.value)}
-                  disabled={rendering}
-                  style={{ minWidth: 160 }}
-                >
-                  <option value="interior">Intérieur</option>
-                  <option value="facade">Façade</option>
-                </select>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={onRenderStyle}
-                  disabled={rendering || !selectedStyle}
-                >
-                  {rendering ? 'Rendu…' : 'Générer rendu'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={() => downloadUrl(renderOut?.url, `render-${renderView}.png`)}
-                  disabled={!renderOut?.url}
-                >
-                  Télécharger PNG
-                </button>
-              </div>
-            </div>
 
-            {styleLoading && (
-              <div style={{ color: 'var(--clr-text-muted)', marginBottom: '0.5rem' }}>
-                Suggestion de styles…
-              </div>
-            )}
-
-            {Array.isArray(stylePresets) && stylePresets.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-                {stylePresets.map((s) => {
-                  const active = String(selectedStyleId) === String(s?.id);
-                  const palette = Array.isArray(s?.palette) ? s.palette : [];
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setSelectedStyleId(String(s.id))}
-                      className="card"
-                      style={{
-                        textAlign: 'left',
-                        padding: '0.75rem 0.75rem',
-                        borderRadius: 14,
-                        border: active ? '2px solid rgba(59,130,246,0.9)' : '1px solid var(--clr-border, #e5e5e5)',
-                        background: 'rgba(255,255,255,0.9)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <div style={{ fontWeight: 900, marginBottom: 6 }}>{s.name}</div>
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-                        {palette.slice(0, 5).map((c) => (
-                          <div
-                            key={c}
-                            style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: 999,
-                              background: c,
-                              border: '1px solid rgba(0,0,0,0.08)',
-                            }}
-                          />
-                        ))}
-                      </div>
-                      {s.note ? (
-                        <div style={{ color: 'var(--clr-text-muted)', fontSize: 12, lineHeight: 1.35 }}>{s.note}</div>
-                      ) : Array.isArray(s?.highlights) && s.highlights.length ? (
-                        <div style={{ color: 'var(--clr-text-muted)', fontSize: 12, lineHeight: 1.35 }}>
-                          {s.highlights.slice(0, 3).join(' • ')}
-                        </div>
-                      ) : (
-                        <div style={{ color: 'var(--clr-text-muted)', fontSize: 12 }}>Style prêt à générer</div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div style={{ color: 'var(--clr-text-muted)' }}>
-                Aucun style disponible (vérifiez la connexion serveur).
-              </div>
-            )}
-
-            {renderOut?.url && (
-              <div style={{ marginTop: '0.75rem' }}>
-                <div
-                  style={{
-                    border: '1px solid var(--clr-border, #e5e5e5)',
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    background: '#fff',
-                  }}
-                >
-                  <img src={renderOut.url} alt="Rendu" style={{ width: '100%', display: 'block' }} />
-                </div>
-                <div style={{ marginTop: 6, color: 'var(--clr-text-muted)', fontSize: 12 }}>
-                  Mode: {renderOut.mode} • Vue: {renderOut.view}
-                </div>
-                {renderOut.mode === 'fallback_svg' && (
-                  <div style={{ marginTop: 6, color: '#b45309', fontSize: 12 }}>
-                    Rendu photo non disponible → affichage du SVG.
-                    {renderMeta?.provider ? ` Provider: ${renderMeta.provider}.` : ''}
-                    {renderMeta?.reason ? ` Raison: ${renderMeta.reason}` : ' Vérifiez `HF_TOKEN` ou `OPENAI_API_KEY`.'}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
 
           {estimate && (
             <div style={{ marginTop: '1rem' }}>

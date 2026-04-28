@@ -3,13 +3,15 @@ import { callCloudAI } from '../utils/cloudAiClient.js';
 import Product from '../models/Product.model.js';
 import ChatSession from '../models/ChatSession.model.js';
 import fs from 'fs';
+import path from 'path';
 
 // Load Expert BTP Knowledge (Safely)
 let btpKnowledge = {};
 try {
-    btpKnowledge = JSON.parse(fs.readFileSync('C:\\Users\\hp elite\\Desktop\\test1\\Esprit-PIDEV-4TWIN1-2026-Artisant\\ml\\dataset\\btp_knowledge_tn.json', 'utf8'));
+  const filePath = path.join(process.cwd(), '..', 'ml', 'dataset', 'btp_knowledge_tn.json');
+  btpKnowledge = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 } catch (e) {
-    console.error("Failed to load knowledge base:", e.message);
+  console.error("Failed to load knowledge base:", e.message);
 }
 
 const SYSTEM_PROMPT = `You are ArtiChat, an ELITE construction AI expert for Artisanet BuildMarket (Tunisia).
@@ -41,27 +43,27 @@ export const chat = async (req, res) => {
     if (!userId) return res.status(401).json({ error: 'Authentication required' });
 
     const userText = messages[messages.length - 1]?.parts?.[0]?.text || "";
-    
+
     // 1. Contextual Product Retrieval
     let recommendations = [];
     try {
-        recommendations = await Product.find({ 
-            $text: { $search: userText }, 
-            isAvailable: true 
-        }).limit(3).lean();
+      recommendations = await Product.find({
+        $text: { $search: userText },
+        isAvailable: true
+      }).limit(3).lean();
     } catch (e) { /* ignore search errors */ }
 
-    const recContext = recommendations.length > 0 
-        ? `Catalog Highlights: ${recommendations.map(r => `${r.name} (${r.price} ${r.priceUnit})`).join(', ')}`
-        : "No specific products found for this query in catalog.";
+    const recContext = recommendations.length > 0
+      ? `Catalog Highlights: ${recommendations.map(r => `${r.name} (${r.price} ${r.priceUnit})`).join(', ')}`
+      : "No specific products found for this query in catalog.";
 
     // 2. Persistent Memory Management
     let session = await ChatSession.findOne({ user: userId });
     if (!session) {
-        session = await ChatSession.create({ 
-            user: userId, 
-            turns: [{ role: 'system', content: SYSTEM_PROMPT }] 
-        });
+      session = await ChatSession.create({
+        user: userId,
+        turns: [{ role: 'system', content: SYSTEM_PROMPT }]
+      });
     }
 
     // 3. Prompt Construction
@@ -95,10 +97,10 @@ export const chat = async (req, res) => {
     // 5. Save and Return
     session.turns.push({ role: 'user', content: userText });
     session.turns.push({ role: 'assistant', content: reply });
-    
+
     // Keep turns history bounded
     if (session.turns.length > 20) session.turns = session.turns.slice(-20);
-    
+
     await session.save();
 
     return res.json({

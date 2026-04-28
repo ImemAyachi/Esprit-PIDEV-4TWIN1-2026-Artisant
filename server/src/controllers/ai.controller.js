@@ -1,4 +1,5 @@
 import { callLocalLLM } from "../utils/aiClient.js";
+import { callCloudAI } from "../utils/cloudAiClient.js";
 import Product from "../models/Product.model.js";
 
 export const recommendProducts = async (req, res) => {
@@ -163,13 +164,21 @@ export const recommendProducts = async (req, res) => {
         }
       ]`;
 
-      console.log(`[AI] Envoi requête au LLM Local pour: "${effectiveNeed}"...`);
-      const responseText = await callLocalLLM([
-        { role: 'system', content: prompt }
-      ], { temperature: 0.1 });
+      console.log(`[AI] Envoi requête au Cloud AI pour: "${effectiveNeed}"...`);
+      let responseText = "";
+      try {
+        responseText = await callCloudAI([
+          { role: 'system', content: prompt }
+        ], { temperature: 0.1 });
+      } catch (cloudErr) {
+        console.error("[AI] Cloud AI failed for recommendation, trying local:", cloudErr.message);
+        responseText = await callLocalLLM([
+          { role: 'system', content: prompt }
+        ], { temperature: 0.1 });
+      }
 
       if (!responseText) {
-        return performLocalFallback("Pas de réponse du LLM local");
+        return performLocalFallback("Pas de réponse des LLMs (Cloud/Local)");
       }
 
       const jsonMatch = responseText.match(/\[[\s\S]*\]/);

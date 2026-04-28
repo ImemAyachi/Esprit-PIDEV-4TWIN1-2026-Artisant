@@ -23,10 +23,11 @@ async function callGemini(messages, options = {}) {
   
   // Use gemini-1.5-flash but with a fallback to gemini-pro if needed
   const model = genAI.getGenerativeModel({ 
-    model: "gemini-1.5-flash",
+    model: "gemini-pro",
     systemInstruction: systemMessage ? systemMessage.content : undefined
   });
 
+  console.log(`[Gemini] Sending message to gemini-pro...`);
   const chatHistory = messages
     .filter(m => m.role !== 'system')
     .slice(0, -1)
