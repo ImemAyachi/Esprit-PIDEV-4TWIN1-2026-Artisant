@@ -41,6 +41,7 @@ import uploadRoutes from './routes/uploadRoutes.js';
 
 // Middleware global d'erreurs
 import { errorHandler } from './middleware/error.middleware.js';
+import { getMetrics, httpRequestDurationMicroseconds } from './controllers/metrics.controller.js';
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -103,6 +104,18 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// ─── Metrics Middleware ──────────────────────────────────────────────────────
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    httpRequestDurationMicroseconds
+      .labels(req.method, req.path, res.statusCode)
+      .observe(duration);
+  });
+  next();
+});
+
 // Static folder for uploads (from Yahya branch)
 app.use('/uploads', express.static(path.join(path.resolve(), '/uploads'), {
   setHeaders: (res) => {
@@ -145,6 +158,9 @@ app.use(`${API}/workforce`, workforceRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// Prometheus metrics
+app.get('/api/metrics', getMetrics);
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Artisant API' });
 });

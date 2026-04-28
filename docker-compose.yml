@@ -1,0 +1,198 @@
+# ============================================================
+# BuildMarket — Docker Compose
+# Orchestration : Frontend + Backend + Geometry + MongoDB
+# ============================================================
+# Usage:
+#   Développement : docker-compose up --build
+#   Production    : docker-compose -f docker-compose.yml up -d --build
+#   Arrêt         : docker-compose down
+#   Nettoyage     : docker-compose down -v  (supprime les volumes)
+# ============================================================
+
+services:
+
+  # ── Base de données MongoDB ──────────────────────────────────
+  database:
+    image: mongo:latest
+    container_name: buildmarket-db
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    networks:
+      - buildmarket-network
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ── Geometry Service (FastAPI / Python) ─────────────────────
+  geometry-service:
+    build:
+      context: ./server/geometry
+      dockerfile: Dockerfile
+    container_name: buildmarket-geometry
+    restart: unless-stopped
+    ports:
+      - "8008:8008"
+    networks:
+      - buildmarket-network
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8008/health" ]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # ── Backend (Node.js / Express) ─────────────────────────────
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: buildmarket-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGO_URI=mongodb://database:27017/buildmarket
+      - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - JWT_EXPIRE=${JWT_EXPIRE:-7d}
+      - CLIENT_URL=http://localhost:5173
+      - CORS_EXTRA_ORIGINS=http://localhost:5173,http://frontend:80
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+      - SMTP_EMAIL=${SMTP_EMAIL:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - AI_PROVIDER=${AI_PROVIDER:-groq}
+      - GROQ_MODEL=${GROQ_MODEL:-llama-3.3-70b-versatile}
+      - GEOMETRY_SERVICE_URL=http://geometry-service:8008
+      - SERVER_PUBLIC_URL=http://localhost:5000
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+      geometry-service:
+        condition: service_healthy
+    networks:
+      - buildmarket-network
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:5000/api/health" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ── Frontend (React / Vite → Nginx) ─────────────────────────
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=/api
+        - VITE_SOCKET_URL=http://localhost:5000
+    container_name: buildmarket-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - buildmarket-network
+
+  # ── PROMETHEUS (Collecte de métriques) ──────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: buildmarket-prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - buildmarket-network
+
+  # ── GRAFANA (Visualisation) ─────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: buildmarket-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - buildmarket-network
+
+  # ── NODE EXPORTER (Métriques Système) ──────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: buildmarket-node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - buildmarket-network
+
+  # ── ALERT MANAGER (Gestion des alertes) ────────────────────
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: buildmarket-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    networks:
+      - buildmarket-network
+
+  # ── SonarQube (Qualité de code) ─────────────────────────────
+  sonarqube:
+    image: sonarqube:community
+    container_name: buildmarket-sonar
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    networks:
+      - buildmarket-network
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+# ── Volumes persistants ──────────────────────────────────────
+volumes:
+  mongo_data:
+    driver: local
+  mongo_config:
+    driver: local
+  uploads_data:
+    driver: local
+  sonarqube_data:
+    driver: local
+  sonarqube_extensions:
+    driver: local
+  sonarqube_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# ── Réseau interne ───────────────────────────────────────────
+networks:
+  buildmarket-network:
+    driver: bridge
+    name: buildmarket-net

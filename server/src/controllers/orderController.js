@@ -7,13 +7,13 @@ const mapOrder = (order, artisan) => ({
     ...order.toObject(),
     orderNumber: order.orderNumber || `ORD-${order._id.toString().slice(-6).toUpperCase()}`,
     financials: { total: order.totalPrice },
-    status: order.status === 'en_attente' ? 'pending' : 
-            order.status === 'expédié' ? 'shipped' : 
-            order.status === 'livré' ? 'delivered' : 
-            order.status === 'annulé' ? 'cancelled' : order.status,
-    shipping: { 
-        address: order.shippingAddress, 
-        contactName: artisan?.companyName || 'Artisant Expert' 
+    status: order.status === 'en_attente' ? 'pending' :
+        order.status === 'expédié' ? 'shipped' :
+            order.status === 'livré' ? 'delivered' :
+                order.status === 'annulé' ? 'cancelled' : order.status,
+    shipping: {
+        address: order.shippingAddress,
+        contactName: artisan?.companyName || 'Artisant Expert'
     }
 });
 
@@ -30,7 +30,7 @@ export const createOrder = async (req, res) => {
         // Manufacturer resolution and item verification
         const productIds = items.map(i => i.product);
         const products = await Product.find({ _id: { $in: productIds } });
-        
+
         if (products.length === 0) {
             return res.status(400).json({ success: false, message: 'Aucun produit valide trouvé.' });
         }
@@ -62,15 +62,28 @@ export const createOrder = async (req, res) => {
         });
 
 
-        // Create order items with reliable database prices
+        // Create order items with reliable database prices and update stock
         for (const item of items) {
             const prod = products.find(p => p._id.toString() === item.product);
+
+            // Deduct stock
+            if (prod) {
+                if (prod.stock && prod.stock.quantity !== undefined) {
+                    prod.stock.quantity -= item.quantity;
+                    if (prod.stock.quantity <= 0) {
+                        prod.stock.quantity = 0;
+                        prod.isAvailable = false;
+                    }
+                }
+                await prod.save();
+            }
+
             await OrderItem.create({
                 order: order._id,
                 product: item.product,
                 quantity: item.quantity,
-                unitPrice: prod?.unitPrice || item.price || 0,
-                subtotal: (prod?.unitPrice || item.price || 0) * item.quantity
+                unitPrice: prod?.unitPrice || prod?.price || item.price || 0,
+                subtotal: (prod?.unitPrice || prod?.price || item.price || 0) * item.quantity
             });
         }
 
@@ -93,7 +106,7 @@ export const getMyOrders = async (req, res) => {
         const orders = await Order.find({ artisan: req.user.id })
             .populate('manufacturer', 'companyName')
             .sort('-createdAt');
-        
+
         const mappedOrders = [];
         for (const order of orders) {
             const items = await OrderItem.find({ order: order._id }).populate('product');
@@ -121,7 +134,7 @@ export const getManufacturerOrders = async (req, res) => {
         const orders = await Order.find({ manufacturer: req.user.id })
             .populate('artisan', 'companyName email')
             .sort('-createdAt');
-        
+
         const mappedOrders = [];
         for (const order of orders) {
             const items = await OrderItem.find({ order: order._id }).populate('product');
@@ -162,7 +175,7 @@ export const getOrder = async (req, res) => {
         const order = await Order.findById(req.params.id)
             .populate('artisan', 'companyName')
             .populate('manufacturer', 'companyName');
-        
+
         if (!order) return res.status(404).json({ success: false, message: 'Order not found.' });
 
         const items = await OrderItem.find({ order: order._id }).populate('product');
@@ -177,13 +190,13 @@ export const getOrder = async (req, res) => {
 // @route   GET /api/orders/summary
 export const getOrderAnalytics = async (req, res) => {
     try {
-        const query = req.user.role === 'manufacturer' 
-            ? { manufacturer: req.user.id } 
+        const query = req.user.role === 'manufacturer'
+            ? { manufacturer: req.user.id }
             : { artisan: req.user.id };
 
         const orders = await Order.find(query);
         const totalSpent = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-        
+
         const analytics = {
             totalOrders: orders.length,
             totalRevenue: totalSpent,

@@ -121,9 +121,36 @@ reviewSchema.statics.calcAverageRating = async function (productId) {
 
   const Product = mongoose.model('Product');
   if (stats.length > 0) {
+    const humanRating = Math.round(stats[0].avgRating * 10) / 10;
+    const popularite = stats[0].count;
+    
+    // 🧠 INTEGRATION DU MODÈLE ML (SCORE DYNAMIQUE)
+    let finalScore = humanRating;
+    try {
+      const productDoc = await Product.findById(productId);
+      const mlResponse = await fetch('http://localhost:8000/predict-score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prix: productDoc.price || 0,
+          qualite_humaine: humanRating,
+          popularite: popularite
+        })
+      });
+      if (mlResponse.ok) {
+        const mlData = await mlResponse.json();
+        if (mlData.score_ia) {
+          finalScore = mlData.score_ia; // On utilise le Score IA calculé par le modèle !
+          console.log(`🧠 ML Model a mis à jour le score de ${productDoc.name}: Humain=${humanRating} -> IA=${finalScore}`);
+        }
+      }
+    } catch (err) {
+      console.log("⚠️ Microservice ML injoignable, utilisation du score humain basique.", err.message);
+    }
+
     await Product.findByIdAndUpdate(productId, {
-      'rating.average': Math.round(stats[0].avgRating * 10) / 10,
-      'rating.count': stats[0].count,
+      'rating.average': Math.round(finalScore * 10) / 10,
+      'rating.count': popularite,
       'rating.recommended': stats[0].recommended,
     });
   } else {

@@ -155,7 +155,7 @@ const ProductDetail = () => {
             </span>
           </div>
 
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{product.name}</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{product.name.replace(/\s*\(\d+\s*étoiles\)/, '')}</h1>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <StarRating value={product.rating?.average} />
@@ -257,8 +257,8 @@ const ProductDetail = () => {
           Feedback et Avis
         </h2>
 
-        {/* Formulaire pour Architecte */}
-        {user?.role === 'Architecte' && (
+        {/* Formulaire d'avis (ouvert aux Architectes, Ingénieurs et Artisans) */}
+        {user && ['Architecte', 'Ingenieur', 'Artisan'].includes(user.role) && (
           <div style={{ background: 'var(--clr-surface2)', padding: '1.5rem', borderRadius: 'var(--radius-lg)', marginBottom: '2rem' }}>
             <h4 style={{ marginBottom: '1rem' }}>Donner mon avis</h4>
             <form onSubmit={handleSubmitReview} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
