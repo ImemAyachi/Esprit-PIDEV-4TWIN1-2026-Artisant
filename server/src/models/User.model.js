@@ -100,6 +100,7 @@ const userSchema = new mongoose.Schema(
     // ── Profil Fournisseur ────────────────────────────────────────────────
     companyName:    { type: String },
     supplierType:   { type: String }, // ex: 'marbre', 'ciment', 'carrelage'
+    supplierTrustScore: { type: Number, default: 80, min: 0, max: 100 }, // Score de confiance tarifaire (PriceRadar)
 
     // ── Profil Architecte / Ingénieur ─────────────────────────────────────
     specialization: { type: String }, // ex: 'génie civil', 'architecture d'intérieur'

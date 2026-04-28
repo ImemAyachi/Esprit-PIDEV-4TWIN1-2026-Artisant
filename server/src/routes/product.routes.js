@@ -9,7 +9,7 @@
 import express from 'express';
 import {
   getProducts, getProductById, createProduct,
-  updateProduct, deleteProduct, getTopByCategory, getMyProducts,
+  updateProduct, deleteProduct, getTopByCategory, getMyProducts, getLuckyDeals
 } from '../controllers/product.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { uploadProduct } from '../middleware/upload.middleware.js';
@@ -18,6 +18,7 @@ const router = express.Router();
 
 // Routes publiques
 router.get('/',           getProducts);
+router.get('/lucky-deals', getLuckyDeals);
 router.get('/top/:category', getTopByCategory);
 router.get('/my',      protect, authorize('Fournisseur'), getMyProducts);
 router.get('/:id',     getProductById);

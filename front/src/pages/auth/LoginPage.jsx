@@ -18,6 +18,9 @@ const LoginPage = () => {
     const result = await dispatch(loginUser(data));
     if (result.meta.requestStatus === 'fulfilled') {
       navigate('/dashboard/home');
+    } else if (result.payload?.require2FA) {
+      // Si le login échoue car l'email n'est pas vérifié, on va vers la page d'inscription (qui affiche l'étape 2FA)
+      navigate('/register');
     }
   };
 

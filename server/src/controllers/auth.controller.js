@@ -142,9 +142,43 @@ export const login = asyncHandler(async (req, res) => {
     throw new AppError('Compte désactivé — contactez l\'administrateur', 403);
   }
 
-  // Si on a laissé le champ twoFactorCode au moment de l'inscription et qu'il force le login
+  // Si l'utilisateur n'est pas encore vérifié (code 2FA présent)
   if (user.twoFactorCode) {
-    throw new AppError('Veuillez d\'abord valider votre e-mail avec le code reçu lors de l\'inscription.', 403);
+    // Si le code a expiré, on en génère un nouveau
+    if (Date.now() > user.twoFactorExpire) {
+      const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+      user.twoFactorCode = newCode;
+      user.twoFactorExpire = Date.now() + 10 * 60 * 1000;
+      await user.save({ validateBeforeSave: false });
+
+      // On tente de renvoyer l'email
+      try {
+        await sendEmail({
+          email: user.email,
+          subject: 'Nouveau code de vérification',
+          message: `Votre nouveau code est : ${newCode}`,
+          html: `<div style="font-family:sans-serif;padding:20px;border:1px solid #ddd;border-radius:8px;">
+                  <h3>Nouveau code de vérification</h3>
+                  <p>L'ancien code ayant expiré, voici votre nouveau code :</p>
+                  <div style="font-size:24px;font-weight:bold;background:#f3f4f6;text-align:center;padding:15px;letter-spacing:5px;">${newCode}</div>
+                </div>`
+        });
+      } catch (err) { console.error("Email resend failed:", err); }
+      
+      return res.status(403).json({
+        success: false,
+        message: 'Votre ancien code avait expiré. Un nouveau code a été envoyé à votre e-mail.',
+        require2FA: true,
+        email: user.email
+      });
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: 'Veuillez d\'abord valider votre e-mail avec le code reçu lors de l\'inscription.',
+      require2FA: true,
+      email: user.email
+    });
   }
 
   // Mettre à jour lastLogin

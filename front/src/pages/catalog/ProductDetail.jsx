@@ -5,6 +5,8 @@ import { fetchProductById } from '../../store/slices/productSlice';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 import { getImageUrl } from '../../utils/imageUrl';
+import { ShieldCheck, Sparkles, AlertCircle } from 'lucide-react';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const StarRating = ({ value }) => (
   <div className="stars" style={{ display: 'flex', gap: '2px' }}>
@@ -31,11 +33,7 @@ const ProductDetail = () => {
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: '', isRecommended: true });
   const [reviewError, setReviewError] = useState('');
-
-  useEffect(() => {
-    dispatch(fetchProductById(id));
-    fetchReviews();
-  }, [id]);
+  const [confirmConfig, setConfirmConfig] = useState(null);
 
   const fetchReviews = async () => {
     try {
@@ -46,6 +44,31 @@ const ProductDetail = () => {
     }
   };
 
+  useEffect(() => {
+    dispatch(fetchProductById(id));
+    fetchReviews();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchChart = async () => {
+      try {
+        if (!product || !product.priceHistory) return;
+        const res = await fetch(`http://localhost:8002/chart`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            history: product.priceHistory.length ? product.priceHistory : [{ price: product.price }],
+            marketAvg: product.priceRadar?.marketAvg || product.price
+          })
+        });
+        const data = await res.json();
+        const container = document.getElementById('price-radar-chart');
+        if (container && data.svg) container.innerHTML = data.svg;
+      } catch (e) { console.error("Error fetching price chart", e); }
+    };
+    fetchChart();
+  }, [product]);
+
   const handleOpenOrder = async () => {
     try {
       const res = await api.get('/projects');
@@ -54,10 +77,22 @@ const ProductDetail = () => {
     } catch(e) { }
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (overrideWarning = false) => {
     try {
       if (!orderData.quantity || !orderData.deliveryAddress) return toast.error("Veuillez remplir les informations de livraison");
       
+      // ALERTE IA POUR L'ARTISAN
+      if (overrideWarning !== true && product.priceRadar?.deviationPercent > 10) {
+        setConfirmConfig({
+          type: 'warning',
+          title: "Alerte de Surcoût (PriceRadar)",
+          message: `Attention, le prix de ce produit (${product.price} DT) est ${product.priceRadar.deviationPercent}% supérieur à la moyenne du marché évaluée par notre IA (${product.priceRadar.marketAvg} DT). Voulez-vous vraiment continuer et valider cette commande ?`,
+          confirmLabel: "Oui, commander quand même",
+          onConfirm: () => handlePlaceOrder(true)
+        });
+        return;
+      }
+
       const payload = {
         items: [{ product: product._id, quantity: Number(orderData.quantity), unitPrice: parseFloat(product.price) }],
         deliveryAddress: { address: orderData.deliveryAddress || 'Aucune', city: 'Non spécifié' },
@@ -169,8 +204,61 @@ const ProductDetail = () => {
             </button>
           </div>
 
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)' }}>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--clr-primary)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {product.price} DT <span style={{ fontSize: '1rem', fontWeight: 500, color: 'var(--clr-text-muted)' }}>/ {product.unit}</span>
+            {product.priceRadar?.status === 'high' && (
+              <div style={{ background: '#fef2f2', border: '1px solid #fee2e2', color: '#ef4444', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '1rem' }}>⚠️</span> Prix au-dessus du marché
+              </div>
+            )}
+            {product.priceRadar?.status === 'low' && (
+              <div style={{ background: '#ecfdf5', border: '1px solid #d1fae5', color: '#10b981', padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ fontSize: '1rem' }}>✨</span> Produit Chance (Prix IA: {product.priceRadar.marketAvg} DT)
+              </div>
+            )}
+          </div>
+          
+          {/* PriceRadar 3.0 — Transparency Badge (Color Bar) */}
+          {product.priceRadar?.transparency && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden', display: 'flex' }}>
+                    <div style={{ width: '33.33%', background: '#10b981', opacity: product.priceRadar.transparency.level >= 1 ? 1 : 0.2 }} />
+                    <div style={{ width: '33.33%', background: '#f59e0b', opacity: product.priceRadar.transparency.level >= 2 ? 1 : 0.2 }} />
+                    <div style={{ width: '33.33%', background: '#ef4444', opacity: product.priceRadar.transparency.level >= 3 ? 1 : 0.2 }} />
+                </div>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b' }}>{product.priceRadar.transparency.label}</span>
+            </div>
+          )}
+
+          {/* PriceRadar 3.0 — PriceSeer Predictive Note */}
+          {product.priceRadar?.predictiveNote && (
+            <div style={{ 
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', 
+                border: '1px solid #bae6fd', padding: '1rem', borderRadius: '16px',
+                display: 'flex', gap: '0.75rem', alignItems: 'flex-start'
+            }}>
+                <Sparkles size={20} color="#0284c7" style={{ marginTop: '0.2rem' }} />
+                <div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#0369a1', marginBottom: '0.2rem' }}>Prévision PriceSeer</div>
+                    <p style={{ fontSize: '0.8rem', color: '#075985', margin: 0, lineHeight: 1.5 }}>
+                        {product.priceRadar.predictiveNote}
+                    </p>
+                </div>
+            </div>
+          )}
+          
+          {/* PriceRadar Chart */}
+          <div className="card" style={{ padding: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px' }}>
+            <h5 style={{ fontSize: '0.85rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
+              Évolution du Prix (3 mois)
+              <span style={{ color: 'var(--clr-primary)' }}>PriceRadar 2.0</span>
+            </h5>
+            <div id="price-radar-chart" style={{ width: '100%', minHeight: '150px' }}>
+                {/* L'SVG sera injecté ici */}
+            </div>
+            <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.5rem' }}>
+              La zone colorée représente l'intervalle de normalité du marché tunisien.
+            </p>
           </div>
           
           {(user?.role === 'Artisan' || user?.role === 'Ingenieur') && product.isAvailable && (
@@ -204,7 +292,17 @@ const ProductDetail = () => {
                 {product.supplier.firstName?.[0]}
               </div>
               <div>
-                <div style={{ fontWeight: 600 }}>{product.supplier.companyName || `${product.supplier.firstName} ${product.supplier.lastName}`}</div>
+                <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    {product.supplier.companyName || `${product.supplier.firstName} ${product.supplier.lastName}`}
+                    <div style={{ 
+                        background: (product.supplier.supplierTrustScore || 80) >= 80 ? '#ecfdf5' : '#fef2f2',
+                        color: (product.supplier.supplierTrustScore || 80) >= 80 ? '#10b981' : '#ef4444',
+                        padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800,
+                        display: 'flex', alignItems: 'center', gap: '0.25rem', border: '1px solid currentColor'
+                    }}>
+                        <ShieldCheck size={12} /> {product.supplier.supplierTrustScore || 80}% Confiance
+                    </div>
+                </div>
                 <div style={{ fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>Lieu:  {product.supplier.location?.city || 'Tunisie'}</div>
               </div>
             </div>
@@ -339,6 +437,17 @@ const ProductDetail = () => {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '1rem' }}>
+              {product.priceRadar?.status === 'high' && (
+                <div style={{ 
+                  background: '#fff7ed', border: '1px solid #ffedd5', padding: '1rem', 
+                  borderRadius: '12px', display: 'flex', gap: '0.75rem', alignItems: 'center' 
+                }}>
+                  <AlertCircle color="#f59e0b" size={20} />
+                  <div style={{ fontSize: '0.85rem', color: '#9a3412', fontWeight: 600 }}>
+                    Alerte : Le prix de ce produit est jugé élevé par notre IA PriceSeer par rapport au marché actuel.
+                  </div>
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Quantité en {product.unit}</label>
                 <input className="form-input" type="number" min="1" max={product.stock?.quantity || 1000} value={orderData.quantity} onChange={e => setOrderData(o => ({...o, quantity: e.target.value}))} />
@@ -373,6 +482,8 @@ const ProductDetail = () => {
           </div>
         </div>
       )}
+
+      <ConfirmModal config={confirmConfig} onClose={() => setConfirmConfig(null)} />
     </div>
   );
 };
