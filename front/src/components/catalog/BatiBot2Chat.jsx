@@ -183,7 +183,7 @@ export default function BatiBot2Chat() {
         style={{
           position: 'fixed',
           bottom: 100,
-          right: 100,
+          right: 32,
           zIndex: 9999,
           width: 60,
           height: 60,
@@ -214,7 +214,7 @@ export default function BatiBot2Chat() {
           style={{
             position: 'fixed',
             bottom: 168,
-            right: 100,
+            right: 32,
             zIndex: 9998,
             width: 'min(420px, calc(100vw - 48px))',
             height: 'min(650px, calc(100vh - 210px))',
@@ -247,9 +247,14 @@ export default function BatiBot2Chat() {
               </button>
               <button
                 onClick={() => setOpen(false)}
-                style={{ border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: 8, padding: '4px 8px', cursor: 'pointer' }}
+                aria-label="Fermer BatiBot2"
+                title="Close"
+                style={{ border: 'none', background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: 8, width: 36, height: 36, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                Close
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
           </div>
