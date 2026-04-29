@@ -283,8 +283,31 @@ const MyProductsPage = () => {
             .premium-btn-delete:hover { background: #fee2e2; color: #dc2626; }
             .btn-single { grid-column: 1 / -1; }
           `}</style>
-          {products.map(p => (
+          {products.map(p => {
+            const getDefaultImage = (cat) => {
+              const images = {
+                marbre: 'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=600&q=80',
+                granit: 'https://images.unsplash.com/photo-1507026330058-294720612ce6?auto=format&fit=crop&w=600&q=80',
+                bois: 'https://images.unsplash.com/photo-1534066929-2321ec9e7555?auto=format&fit=crop&w=600&q=80',
+                brique: 'https://images.unsplash.com/photo-1518041530939-2ce963d12d46?auto=format&fit=crop&w=600&q=80',
+                acier: 'https://images.unsplash.com/photo-1605336043132-95f7c32b5357?auto=format&fit=crop&w=600&q=80',
+                ciment: 'https://images.unsplash.com/photo-1588636195655-081467cb4474?auto=format&fit=crop&w=600&q=80',
+                carrelage: 'https://images.unsplash.com/photo-1523413363574-c30aa1c2a516?auto=format&fit=crop&w=600&q=80',
+                sable: 'https://images.unsplash.com/photo-1616110756916-2d580f488ea9?auto=format&fit=crop&w=600&q=80',
+                peinture: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
+                plomberie: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80',
+                électricité: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=600&q=80',
+                autre: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=600&q=80',
+              };
+              return images[cat?.toLowerCase()] || images.autre;
+            };
+            const productImg = (p.media && p.media.find(m => m.type === 'image'))?.url || getDefaultImage(p.category);
+            
+            return (
             <div key={p._id} className="premium-product-card">
+              <div style={{ width: '100%', height: '180px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1rem', background: '#f1f5f9' }}>
+                <img src={productImg} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = getDefaultImage('autre'); }} />
+              </div>
               <div className="premium-card-header">
                 <span className="premium-cat-badge">{p.category}</span>
                 <span className={`premium-status-dot ${p.isAvailable ? 'active' : 'inactive'}`}>
@@ -330,7 +353,8 @@ const MyProductsPage = () => {
                 </button>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 
@@ -554,7 +578,14 @@ const MyProductsPage = () => {
               </div>
 
               <div className="premium-group full">
-                <label className="premium-label">Fiche Technique & Images</label>
+                <label className="premium-label">Images & Fiche Technique</label>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                  {files && files.length > 0 ? Array.from(files).filter(f => f.type.startsWith('image/')).map((file, idx) => (
+                    <img key={idx} src={URL.createObjectURL(file)} alt="preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '2px solid #e2e8f0' }} />
+                  )) : (
+                    <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: '#f8fafc', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '0.5rem' }}>Aperçu d'image</div>
+                  )}
+                </div>
                 <input className="premium-input" type="file" multiple accept=".pdf,image/*" onChange={e => setFiles(e.target.files)} />
                 <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Sélectionnez vos images (.jpg, .png) et/ou la fiche technique (.pdf).</p>
               </div>

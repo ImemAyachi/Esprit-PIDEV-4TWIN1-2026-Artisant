@@ -36,6 +36,8 @@ import DashboardPlannerPage from './pages/dashboard/DashboardPlannerPage';
 import Ai2DPlanPage from './pages/Ai2DPlanPage';
 import AiChantierBrainPage from './pages/AiChantierBrainPage';
 import ProduitsChancePage from './pages/catalog/ProduitsChancePage';
+import PlanTo3D from './pages/plan3d/PlanTo3D';
+import VirtualStaging from './pages/ai/VirtualStaging';
 
 // Guards
 import PrivateRoute from './components/auth/PrivateRoute';
@@ -128,9 +130,14 @@ function App() {
                 <AiChantierBrainPage />
               </RoleRoute>
             } />
-            
             {/* PriceRadar 2.0 — Produits Chance */}
             <Route path="lucky-deals" element={<ProduitsChancePage />} />
+
+            {/* AI Plan → 3D */}
+            <Route path="plan-3d" element={<PlanTo3D />} />
+
+            {/* AI Virtual Staging */}
+            <Route path="virtual-staging" element={<VirtualStaging />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
