@@ -101,7 +101,6 @@ const MyProductsPage = () => {
     setShowModal(true);
   };
 
-<<<<<<< HEAD
   const [radarData, setRadarData] = useState(null);
 
   const handleGetSuggestion = async () => {
@@ -133,8 +132,6 @@ const MyProductsPage = () => {
   };
 
   const handleSubmit = async (bypassRadar = false) => {
-=======
-  const handleSubmit = async () => {
     const validationErrors = validate(form);
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
@@ -142,7 +139,6 @@ const MyProductsPage = () => {
       toast.error('Veuillez corriger les erreurs dans le formulaire.');
       return;
     }
->>>>>>> origin/zahraaa
     try {
       setUploading(true);
       
