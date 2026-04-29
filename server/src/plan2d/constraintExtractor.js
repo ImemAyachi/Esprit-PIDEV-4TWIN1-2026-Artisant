@@ -109,18 +109,23 @@ function extractPlacementHintsFromPrompt(raw) {
 }
 
 function parseTotalAreaM2(t) {
-  const s = String(t);
+  const s = String(t).toLowerCase();
   
-  let m = /\benviron\s+(\d+(?:[.,]\d+)?)\s*(?:m\s*2|m2|m²)/i.exec(s);
+  const areaRe = /(?:m\s*2|m2|m²|metres?\s*carre?e?s?)/i;
+  
+  let m = new RegExp(`\\benviron\\s+(\\d+(?:[.,]\\d+)?)\\s*${areaRe.source}`, 'i').exec(s);
   if (m) return Number(String(m[1]).replace(',', '.'));
-  m = /(\d+(?:[.,]\d+)?)\s*(?:m\s*2|m2|m²)/i.exec(s);
+  m = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${areaRe.source}`, 'i').exec(s);
   if (m) return Number(String(m[1]).replace(',', '.'));
   return null;
 }
 
 function parseBedroomCount(t) {
+  const numMap = { un: 1, deux: 2, trois: 3, quatre: 4, cinq: 5, six: 6 };
   let m = /\b(\d+)\s*chambres?\b/i.exec(t);
   if (m) return Math.min(6, Math.max(0, parseInt(m[1], 10)));
+  m = /\b(un|deux|trois|quatre|cinq|six)\s*chambres?\b/i.exec(t);
+  if (m) return numMap[m[1].toLowerCase()];
   m = /\bchambres?\s*(\d+)\b/i.exec(t);
   if (m) return Math.min(6, Math.max(0, parseInt(m[1], 10)));
   return null;
@@ -295,8 +300,16 @@ export function parsePromptProgram(raw) {
   }
 
   let bathrooms = 1;
-  if (/\b(deux|2)\s+salles?\s+(d'|d\s*)?eau\b/.test(t)) bathrooms = 2;
-  else if (bool(t, /\bune\s+salle\s+(d'|d\s*)?eau\b/) || mentioned.has('bathroom')) bathrooms = 1;
+  const numMap = { un: 1, deux: 2, trois: 3, quatre: 4 };
+  const bathRe = /(?:salle\s*(?:d['\s]*eau|de\s*bain|de\s*bains)|sdb)/i;
+  
+  let mb = new RegExp(`\\b(\\d+)\\s*${bathRe.source}`, 'i').exec(t);
+  if (mb) bathrooms = Math.min(4, Math.max(1, parseInt(mb[1], 10)));
+  else {
+    mb = new RegExp(`\\b(un|deux|trois|quatre)\\s*${bathRe.source}`, 'i').exec(t);
+    if (mb) bathrooms = numMap[mb[1].toLowerCase()];
+    else if (mentioned.has('bathroom')) bathrooms = 1;
+  }
 
   
   const wcCount = 1;

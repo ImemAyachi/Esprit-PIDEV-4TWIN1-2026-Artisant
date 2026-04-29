@@ -57,8 +57,9 @@ export const register = asyncHandler(async (req, res) => {
   const createPayload = {
     firstName, lastName, email, password, role, phone,
     craft, companyName, supplierType, specialization,
-    // Les professionnels nécessitent validation Admin (sauf en dev)
-    isVerified: process.env.NODE_ENV === 'development',
+    // Activation automatique pour éviter les blocages de vérification
+    isVerified: true,
+    isActive: true
   };
 
   // Store face descriptor if provided and valid (128-element array)

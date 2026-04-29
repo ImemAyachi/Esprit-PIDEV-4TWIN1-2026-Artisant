@@ -11,6 +11,7 @@ import { geometryLayout } from '../services/geometryServiceClient.js';
 import { extractConstraints, extractConstraintsHeuristic } from '../plan2d/constraintExtractor.js';
 import { getArchitectureGuideBlockForPrompt, computeFootprintFromAreaM2 } from '../plan2d/floorPlanArchitectureGuide.js';
 import { buildOpenPlanSegmentsFromLivingKitchen } from '../plan2d/openPlanSegmentsFromRooms.js';
+import { evaluateBriefInput } from '../plan2d/briefInputGuard.js';
 
 const MAX_INPUT_LENGTH = Number(process.env.TEXT2D_PLAN_MAX_INPUT_LENGTH) || 6000;
 
@@ -40,6 +41,161 @@ function cacheSet(key, data) {
 function renderPlanSvgs(plan, norms) {
   return {
     svg: renderPlan2DSvg(plan, { theme: 'architectural_bw', norms }),
+  };
+}
+
+function classifyRoomType(name) {
+  const s = String(name || '').toLowerCase();
+  if (s.includes('séjour') || s.includes('sejour') || s.includes('salon') || s.includes('living')) return 'living';
+  if (s.includes('cuisine') || s.includes('kitchen')) return 'kitchen';
+  if (s.includes('salle à manger') || s.includes('salle a manger') || s.includes('dining')) return 'dining';
+  if (s.includes('chambre') || s.includes('bed')) return 'bedroom';
+  if (s.includes('suite')) return 'bedroom';
+  if (s.includes('salle de bain') || s.includes('bain') || s.includes('bath')) return 'bathroom';
+  if (/\bwc\b/.test(s) || s.includes('toilet')) return 'wc';
+  if (s.includes('entrée') || s.includes('entree') || s.includes('hall')) return 'entry';
+  if (s.includes('bureau') || s.includes('office')) return 'office';
+  if (s.includes('buanderie') || s.includes('laundry')) return 'laundry';
+  if (s.includes('cellier') || s.includes('rangement') || s.includes('storage') || s.includes('pantry') || s.includes('placard'))
+    return 'storage';
+  if (s.includes('garage')) return 'garage';
+  return 'other';
+}
+
+function zoneForType(t) {
+  if (t === 'living' || t === 'kitchen' || t === 'dining' || t === 'entry') return 'day';
+  if (t === 'bedroom') return 'night';
+  if (t === 'bathroom' || t === 'wc' || t === 'laundry' || t === 'storage' || t === 'garage') return 'service';
+  return 'other';
+}
+
+function zonesLayoutSummary(plan) {
+  const W = Number(plan?.width_m);
+  const H = Number(plan?.height_m);
+  const rooms = Array.isArray(plan?.rooms) ? plan.rooms : [];
+  if (!Number.isFinite(W) || !Number.isFinite(H) || rooms.length === 0) return '';
+
+  const centroid = (list) => {
+    if (!list.length) return null;
+    let sx = 0;
+    let sy = 0;
+    let a = 0;
+    for (const r of list) {
+      const x = Number(r.x);
+      const y = Number(r.y);
+      const w = Number(r.w);
+      const h = Number(r.h);
+      if (![x, y, w, h].every(Number.isFinite)) continue;
+      const ar = Math.max(0.01, w * h);
+      sx += (x + w / 2) * ar;
+      sy += (y + h / 2) * ar;
+      a += ar;
+    }
+    if (a <= 0) return null;
+    return { x: sx / a, y: sy / a };
+  };
+
+  const typed = rooms.map((r) => ({ r, t: classifyRoomType(r?.name) }));
+  const day = typed.filter((x) => zoneForType(x.t) === 'day').map((x) => x.r);
+  const night = typed.filter((x) => zoneForType(x.t) === 'night').map((x) => x.r);
+  const service = typed.filter((x) => zoneForType(x.t) === 'service').map((x) => x.r);
+
+  const describe = (c) => {
+    if (!c) return '';
+    const horiz = c.x < W * 0.45 ? 'à l’ouest' : c.x > W * 0.55 ? 'à l’est' : 'au centre';
+    const vert = c.y < H * 0.45 ? 'au nord' : c.y > H * 0.55 ? 'au sud' : 'au centre';
+    if (horiz === 'au centre' && vert === 'au centre') return 'au centre';
+    if (horiz === 'au centre') return vert;
+    if (vert === 'au centre') return horiz;
+    return `${vert}-${horiz}`;
+  };
+
+  const cDay = centroid(day);
+  const cNight = centroid(night);
+  const cService = centroid(service);
+  const parts = [];
+  if (cDay) parts.push(`Zone jour ${describe(cDay)}`);
+  if (cNight) parts.push(`Zone nuit ${describe(cNight)}`);
+  if (cService) parts.push(`Zone service ${describe(cService)}`);
+  return parts.join(' • ');
+}
+
+function suggestFixFromWarnings(plan, warnings) {
+  const out = [];
+  const rooms = Array.isArray(plan?.rooms) ? plan.rooms : [];
+  const bedroomDefs = [];
+  for (const r of rooms) {
+    const t = classifyRoomType(r?.name);
+    if (t !== 'bedroom') continue;
+    const w = Number(r.w);
+    const h = Number(r.h);
+    if (![w, h].every(Number.isFinite)) continue;
+    const minDim = Math.min(w, h);
+    if (minDim < 2.5 - 1e-6) bedroomDefs.push({ name: r?.name, deficit: Math.round((2.5 - minDim) * 100) / 100 });
+  }
+  if (bedroomDefs.length) {
+    const worst = bedroomDefs.sort((a, b) => b.deficit - a.deficit)[0];
+    out.push(`Agrandir "${String(worst.name || 'Chambre')}" d’au moins +${worst.deficit} m sur son petit côté (ou augmenter légèrement l’enveloppe).`);
+  }
+
+  const W = Number(plan?.width_m);
+  const H = Number(plan?.height_m);
+  if (Number.isFinite(W) && Number.isFinite(H) && Array.isArray(warnings) && warnings.length) {
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('cuisine trop loin') || s.includes('kitchen too far');
+    })) {
+      out.push('Rapprocher la cuisine du séjour (mur commun ou ouverture large) pour améliorer la zone jour.');
+    }
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('salle de bain trop loin') || s.includes('bathroom too far');
+    })) {
+      out.push('Rapprocher la salle de bain des chambres (regrouper la zone nuit et les pièces d’eau).');
+    }
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('wc n\'est pas proche') || s.includes('wc is not near');
+    })) {
+      out.push('Déplacer le WC plus près de l’entrée (WC invités) ou créer un petit sas.');
+    }
+    if (warnings.some((w) => {
+      const s = String(w).toLowerCase();
+      return s.includes('éparpillée') || s.includes('scattered');
+    })) {
+      out.push('Regrouper les pièces par zones (jour/nuit/service) pour réduire la circulation et améliorer la cohérence.');
+    }
+  }
+  return out;
+}
+
+function buildExplain({ plan, intent = null, architectural = null, layoutWarnings = null, constraintWarnings = null }) {
+  const archWarnings = Array.isArray(architectural?.warnings) ? architectural.warnings : [];
+  const lw = Array.isArray(layoutWarnings) ? layoutWarnings : [];
+  const cw = Array.isArray(constraintWarnings) ? constraintWarnings : [];
+
+  const constraints_applied = [];
+  const enforced = architectural?.checks?.enforced;
+  if (Array.isArray(enforced)) constraints_applied.push(...enforced);
+  if (intent?.canonicalConstraints && typeof intent.canonicalConstraints === 'object') {
+    const c = intent.canonicalConstraints;
+    const push = (x) => constraints_applied.push(`demandé : ${x}`);
+    if (c.kitchen_open_to_living === true) push('cuisine ouverte sur séjour');
+    if (c.wc_near === 'entry') push('WC près de l’entrée');
+    if (c.wc_not_visible === true) push('WC non visible depuis l’entrée');
+    if (c.living_facing) push(`séjour orienté ${c.living_facing}`);
+  }
+
+  const violatedRaw = [...cw, ...lw, ...archWarnings].filter(Boolean).map((x) => String(x));
+  const constraints_violated = violatedRaw.map((msg) => ({ message: msg, suggestion: null }));
+  const improvements = Array.from(new Set(suggestFixFromWarnings(plan, violatedRaw)));
+
+  return {
+    layout_summary: zonesLayoutSummary(plan),
+    constraints_applied: Array.from(new Set(constraints_applied)).slice(0, 40),
+    constraints_violated: constraints_violated.slice(0, 60),
+    improvements: improvements.slice(0, 20),
+    not_modeled: Array.isArray(architectural?.checks?.notModeled) ? architectural.checks.notModeled.slice(0, 20) : [],
   };
 }
 
@@ -1182,13 +1338,17 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
     throw new AppError(`Texte trop long (max ${MAX_INPUT_LENGTH} caractères).`, 400);
   }
 
-  
+  const briefGuard = evaluateBriefInput(input);
+  if (!briefGuard.ok) {
+    throw new AppError(briefGuard.message, 400);
+  }
+
   const interpreted = interpretPrompt(input);
   const { brief, overrides, warnings } = applyConstraints(interpreted);
   const constraintFooter = buildLLMConstraintFooter(brief);
 
   const modelName = String(process.env.LLM_MODEL || process.env.GROQ_MODEL || 'llama-3.1-70b-versatile').trim();
-  const rendererVersion = 'v97-apartment-envelope-minh-wetcore-wc-entry';
+  const rendererVersion = 'v98-explainable-guards-openplan-wetcore';
   const cacheKey = `text2d:${rendererVersion}:${modelName}:${norms}:${input}`;
   const cached = cacheGet(cacheKey);
   if (cached) return res.status(200).json({ success: true, data: cached, meta: { cached: true } });
@@ -1215,8 +1375,10 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
     const planCandidate = intent2 ? generatePlanFromIntent(intent2, brief) : null;
     const ok = planCandidate ? validateAndNormalizePlan2D(planCandidate) : { ok: false, errors: ['no_plan'] };
     if (!ok.ok) throw new AppError(`Impossible de générer un plan déterministe. ${ok.errors?.[0] || ''}`, 422);
+    const arch = validateArchitecturalRules(ok.data, intent2 || interpreted?.intent || {});
     const { svg } = renderPlanSvgs(ok.data, norms);
-    const data = { svg, plan: ok.data };
+    const explain = buildExplain({ plan: ok.data, intent: intent2 || interpreted?.intent || null, architectural: arch, constraintWarnings: warnings, layoutWarnings: ok.layoutWarnings || [] });
+    const data = { svg, plan: ok.data, explain };
     cacheSet(cacheKey, data);
     return res.status(200).json({ success: true, data, meta: { mode: 'deterministic_no_llm', pipeline: pipelineMeta, rendererVersion } });
   }
@@ -1355,7 +1517,8 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
         }
 
         const { svg } = renderPlanSvgs(ok.data, norms);
-        const data = { svg, plan: ok.data };
+        const explain = buildExplain({ plan: ok.data, intent: intentC, architectural: arch, constraintWarnings: warningsC, layoutWarnings: ok.layoutWarnings || [] });
+        const data = { svg, plan: ok.data, explain };
         cacheSet(cacheKey, data);
         return res.status(200).json({
           success: true,
@@ -1538,7 +1701,8 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
         }
 
         const { svg } = renderPlanSvgs(ok.data, norms);
-        const data = { svg, plan: ok.data };
+        const explain = buildExplain({ plan: ok.data, intent, architectural: arch, constraintWarnings: warnings2, layoutWarnings: ok.layoutWarnings || [] });
+        const data = { svg, plan: ok.data, explain };
         cacheSet(cacheKey, data);
         return res.status(200).json({
           success: true,
@@ -1633,7 +1797,8 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
           }
 
           const { svg } = renderPlanSvgs(ok.data, norms);
-          const data = { svg, plan: ok.data };
+          const explain = buildExplain({ plan: ok.data, intent: intent2, architectural: arch, constraintWarnings: warningsLocal, layoutWarnings: ok.layoutWarnings || [] });
+          const data = { svg, plan: ok.data, explain };
           cacheSet(cacheKey, data);
           return res.status(200).json({
             success: true,
@@ -1692,7 +1857,8 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
             const arch = validateArchitecturalRules(ok.data, interpreted?.intent || {});
             
             const { svg } = renderPlanSvgs(ok.data, norms);
-            const data = { svg, plan: ok.data };
+            const explain = buildExplain({ plan: ok.data, intent: interpreted?.intent || null, architectural: arch, constraintWarnings: [...warningsUx, ...(ok.layoutWarnings || [])], layoutWarnings: ok.layoutWarnings || [] });
+            const data = { svg, plan: ok.data, explain };
             cacheSet(cacheKey, data);
             return res.status(200).json({
               success: true,
@@ -1766,7 +1932,9 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
         const normalizedPlan2 = validateAndNormalizePlan2D(llmOut2);
         if (normalizedPlan2.ok) {
           const { svg } = renderPlanSvgs(normalizedPlan2.data, norms);
-          const data = { svg, plan: normalizedPlan2.data };
+          const arch = validateArchitecturalRules(normalizedPlan2.data, interpreted?.intent || {});
+          const explain = buildExplain({ plan: normalizedPlan2.data, intent: interpreted?.intent || null, architectural: arch, constraintWarnings: warnings, layoutWarnings: normalizedPlan2.layoutWarnings || [] });
+          const data = { svg, plan: normalizedPlan2.data, explain };
           cacheSet(cacheKey, data);
           return res.status(200).json({ success: true, data, meta: { mode: 'llm', pipeline: pipelineMeta, rendererVersion } });
         }
@@ -1783,7 +1951,8 @@ export const createTextTo2dPlan = asyncHandler(async (req, res) => {
       if (!ok.ok) throw new Error(ok.errors?.[0] || 'invalid_plan');
       const arch = validateArchitecturalRules(ok.data, intent2);
       const { svg } = renderPlanSvgs(ok.data, norms);
-      const data = { svg, plan: ok.data };
+      const explain = buildExplain({ plan: ok.data, intent: intent2, architectural: arch, constraintWarnings: warnings, layoutWarnings: ok.layoutWarnings || [] });
+      const data = { svg, plan: ok.data, explain };
       cacheSet(cacheKey, data);
       return res.status(200).json({
         success: true,

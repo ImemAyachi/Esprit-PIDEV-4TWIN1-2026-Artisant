@@ -155,7 +155,7 @@ export default function GestureController() {
                 const vision = await FilesetResolver.forVisionTasks(
                     'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm');
                 setRecognizer(await GestureRecognizer.createFromOptions(vision, {
-                    baseOptions: { modelAssetPath:'/models/gesture_recognizer.task', delegate:'GPU' },
+                    baseOptions: { modelAssetPath:'/models/gesture_recognizer.task', delegate:'CPU' },
                     runningMode:'VIDEO', numHands:1,
                 }));
                 setModelReady(true);

@@ -1,7 +1,19 @@
 import crypto from 'crypto';
 import OpenAI from 'openai';
+import { InferenceClient } from '@huggingface/inference';
 import { asyncHandler, AppError } from '../middleware/error.middleware.js';
 import { uploadBufferToCloudinary } from '../utils/cloudinaryUpload.js';
+import { comfyuiGenerateImage } from '../services/comfyuiClient.js';
+
+function hasRealCloudinaryConfig() {
+  const name = String(process.env.CLOUDINARY_CLOUD_NAME || '').trim();
+  const key = String(process.env.CLOUDINARY_API_KEY || '').trim();
+  const secret = String(process.env.CLOUDINARY_API_SECRET || '').trim();
+  if (!name || !key || !secret) return false;
+  const bad = new Set(['your_api_key', 'your_cloud_name', 'your_api_secret', 'changeme', 'xxx']);
+  if (bad.has(key) || bad.has(name) || bad.has(secret)) return false;
+  return true;
+}
 
 function stableStringify(obj) {
   const seen = new Set();
@@ -158,59 +170,30 @@ function svgToDataUrl(svg) {
 }
 
 async function generateWithHf({ hfToken, model, prompt, negativePrompt, width = 1024, height = 768 }) {
-  
-  
-  const url = `https://api-inference.huggingface.co/models/${model}`;
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), 120_000);
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        Authorization: hfToken ? `Bearer ${hfToken}` : undefined,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        inputs: prompt,
-        parameters: {
-          negative_prompt: negativePrompt,
-          width,
-          height,
-          num_inference_steps: 35,
-          guidance_scale: 7.5,
-        },
-      }),
-    });
+  const token = String(hfToken || '').trim();
+  if (!token) throw new Error('HF_TOKEN missing');
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      const err = new Error(`HF Inference failed (${res.status}). ${text.slice(0, 300)}`);
-      err.statusCode = 502;
-      throw err;
-    }
+  const provider = String(process.env.TEXT2D_RENDER_HF_PROVIDER || 'auto').trim() || 'auto';
+  const steps = Number(process.env.TEXT2D_RENDER_HF_STEPS) || 20;
+  const guidance = Number(process.env.TEXT2D_RENDER_HF_GUIDANCE) || 7.5;
 
-    const ct = String(res.headers.get('content-type') || '');
-    if (ct.startsWith('image/')) {
-      const buf = Buffer.from(await res.arrayBuffer());
-      return buf;
-    }
+  const client = new InferenceClient(token);
+  const img = await client.textToImage({
+    provider,
+    model,
+    inputs: prompt,
+    parameters: {
+      negative_prompt: negativePrompt,
+      width,
+      height,
+      num_inference_steps: steps,
+      guidance_scale: guidance,
+    },
+  });
 
-    
-    const json = await res.json();
-    const b64 =
-      json?.image_base64 ||
-      json?.images?.[0]?.base64 ||
-      json?.generated_images?.[0]?.base64 ||
-      json?.generated_images?.[0]?.image_base64;
-    if (typeof b64 === 'string' && b64.length > 20) {
-      return Buffer.from(b64, 'base64');
-    }
-
-    throw new Error('Réponse HF non reconnue (pas d’image).');
-  } finally {
-    clearTimeout(t);
-  }
+  const buf = Buffer.from(await img.arrayBuffer());
+  if (!buf || buf.length < 1000) throw new Error('HF image empty');
+  return buf;
 }
 
 async function generateWithOpenAI({ openaiKey, prompt, negativePrompt }) {
@@ -282,10 +265,30 @@ export const createPlan2dRender = asyncHandler(async (req, res) => {
 
   const hfToken = String(process.env.HF_TOKEN || process.env.HUGGINGFACE_TOKEN || '').trim();
   const openaiKey = String(process.env.OPENAI_API_KEY || '').trim();
+  const comfyUrl = String(process.env.COMFYUI_URL || '').trim();
+  const comfyWorkflowPath = String(process.env.COMFYUI_WORKFLOW_PATH || '').trim();
 
   let lastErr;
+  let lastProvider = null;
   let imgBuf = null;
   const canTryHf = Boolean(hfToken) && hfModelList.length > 0;
+
+  if (!imgBuf && comfyUrl && comfyWorkflowPath) {
+    try {
+      imgBuf = await comfyuiGenerateImage({
+        url: comfyUrl,
+        workflowPath: comfyWorkflowPath,
+        prompt: promptPlan,
+        negativePrompt,
+        timeoutMs: Number(process.env.COMFYUI_TIMEOUT_MS) || 140_000,
+        pollMs: Number(process.env.COMFYUI_POLL_MS) || 800,
+      });
+      lastProvider = 'comfyui';
+    } catch (err) {
+      lastErr = err;
+      lastProvider = 'comfyui';
+    }
+  }
 
   
   if (canTryHf) {
@@ -297,9 +300,11 @@ export const createPlan2dRender = asyncHandler(async (req, res) => {
           prompt: promptPlan,
           negativePrompt,
         });
+        lastProvider = `hf:${model}`;
         break;
       } catch (err) {
         lastErr = err;
+        lastProvider = `hf:${model}`;
       }
     }
   }
@@ -312,8 +317,10 @@ export const createPlan2dRender = asyncHandler(async (req, res) => {
         prompt: promptPlan,
         negativePrompt,
       });
+      lastProvider = 'openai';
     } catch (err) {
       lastErr = err;
+      lastProvider = 'openai';
     }
   }
 
@@ -323,11 +330,27 @@ export const createPlan2dRender = asyncHandler(async (req, res) => {
     if (svgUrl) {
       const data = { url: svgUrl, view: viewNorm, mode: 'fallback_svg' };
       cacheSet(cacheKey, data);
-      return res.status(200).json({ success: true, data, meta: { fallback: 'svg' } });
+      return res.status(200).json({
+        success: true,
+        data,
+        meta: {
+          fallback: 'svg',
+          provider: lastProvider,
+          reason: String(lastErr?.message || '').slice(0, 220) || 'no_provider_available',
+        },
+      });
     }
     throw lastErr instanceof AppError
       ? lastErr
       : new AppError(String(lastErr?.message || 'Erreur rendu'), 502);
+  }
+
+  if (!hasRealCloudinaryConfig()) {
+    const b64 = Buffer.from(imgBuf).toString('base64');
+    const url = `data:image/png;base64,${b64}`;
+    const data = { url, view: viewNorm, mode: 'png_inline' };
+    cacheSet(cacheKey, data);
+    return res.status(200).json({ success: true, data, meta: { provider: lastProvider, storage: 'inline' } });
   }
 
   const uploaded = await uploadBufferToCloudinary(imgBuf, {
@@ -339,6 +362,6 @@ export const createPlan2dRender = asyncHandler(async (req, res) => {
 
   const data = { url: uploaded.secure_url || uploaded.url, view: viewNorm, mode: 'photo' };
   cacheSet(cacheKey, data);
-  return res.status(200).json({ success: true, data });
+  return res.status(200).json({ success: true, data, meta: { provider: lastProvider, storage: 'cloudinary' } });
 });
 

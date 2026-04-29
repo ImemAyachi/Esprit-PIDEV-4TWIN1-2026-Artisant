@@ -1,6 +1,5 @@
 import express from 'express';
 import { spawn } from 'child_process';
-
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -12,6 +11,8 @@ import { createPlan2dRender } from '../controllers/textTo2dRender.controller.js'
 import { runChantierBrain } from '../controllers/aiChantierBrain.controller.js';
 import { recommendProducts } from '../controllers/aiProductRecommendation.controller.js';
 import { generateVirtualStaging } from '../controllers/aiRenovation.controller.js';
+import { estimatePlan2dTnd } from '../controllers/plan2dEstimate.controller.js';
+import { suggestPlan2dStyles } from '../controllers/plan2dStyleSuggest.controller.js';
 
 const router = express.Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -36,8 +37,31 @@ const upload = multer({
   },
 });
 
+/**
+ * @swagger
+ * /ai/recommend:
+ *   post:
+ *     summary: Recommander des produits via IA
+ *     tags: [AI]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               need:
+ *                 type: string
+ *                 example: "Je veux construire une salle de bain moderne"
+ *     responses:
+ *       200:
+ *         description: Liste de recommandations
+ *       500:
+ *         description: Erreur serveur ou IA
+ */
+router.post('/recommend', recommendProducts);
+router.post('/recommend-products', recommendProducts); // Alias from HEAD
 
-// ── POST /api/ai/project-plan ────────────────────────────────────────────────
 router.post('/project-plan', createProjectPlan);
 router.post('/plan-2d', aiFeatureProtect, createTextTo2dPlan);
 router.post('/plan-2d/render', aiFeatureProtect, createPlan2dRender);
@@ -45,12 +69,8 @@ router.post('/plan-2d/render', aiFeatureProtect, createPlan2dRender);
 // 🧠 Multi-Agent Construction Intelligence Engine
 router.post('/chantier-brain', aiFeatureProtect, runChantierBrain);
 
-// 🛒 ML Product Recommendation Engine
-router.post('/recommend-products', recommendProducts);
-
 // ── POST /api/ai/virtual-staging ──────────────────────────────────────────────
 router.post('/virtual-staging', upload.single('image'), generateVirtualStaging);
-
 
 // ── POST /api/ai/analyze-plan ─────────────────────────────────────────────────
 // Accepts a multipart image upload. Runs plan_analyzer.py via Python/OpenCV.
@@ -95,4 +115,7 @@ router.post('/analyze-plan', upload.single('plan'), async (req, res) => {
     res.status(500).json({ error: 'Failed to start Python analyzer' });
   });
 });
+
+router.post('/plan-2d/estimate', aiFeatureProtect, estimatePlan2dTnd);
+router.post('/plan-2d/style-suggest', aiFeatureProtect, suggestPlan2dStyles);
 export default router;

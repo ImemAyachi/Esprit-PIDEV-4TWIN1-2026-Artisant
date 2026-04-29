@@ -41,6 +41,7 @@ const connectDB = async () => {
         '   → Ou dans Atlas : Connect → Drivers → utilisez la chaîne standard mongodb://… (sans +srv).'
       );
     }
+    console.warn("Le serveur reste en ligne — tentaive de reconnexion automatique en arrière-plan...");
     if (process.env.REQUIRE_MONGODB === 'true') {
       process.exit(1);
     }

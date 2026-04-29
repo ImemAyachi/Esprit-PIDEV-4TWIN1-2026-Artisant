@@ -5,7 +5,7 @@ import { fetchProducts, setFilters } from '../../store/slices/productSlice';
 import { getProductImage } from '../../utils/imageUrl';
 
 const CATEGORIES = ['', 'marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'peinture', 'plomberie', 'électricité', 'autre'];
-const CAT_ICONS  = { marbre: '', granit: '', ciment: '', sable: '', carrelage: '', brique: '', bois: '', acier: '', peinture: '', plomberie: '', électricité: '', autre: '' };
+const CAT_ICONS = { marbre: '', granit: '', ciment: '', sable: '', carrelage: '', brique: '', bois: '', acier: '', peinture: '', plomberie: '', électricité: '', autre: '' };
 
 const StarRating = ({ value }) => (
   <div className="stars" style={{ display: 'flex', gap: '2px' }}>
@@ -107,7 +107,7 @@ const CatalogPage = () => {
       {/* Products grid */}
       {loading ? (
         <div className="grid-auto">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="skeleton" style={{ height: 300, borderRadius: 'var(--radius-xl)' }} />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="skeleton" style={{ height: 300, borderRadius: 'var(--radius-xl)' }} />)}
         </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--clr-text-muted)' }}>
@@ -144,7 +144,7 @@ const CatalogPage = () => {
                   </div>
                   {p.supplier && (
                     <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--clr-border)', fontSize: '0.8rem', color: 'var(--clr-text-muted)' }}>
-                       {p.supplier.companyName || `${p.supplier.firstName} ${p.supplier.lastName}`}
+                      {p.supplier.companyName || `${p.supplier.firstName} ${p.supplier.lastName}`}
                     </div>
                   )}
                 </div>
