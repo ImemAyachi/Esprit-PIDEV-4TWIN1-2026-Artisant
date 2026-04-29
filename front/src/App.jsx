@@ -5,7 +5,6 @@ import { Toaster } from 'react-hot-toast';
 import GestureController from './components/common/GestureController';
 import { store } from './store';
 import ChatbotWidget from './components/chatbot/ChatbotWidget';
-import AiProductRecommender from './components/catalog/AiProductRecommender';
 import BatiBot2Chat from './components/catalog/BatiBot2Chat';
 
 // Pages
@@ -136,7 +135,6 @@ function AppContent() {
 
       {/* Chatbot available for all logged-in users */}
       {isAuthenticated && <ChatbotWidget />}
-      {isAuthenticated && <AiProductRecommender />}
       {isAuthenticated && <BatiBot2Chat />}
     </BrowserRouter>
   );

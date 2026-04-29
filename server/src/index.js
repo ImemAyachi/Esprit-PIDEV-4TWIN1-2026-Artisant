@@ -30,7 +30,6 @@ import adminRoutes from './routes/admin.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import workforceRoutes from './routes/workforce.routes.js';
-import nlpRoutes from './routes/nlp.routes.js';
 
 
 // ---- Routes (Yahya's unique architecture) ----
@@ -146,7 +145,6 @@ app.use(`${API}/notifications`, notificationRoutes);
 app.use(`${API}/admin`, adminRoutes);
 app.use(`${API}/chat`, chatRoutes);
 app.use(`${API}/ai`, aiRoutes);
-app.use(`${API}/nlp`, nlpRoutes);
 
 // Yahya's specific routes
 app.use(`${API}/documents`, documentRoutes);
