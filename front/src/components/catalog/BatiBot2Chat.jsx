@@ -81,12 +81,7 @@ export default function BatiBot2Chat() {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       };
 
-      const [chatRes, recommendRes] = await Promise.allSettled([
-        fetch(`${apiBase}/chat`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ messages: apiMessages }),
-        }),
+      const [recommendRes] = await Promise.allSettled([
         fetch(`${apiBase}/ai/recommend`, {
           method: 'POST',
           headers,
@@ -103,22 +98,11 @@ export default function BatiBot2Chat() {
         }
       }
 
-      if (chatRes.status === 'fulfilled') {
-        const res = chatRes.value;
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data?.error || 'Erreur API');
-        const cleanedReply = cleanBotText(data?.reply || buildSmartFallbackReply(text, recommendationPayload));
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now() + 1, from: 'bot', type: 'text', text: cleanedReply, time: new Date() },
-        ]);
-      } else {
-        const fallbackReply = buildSmartFallbackReply(text, recommendationPayload);
-        setMessages((prev) => [
-          ...prev,
-          { id: Date.now() + 1, from: 'bot', type: 'text', text: fallbackReply, time: new Date() },
-        ]);
-      }
+      const fallbackReply = buildSmartFallbackReply(text, recommendationPayload);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, from: 'bot', type: 'text', text: cleanBotText(fallbackReply), time: new Date() },
+      ]);
 
       if (recommendationPayload.length > 0) {
         setMessages((prev) => [
