@@ -6,3 +6,6 @@ pydantic
 torch
 numpy
 pandas
+torchvision
+Pillow
+python-multipart

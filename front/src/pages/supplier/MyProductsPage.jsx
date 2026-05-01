@@ -6,6 +6,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import PriceRadarModal from '../../components/supplier/PriceRadarModal';
 import { ShieldCheck, AlertCircle, TrendingDown, BrainCircuit } from 'lucide-react';
 import { getProductImage } from '../../utils/imageUrl';
+import Material3DPreview from '../../components/supplier/Material3DPreview';
 
 // Add this style for the skeleton animation
 const skeletonStyles = `
@@ -14,6 +15,24 @@ const skeletonStyles = `
   100% { background-position: 200% 0; }
 }
 `;
+
+const getDefaultImage = (cat) => {
+  const images = {
+    marbre: 'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=600&q=80',
+    granit: 'https://images.unsplash.com/photo-1507026330058-294720612ce6?auto=format&fit=crop&w=600&q=80',
+    bois: 'https://images.unsplash.com/photo-1534066929-2321ec9e7555?auto=format&fit=crop&w=600&q=80',
+    brique: 'https://images.unsplash.com/photo-1518041530939-2ce963d12d46?auto=format&fit=crop&w=600&q=80',
+    acier: 'https://images.unsplash.com/photo-1605336043132-95f7c32b5357?auto=format&fit=crop&w=600&q=80',
+    ciment: 'https://images.unsplash.com/photo-1588636195655-081467cb4474?auto=format&fit=crop&w=600&q=80',
+    carrelage: 'https://images.unsplash.com/photo-1523413363574-c30aa1c2a516?auto=format&fit=crop&w=600&q=80',
+    sable: 'https://images.unsplash.com/photo-1616110756916-2d580f488ea9?auto=format&fit=crop&w=600&q=80',
+    peinture: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
+    plomberie: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80',
+    électricité: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=600&q=80',
+    autre: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=600&q=80',
+  };
+  return images[cat?.toLowerCase()] || images.autre;
+};
 
 const MyProductsPage = () => {
   const { user } = useSelector((s) => s.auth);
@@ -102,6 +121,48 @@ const MyProductsPage = () => {
   };
 
   const [radarData, setRadarData] = useState(null);
+  const [qcLoading, setQcLoading] = useState(false);
+  const [qcResult, setQcResult] = useState(null);
+  const [show3DPreview, setShow3DPreview] = useState(null);
+
+  const handleMaterialQC = async () => {
+    const imageFile = Array.from(files).find(f => f.type.startsWith('image/'));
+    if (!imageFile) {
+      toast.error("Veuillez sélectionner une image à analyser.");
+      return;
+    }
+
+    try {
+      setQcLoading(true);
+      setQcResult(null);
+      const formData = new FormData();
+      formData.append('file', imageFile);
+
+      const res = await fetch('http://localhost:8002/analyze-material', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setQcResult(data);
+        if (data.status === 'success') toast.success(`Qualité : ${data.grade}`);
+        else if (data.status === 'warning') toast.success(`Qualité : ${data.grade}`);
+        else toast.error(`Attention, Qualité : ${data.grade}`);
+        
+        // Optionally update description with QC info
+        if (data.note) {
+          setForm(f => ({ ...f, description: f.description ? f.description + `\n\n[Contrôle Qualité IA] : ${data.note}` : `[Contrôle Qualité IA] : ${data.note}` }));
+        }
+      } else {
+        toast.error("Erreur lors de l'analyse de la qualité.");
+      }
+    } catch (e) {
+      toast.error("Erreur de connexion à l'IA Material-QC.");
+    } finally {
+      setQcLoading(false);
+    }
+  };
 
   const handleGetSuggestion = async () => {
     if (!form.name || !form.description) return toast.error("Veuillez remplir le nom et la description");
@@ -353,23 +414,6 @@ const MyProductsPage = () => {
             .btn-single { grid-column: 1 / -1; }
           `}</style>
           {products.map(p => {
-            const getDefaultImage = (cat) => {
-              const images = {
-                marbre: 'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=600&q=80',
-                granit: 'https://images.unsplash.com/photo-1507026330058-294720612ce6?auto=format&fit=crop&w=600&q=80',
-                bois: 'https://images.unsplash.com/photo-1534066929-2321ec9e7555?auto=format&fit=crop&w=600&q=80',
-                brique: 'https://images.unsplash.com/photo-1518041530939-2ce963d12d46?auto=format&fit=crop&w=600&q=80',
-                acier: 'https://images.unsplash.com/photo-1605336043132-95f7c32b5357?auto=format&fit=crop&w=600&q=80',
-                ciment: 'https://images.unsplash.com/photo-1588636195655-081467cb4474?auto=format&fit=crop&w=600&q=80',
-                carrelage: 'https://images.unsplash.com/photo-1523413363574-c30aa1c2a516?auto=format&fit=crop&w=600&q=80',
-                sable: 'https://images.unsplash.com/photo-1616110756916-2d580f488ea9?auto=format&fit=crop&w=600&q=80',
-                peinture: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=600&q=80',
-                plomberie: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&w=600&q=80',
-                électricité: 'https://images.unsplash.com/photo-1555664424-778a1e5e1b48?auto=format&fit=crop&w=600&q=80',
-                autre: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=600&q=80',
-              };
-              return images[cat?.toLowerCase()] || images.autre;
-            };
             const productImg = (p.media && p.media.find(m => m.type === 'image'))?.url || getDefaultImage(p.category);
             
             return (
@@ -416,12 +460,15 @@ const MyProductsPage = () => {
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>
                   {p.isAvailable ? 'Désactiver' : 'Activer'}
                 </button>
+                <button className="premium-action-btn" onClick={() => setShow3DPreview(p)} style={{ background: '#3b82f6', color: 'white' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
+                  3D
+                </button>
                 <button className="premium-action-btn premium-btn-delete" onClick={() => handleDelete(p._id, p.name)}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                   Supprimer
                 </button>
               </div>
-              </div> {/* end premium-card-body */}
             </div>
           );
           })}
@@ -686,7 +733,29 @@ const MyProductsPage = () => {
                     <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: '#f8fafc', border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem', textAlign: 'center', padding: '0.5rem' }}>Aperçu d'image</div>
                   )}
                 </div>
-                <input className="premium-input" type="file" multiple accept=".pdf,image/*" onChange={e => setFiles(e.target.files)} />
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                  <input className="premium-input" style={{ flex: 1 }} type="file" multiple accept=".pdf,image/*" onChange={e => setFiles(e.target.files)} />
+                  <button 
+                    type="button" 
+                    className="premium-btn" 
+                    style={{ background: '#475569', color: 'white', whiteSpace: 'nowrap' }}
+                    onClick={handleMaterialQC}
+                    disabled={qcLoading || !files || files.length === 0 || !Array.from(files).some(f => f.type.startsWith('image/'))}
+                  >
+                    {qcLoading ? 'Analyse...' : 'Contrôle Qualité IA'}
+                  </button>
+                </div>
+                {qcResult && (
+                  <div style={{ marginTop: '0.5rem', padding: '0.75rem', borderRadius: '8px', border: `1px solid ${qcResult.status === 'success' ? '#10b981' : qcResult.status === 'warning' ? '#f59e0b' : '#ef4444'}`, background: qcResult.status === 'success' ? '#ecfdf5' : qcResult.status === 'warning' ? '#fffbeb' : '#fef2f2' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ color: qcResult.status === 'success' ? '#047857' : qcResult.status === 'warning' ? '#b45309' : '#b91c1c' }}>
+                        Grade : {qcResult.grade} (Confiance : {qcResult.confidence}%)
+                      </strong>
+                      <span style={{ fontSize: '0.7rem', color: '#64748b' }}>{qcResult.aiModel}</span>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: '#475569', marginTop: '0.25rem' }}>{qcResult.note}</p>
+                  </div>
+                )}
                 <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>Sélectionnez vos images (.jpg, .png) et/ou la fiche technique (.pdf).</p>
               </div>
 
@@ -717,6 +786,14 @@ const MyProductsPage = () => {
             setRadarData(null);
             // On peut scroller vers le champ prix ou simplement fermer
           }}
+        />
+      )}
+
+      {show3DPreview && (
+        <Material3DPreview 
+          imageUrl={(show3DPreview.media && show3DPreview.media.find(m => m.type === 'image'))?.url || getDefaultImage(show3DPreview.category)}
+          category={show3DPreview.category}
+          onClose={() => setShow3DPreview(null)}
         />
       )}
     </div>
