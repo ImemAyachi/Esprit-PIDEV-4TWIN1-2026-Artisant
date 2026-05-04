@@ -11,17 +11,20 @@ import {
   getProducts, getProductById, createProduct,
   updateProduct, deleteProduct, getTopByCategory, getMyProducts, getLuckyDeals
 } from '../controllers/product.controller.js';
+import { mlSearchProductsGet, getDatasetStats } from '../controllers/aiMLSearch.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { uploadProduct } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
 // Routes publiques
-router.get('/',           getProducts);
-router.get('/lucky-deals', getLuckyDeals);
-router.get('/top/:category', getTopByCategory);
-router.get('/my',      protect, authorize('Fournisseur'), getMyProducts);
-router.get('/:id',     getProductById);
+router.get('/',               getProducts);
+router.get('/ml-search',      mlSearchProductsGet);  // 🤖 Recherche IA ML
+router.get('/dataset-stats',  getDatasetStats);       // 📊 Stats dataset
+router.get('/lucky-deals',    getLuckyDeals);
+router.get('/top/:category',  getTopByCategory);
+router.get('/my',             protect, authorize('Fournisseur'), getMyProducts);
+router.get('/:id',            getProductById);
 
 // Routes protégées Fournisseur
 router.post('/',

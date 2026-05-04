@@ -1,18 +1,21 @@
 # ============================================================
-# BuildMarket — Frontend (React + Vite)
-# Multi-stage build : Node → Nginx
+# BuildMarket — Frontend (React + Vite 8)
+# Multi-stage build : Node (Debian) → Nginx
+# Fix: package.json only (no lock) to get correct Linux binaries
+# for rolldown, lightningcss and other native packages
 # ============================================================
 
 # ── Stage 1 : Build ──────────────────────────────────────────
-FROM node:20-alpine AS build
+FROM node:22-bookworm-slim AS build
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances en premier (cache Docker)
-COPY package.json package-lock.json ./
+# Copier UNIQUEMENT package.json (pas le package-lock.json Windows)
+# Cela force npm à résoudre et télécharger les bons binaires Linux
+COPY package.json ./
 
-# Installer toutes les dépendances (y compris devDependencies pour le build)
-RUN npm ci
+# Installation propre avec les binaires Linux natifs
+RUN npm install --legacy-peer-deps
 
 # Copier le reste du code source
 COPY . .

@@ -38,7 +38,7 @@ const productSlice = createSlice({
     pagination: { total: 0, page: 1, pages: 1 },
     loading:    false,
     error:      null,
-    filters:    { category: '', search: '', minPrice: '', maxPrice: '', sort: '-createdAt' },
+    filters:    { category: '', search: '', minPrice: '', maxPrice: '', sort: '-createdAt', page: 1, limit: 24 },
   },
   reducers: {
     setFilters: (state, action) => {

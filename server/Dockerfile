@@ -3,7 +3,7 @@
 # Image légère avec utilisateur non-root
 # ============================================================
 
-FROM node:18-alpine
+FROM node:22-alpine
 
 # Installer dumb-init pour un PID 1 propre (gestion des signaux)
 RUN apk add --no-cache dumb-init

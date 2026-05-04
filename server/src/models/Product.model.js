@@ -57,7 +57,7 @@ const productSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ['marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'verre', 'peinture', 'plomberie', 'électricité', 'isolation', 'quincaillerie', 'maconnerie', 'etancheite', 'menuiserie', 'autre'],
+      enum: ['marbre', 'granit', 'ciment', 'sable', 'carrelage', 'brique', 'bois', 'acier', 'verre', 'peinture', 'plomberie', 'électricité', 'isolation', 'quincaillerie', 'maconnerie', 'etancheite', 'menuiserie', 'revetement', 'autre'],
     },
     subCategory: { type: String },
 
@@ -123,6 +123,20 @@ const productSchema = new mongoose.Schema(
     // ── SEO / Recherche ───────────────────────────────────────────────────
     tags: [{ type: String }], // ex: ['résistant', 'luxe', 'importé']
     views: { type: Number, default: 0 },
+
+    // ── Champs IA / Dataset ML ────────────────────────────────────────────
+    // Scores pré-calculés par les 3 modèles sklearn (construction_showroom_tunisia.csv)
+    aiScoreGlobal:  { type: Number, default: null },  // modele_score.pkl  (0–100)
+    aiQualite:      { type: Number, default: null },  // modele_qualite.pkl (1–5)
+    aiPopularite:   { type: Number, default: null },  // modele_origine.pkl (0–100)
+    localisation:   { type: String },
+    typeProjet:     { type: String },
+    surfaceM2:      { type: Number },
+    budget:         { type: Number },
+    marque:         { type: String },
+    quantite:       { type: Number },
+    prixTotal:      { type: Number },
+    fromDataset:    { type: Boolean, default: false, index: true },
   },
   {
     timestamps: true,
@@ -135,6 +149,9 @@ productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 productSchema.index({ category: 1, isAvailable: 1, 'rating.average': -1 });
 productSchema.index({ price: 1 });
 productSchema.index({ supplier: 1 });
+productSchema.index({ aiScoreGlobal: -1 });
+productSchema.index({ aiQualite: -1 });
+productSchema.index({ fromDataset: 1 });
 
 // ── Virtual : URL de l'image principale ───────────────────────────────────────
 productSchema.virtual('mainImage').get(function () {

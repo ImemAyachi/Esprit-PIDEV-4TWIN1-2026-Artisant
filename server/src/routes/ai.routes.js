@@ -10,6 +10,7 @@ import { createTextTo2dPlan } from '../controllers/textTo2dPlan.controller.js';
 import { createPlan2dRender } from '../controllers/textTo2dRender.controller.js';
 import { runChantierBrain } from '../controllers/aiChantierBrain.controller.js';
 import { recommendProducts } from '../controllers/aiProductRecommendation.controller.js';
+import { mlSearchProducts } from '../controllers/aiMLSearch.controller.js';
 import { generateVirtualStaging } from '../controllers/aiRenovation.controller.js';
 import { estimatePlan2dTnd } from '../controllers/plan2dEstimate.controller.js';
 import { suggestPlan2dStyles } from '../controllers/plan2dStyleSuggest.controller.js';
@@ -61,6 +62,9 @@ const upload = multer({
  */
 router.post('/recommend', recommendProducts);
 router.post('/recommend-products', recommendProducts); // Alias from HEAD
+
+// 🤖 ML Search — 3 modèles IA appliqués (modele_score, modele_qualite, modele_origine)
+router.post('/ml-search', mlSearchProducts);
 
 router.post('/project-plan', createProjectPlan);
 router.post('/plan-2d', aiFeatureProtect, createTextTo2dPlan);

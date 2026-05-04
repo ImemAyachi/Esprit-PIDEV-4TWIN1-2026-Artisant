@@ -1,0 +1,87 @@
+// ============================================================
+// BuildMarket — Jenkins CI Pipeline (BACKEND & GEOMETRY)
+// Handles: Node.js Backend + Python Geometry Service
+// ============================================================
+
+pipeline {
+    agent any
+    
+    environment {
+        DOCKER_HUB_USER = "alabendawed871"
+        // Note: Create a 'Username with password' credential in Jenkins with ID 'docker-hub-credentials'
+        DOCKER_CREDS    = credentials('docker-hub-credentials') 
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+
+    stages {
+        stage('🚀 Preparation') {
+            steps {
+                echo "Checking environment..."
+                sh "docker version"
+                checkout scm
+            }
+        }
+
+        stage('📦 Build Backend') {
+            steps {
+                script {
+                    echo "🔨 Building Backend Image (Node.js 22)..."
+                    sh "docker build -t ${DOCKER_HUB_USER}/buildmarket-backend:latest ./server"
+                }
+            }
+        }
+
+        stage('🤖 Build Geometry') {
+            steps {
+                script {
+                    echo "🐍 Building Geometry IA Image (Python)..."
+                    sh "docker build -t ${DOCKER_HUB_USER}/buildmarket-geometry:latest ./server/geometry"
+                }
+            }
+        }
+
+        stage('☁️ Push Images') {
+            steps {
+                script {
+                    echo "🔐 Logging into DockerHub..."
+                    sh "echo \$DOCKER_CREDS_PSW | docker login -u \$DOCKER_CREDS_USR --password-stdin"
+                    
+                    echo "📤 Pushing Backend..."
+                    sh "docker push ${DOCKER_HUB_USER}/buildmarket-backend:latest"
+                    
+                    echo "📤 Pushing Geometry..."
+                    sh "docker push ${DOCKER_HUB_USER}/buildmarket-geometry:latest"
+                }
+            }
+            post {
+                always {
+                    sh "docker logout"
+                }
+            }
+        }
+
+        stage('🔗 Trigger Frontend') {
+            steps {
+                script {
+                    echo "➡️ Triggering Frontend Pipeline: buildmarket-frontend"
+                    // Trigger the second job. Ensure the job name matches exactly in Jenkins.
+                    build job: 'buildmarket-frontend', wait: false, propagate: false
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Backend & Geometry Pipeline finished successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs for details."
+        }
+    }
+}

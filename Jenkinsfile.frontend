@@ -1,0 +1,74 @@
+// ============================================================
+// BuildMarket — Jenkins CI Pipeline (FRONTEND)
+// Handles: React (Vite 8) + Nginx + K8s Deployment
+// ============================================================
+
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_HUB_USER = "alabendawed871"
+        DOCKER_CREDS    = credentials('docker-hub-credentials')
+    }
+
+    options {
+        timeout(time: 20, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timestamps()
+    }
+
+    stages {
+        stage('🚀 Preparation') {
+            steps {
+                echo "Fetching source code..."
+                checkout scm
+            }
+        }
+
+        stage('🎨 Build Frontend') {
+            steps {
+                script {
+                    echo "🛠️ Building Frontend Image (React/Vite)..."
+                    // Note: This uses the fixed Dockerfile with Debian-slim and Node 22
+                    sh "docker build -t ${DOCKER_HUB_USER}/buildmarket-frontend:latest ./front"
+                }
+            }
+        }
+
+        stage('☁️ Push Image') {
+            steps {
+                script {
+                    echo "🔐 Logging into DockerHub..."
+                    sh "echo \$DOCKER_CREDS_PSW | docker login -u \$DOCKER_CREDS_USR --password-stdin"
+                    
+                    echo "📤 Pushing Frontend..."
+                    sh "docker push ${DOCKER_HUB_USER}/buildmarket-frontend:latest"
+                }
+            }
+            post {
+                always {
+                    sh "docker logout"
+                }
+            }
+        }
+
+        stage('☸️ Deploy to K8s') {
+            steps {
+                script {
+                    echo "🚢 Applying Kubernetes manifests..."
+                    // This applies your app.yaml (Deployment, Service, etc.)
+                    sh "kubectl apply -f k8s/manifests/app.yaml"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✨ Frontend Pipeline & K8s Deployment completed!"
+        }
+        failure {
+            echo "🚒 Build or Deployment failed."
+        }
+    }
+}
