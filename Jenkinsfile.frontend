@@ -70,16 +70,6 @@ pipeline {
                 }
             }
         }
-
-        stage('☸️ Deploy to K8s') {
-            steps {
-                script {
-                    echo "🚢 Applying Kubernetes manifests..."
-                    // This applies your app.yaml (Deployment, Service, etc.)
-                    sh "kubectl apply -f k8s/manifests/app.yaml"
-                }
-            }
-        }
     }
 
     post {
