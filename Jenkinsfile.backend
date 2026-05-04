@@ -32,8 +32,8 @@ pipeline {
             steps {
                 script {
                     echo "Running Unit Tests..."
-                    // On utilise npm install au lieu de npm ci pour resynchroniser le lockfile si besoin
-                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" -w \"/var/jenkins_home/workspace/${env.JOB_NAME}/server\" node:22-alpine sh -c 'npm install && npm run test:coverage'"
+                    // Utilisation de cd avec guillemets à l'intérieur du container pour gérer l'espace
+                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" node:22-alpine sh -c 'cd \"/var/jenkins_home/workspace/${env.JOB_NAME}/server\" && npm install && npm run test:coverage'"
                 }
             }
         }
