@@ -31,7 +31,7 @@ pipeline {
                     echo "Running SonarQube Scan for Frontend..."
                     sh """
                     docker run --rm \
-                        -v \$(pwd):/usr/src \
+                        -v "\$(pwd):/usr/src" \
                         --network buildmarket-net \
                         sonarsource/sonar-scanner-cli \
                         -Dsonar.projectKey=buildmarket-frontend \

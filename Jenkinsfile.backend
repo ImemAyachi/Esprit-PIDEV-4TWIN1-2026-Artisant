@@ -34,7 +34,7 @@ pipeline {
                     // Utilisation de l'image Docker pour le scan
                     sh """
                     docker run --rm \
-                        -v \$(pwd):/usr/src \
+                        -v "\$(pwd):/usr/src" \
                         --network buildmarket-net \
                         sonarsource/sonar-scanner-cli \
                         -Dsonar.host.url=http://buildmarket-sonar:9000 \
