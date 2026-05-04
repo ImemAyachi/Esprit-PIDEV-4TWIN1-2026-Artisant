@@ -32,8 +32,8 @@ pipeline {
             steps {
                 script {
                     echo "Running Unit Tests..."
-                    // Utilisation de cd avec guillemets à l'intérieur du container pour gérer l'espace
-                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" node:22-alpine sh -c 'cd \"/var/jenkins_home/workspace/${env.JOB_NAME}/server\" && npm install && npm run test:coverage'"
+                    // On utilise une astuce : on cherche le dossier physique sur le volume pour le monter proprement sur /app
+                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" node:22-alpine sh -c 'cp -r \"/var/jenkins_home/workspace/${env.JOB_NAME}/server\" /tmp/app && cd /tmp/app && npm install && npm run test:coverage && cp -r coverage \"/var/jenkins_home/workspace/${env.JOB_NAME}/server/\"'"
                 }
             }
         }
