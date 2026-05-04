@@ -32,14 +32,7 @@ pipeline {
             steps {
                 script {
                     echo "Running SonarQube Scan..."
-                    sh """
-                    docker run --rm \
-                        -v "\$(pwd):/usr/src" \
-                        --network buildmarket-net \
-                        sonarsource/sonar-scanner-cli \
-                        -Dsonar.host.url=http://buildmarket-sonar:9000 \
-                        -Dsonar.token=\$SONAR_AUTH
-                    """
+                    sh "docker run --rm -v \"${env.WORKSPACE}:/usr/src\" --network buildmarket-net sonarsource/sonar-scanner-cli -Dsonar.host.url=http://buildmarket-sonar:9000 -Dsonar.token=\$SONAR_AUTH"
                 }
             }
         }
