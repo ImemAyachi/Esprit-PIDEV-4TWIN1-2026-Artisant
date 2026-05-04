@@ -9,6 +9,7 @@ pipeline {
     environment {
         DOCKER_HUB_USER = "alabendawed871"
         DOCKER_CREDS    = credentials('docker-hub-credentials')
+        SONAR_AUTH      = credentials('sonar-token')
     }
 
     options {
@@ -36,8 +37,7 @@ pipeline {
                         sonarsource/sonar-scanner-cli \
                         -Dsonar.projectKey=buildmarket-frontend \
                         -Dsonar.host.url=http://buildmarket-sonar:9000 \
-                        -Dsonar.login=admin \
-                        -Dsonar.password=admin \
+                        -Dsonar.token=\$SONAR_AUTH \
                         -Dsonar.sources=front/src
                     """
                 }
