@@ -31,7 +31,9 @@ pipeline {
         stage('🧪 Tests & Coverage') {
             steps {
                 dir('server') {
-                    echo "Running Unit Tests directly in Jenkins..."
+                    echo "Cleaning and Running Unit Tests..."
+                    // On supprime tout pour repartir sur du propre
+                    sh "rm -rf node_modules package-lock.json"
                     sh "npm install"
                     sh "npm run test:coverage"
                 }
