@@ -32,7 +32,8 @@ pipeline {
             steps {
                 script {
                     echo "Running SonarQube Scan..."
-                    sh "docker run --rm -v \"${env.WORKSPACE}:/usr/src\" --network buildmarket-net sonarsource/sonar-scanner-cli -Dsonar.host.url=http://buildmarket-sonar:9000 -Dsonar.token=\$SONAR_AUTH"
+                    // On passe les paramètres en direct pour éviter les problèmes de montage de volume sur Windows/Docker
+                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" -w \"/var/jenkins_home/workspace/${env.JOB_NAME}\" --network buildmarket-net sonarsource/sonar-scanner-cli -Dsonar.projectKey=buildmarket-backend -Dsonar.projectName=\"BuildMarket Backend\" -Dsonar.sources=server/src -Dsonar.host.url=http://buildmarket-sonar:9000 -Dsonar.token=\$SONAR_AUTH"
                 }
             }
         }
