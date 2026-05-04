@@ -30,9 +30,10 @@ pipeline {
 
         stage('🧪 Tests & Coverage') {
             steps {
-                script {
-                    echo "Running Unit Tests..."
-                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" -w \"/var/jenkins_home/workspace/${env.JOB_NAME}/server\" node:22-alpine sh -c 'npm install && npm run test:coverage'"
+                dir('server') {
+                    echo "Running Unit Tests directly in Jenkins..."
+                    sh "npm install"
+                    sh "npm run test:coverage"
                 }
             }
         }
