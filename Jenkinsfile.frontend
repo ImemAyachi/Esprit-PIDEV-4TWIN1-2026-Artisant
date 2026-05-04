@@ -25,6 +25,25 @@ pipeline {
             }
         }
 
+        stage('🔍 SonarQube Analysis') {
+            steps {
+                script {
+                    echo "Running SonarQube Scan for Frontend..."
+                    sh """
+                    docker run --rm \
+                        -v \$(pwd):/usr/src \
+                        --network buildmarket-net \
+                        sonarsource/sonar-scanner-cli \
+                        -Dsonar.projectKey=buildmarket-frontend \
+                        -Dsonar.host.url=http://buildmarket-sonar:9000 \
+                        -Dsonar.login=admin \
+                        -Dsonar.password=admin \
+                        -Dsonar.sources=front/src
+                    """
+                }
+            }
+        }
+
         stage('🎨 Build Frontend') {
             steps {
                 script {
