@@ -1,16 +1,23 @@
 # ============================================================
-# BuildMarket — Backend (Node.js / Express)
-# Image légère avec utilisateur non-root
+# BuildMarket — Backend (Node.js / Express + Python)
 # ============================================================
 
-FROM node:18-alpine
+FROM node:18-slim
 
-# Installer dumb-init pour un PID 1 propre (gestion des signaux)
-# Et installer Python3 + OpenCV + Numpy pour les scripts d'analyse IA
-RUN apk add --no-cache dumb-init python3 py3-pip py3-numpy py3-opencv
+# Installer dumb-init, python3, pip, and OpenCV system dependencies
+RUN apt-get update && apt-get install -y \
+    dumb-init \
+    python3 \
+    python3-pip \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Installer les packages Python requis
+RUN pip3 install opencv-python-headless numpy --no-cache-dir
 
 # Créer un utilisateur non-root pour la sécurité
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
 WORKDIR /app
 
@@ -24,7 +31,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY . .
 
 # Créer le dossier uploads et donner les permissions
-RUN mkdir -p /app/uploads && chown -R appuser:appgroup /app
+RUN mkdir -p /app/uploads /app/tmp && chown -R appuser:appgroup /app
 
 # Passer en utilisateur non-root
 USER appuser
@@ -34,7 +41,7 @@ EXPOSE 5000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:5000/api/health || exit 1
+  CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Démarrer avec dumb-init pour la gestion propre des signaux
 CMD ["dumb-init", "node", "src/index.js"]
