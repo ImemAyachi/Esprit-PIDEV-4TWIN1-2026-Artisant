@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Installer les packages Python requis
-RUN pip3 install opencv-python-headless numpy --no-cache-dir
+RUN pip3 install opencv-python-headless numpy --no-cache-dir --break-system-packages
 
 # Créer un utilisateur non-root pour la sécurité
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
