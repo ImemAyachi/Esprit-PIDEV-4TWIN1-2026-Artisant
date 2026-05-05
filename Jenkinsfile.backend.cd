@@ -8,9 +8,9 @@ pipeline {
                     echo "Deploying Backend components to Kubernetes..."
                     checkout scm
                     withCredentials([file(credentialsId: 'k8s-config', variable: 'KUBECONFIG')]) {
-                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/namespace.yaml"
-                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/mongodb-k8s.yaml"
-                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/backend-k8s.yaml"
+                        sh "kubectl apply -f k8s/namespace.yaml"
+                        sh "kubectl apply -f k8s/mongodb-k8s.yaml"
+                        sh "kubectl apply -f k8s/backend-k8s.yaml"
                     }
                 }
             }
