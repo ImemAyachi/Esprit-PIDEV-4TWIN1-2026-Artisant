@@ -8,8 +8,8 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "seed": "node src/utils/seed.js",
-    "test": "jest",
-    "test:coverage": "jest --coverage"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
   "keywords": [],
   "author": "",
