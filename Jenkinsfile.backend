@@ -98,16 +98,11 @@ pipeline {
         }
     }
 
-        stage('🚀 Deploy to Kubernetes') {
+        stage('🔗 Trigger CD Backend') {
             steps {
                 script {
-                    echo "Deploying to Kubernetes Cluster..."
-                    withCredentials([file(credentialsId: 'k8s-config', variable: 'KUBECONFIG')]) {
-                        // On utilise l'image bitnami/kubectl pour ne pas dépendre de l'install locale
-                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/namespace.yaml"
-                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/mongodb-k8s.yaml"
-                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/backend-k8s.yaml"
-                    }
+                    echo "➡️ Triggering CD Pipeline: buildmarket-backend-cd"
+                    build job: 'buildmarket-backend-cd', wait: false, propagate: false
                 }
             }
         }
