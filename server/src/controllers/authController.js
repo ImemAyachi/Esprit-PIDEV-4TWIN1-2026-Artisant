@@ -49,24 +49,11 @@ export const register = async (req, res) => {
             password,
             role: (role || 'artisan').toLowerCase(),
             phone,
-<<<<<<< HEAD
-        };
-
-        // Optionally enroll face during registration
-        if (faceEmbedding && Array.isArray(faceEmbedding) && faceEmbedding.length > 0) {
-            userData.faceEmbedding = faceEmbedding;
-            userData.hasFaceAuth = true;
-        }
-
-        const user = await User.create(userData);
-        sendTokenResponse(user, 201, res);
-=======
             faceEmbedding: faceEmbedding || [],
             isActive: true
         });
 
         await sendTokenResponse(user, 201, req, res);
->>>>>>> imem
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
