@@ -6,7 +6,8 @@
 FROM node:18-alpine
 
 # Installer dumb-init pour un PID 1 propre (gestion des signaux)
-RUN apk add --no-cache dumb-init
+# Et installer Python3 + OpenCV + Numpy pour les scripts d'analyse IA
+RUN apk add --no-cache dumb-init python3 py3-pip py3-numpy py3-opencv
 
 # Créer un utilisateur non-root pour la sécurité
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
