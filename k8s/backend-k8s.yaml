@@ -13,9 +13,11 @@ spec:
       labels:
         app: backend
     spec:
+      imagePullSecrets:
+      - name: regcred
       containers:
       - name: backend
-        image: imemayachi/buildmarket-backend:latest
+        image: alabendawed871/buildmarket-backend:latest
         ports:
         - containerPort: 5000
         env:

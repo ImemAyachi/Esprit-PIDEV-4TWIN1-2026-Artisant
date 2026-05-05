@@ -13,9 +13,11 @@ spec:
       labels:
         app: frontend
     spec:
+      imagePullSecrets:
+      - name: regcred
       containers:
       - name: frontend
-        image: imemayachi/buildmarket-frontend:latest
+        image: alabendawed871/buildmarket-frontend:latest
         ports:
         - containerPort: 80
 ---
