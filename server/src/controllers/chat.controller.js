@@ -1,122 +1,76 @@
-import { callLocalLLM } from '../utils/aiClient.js';
-import { callCloudAI } from '../utils/cloudAiClient.js';
-import Product from '../models/Product.model.js';
-import ChatSession from '../models/ChatSession.model.js';
-import fs from 'fs';
-import path from 'path';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+ 
+const SYSTEM_PROMPT = `You are BatiBot2, an interactive construction assistant for Tunisian users.
 
-// Load Expert BTP Knowledge (Safely)
-let btpKnowledge = {};
-try {
-  const filePath = path.join(process.cwd(), '..', 'ml', 'dataset', 'btp_knowledge_tn.json');
-  btpKnowledge = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-} catch (e) {
-  console.error("Failed to load knowledge base:", e.message);
+Your role is to help users with anything related to:
+- Construction products and renovation decisions
+- Artisanet/BuildMarket platform guidance
+- Practical next steps for projects, materials and tools
+
+Rules:
+- Always answer with useful, actionable information.
+- Never answer with a generic refusal like "give me more details" only.
+- If the user query is broad, still provide a short concrete starter recommendation and then ask 1 follow-up question.
+- Match the user language (Arabic/French/English/Tunisian derja when possible).
+- Keep responses concise, natural, and interactive.`;
+
+function buildGuaranteedFallback(userText) {
+  const t = String(userText || '').trim();
+  if (!t) {
+    return 'Marhbe bik! Nnajjem n3awnek b choix produits, budget, w plan de travaux. Chnowa hachtek tawa?';
+  }
+
+  return `Fhemt 3lik 3la "${t}". Bch نبداو عمليًا: ikhtar catégorie (peinture, plomberie, carrelage, ciment) w na3tik options mli7a + budget tips مباشرة.`;
 }
 
-const SYSTEM_PROMPT = `You are ArtiChat, an ELITE construction AI expert for Artisanet BuildMarket (Tunisia).
-KNOWLEDGE BASE:
-${JSON.stringify(btpKnowledge, null, 2)}
-
-CORE RULES:
-1. You provide technical and financial advice for construction in Tunisia.
-2. 1 Malyoun = 1000 TND. Budget 200 Malyoun = 200,000 TND.
-3. For large budgets (like 200M), explain phases: Foundation, Gros Œuvre, Finition.
-4. Always suggest relevant products from our Catalog.
-5. Use natural Tunisian Arabizi/Darija (e.g., 'mrigla', 'bch', 'famma', 'lhne').
-
-PLATFORM NAVIGATION:
-- Catalog: Dashboard -> Catalog
-- Quotes: Dashboard -> Quotes -> Add
-- Projects: Dashboard -> Projects -> Add
-- Artisans: Dashboard -> Artisans
-
-Be precise, expert, and never repeat the same generic intro.`;
-
 /**
- * Optimized Chat Controller
+ * POST /api/chat
+ * Body: { messages: [{role: 'user'|'model', parts: [{text: string}]}] }
  */
 export const chat = async (req, res) => {
   try {
-    const { messages } = req.body;
-    const userId = req.user?._id;
-    if (!userId) return res.status(401).json({ error: 'Authentication required' });
-
-    const userText = messages[messages.length - 1]?.parts?.[0]?.text || "";
-
-    // 1. Contextual Product Retrieval
-    let recommendations = [];
-    try {
-      recommendations = await Product.find({
-        $text: { $search: userText },
-        isAvailable: true
-      }).limit(3).lean();
-    } catch (e) { /* ignore search errors */ }
-
-    const recContext = recommendations.length > 0
-      ? `Catalog Highlights: ${recommendations.map(r => `${r.name} (${r.price} ${r.priceUnit})`).join(', ')}`
-      : "No specific products found for this query in catalog.";
-
-    // 2. Persistent Memory Management
-    let session = await ChatSession.findOne({ user: userId });
-    if (!session) {
-      session = await ChatSession.create({
-        user: userId,
-        turns: [{ role: 'system', content: SYSTEM_PROMPT }]
-      });
+    const { messages } = req.body || {};
+    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+      return res.status(400).json({ error: 'Messages array is required' });
     }
 
-    // 3. Prompt Construction
-    const promptMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
-      ...session.turns.slice(-12).map(t => ({ role: t.role, content: t.content })),
-      { role: 'user', content: `${userText} (Grounding Context: ${recContext})` }
-    ];
-
-    // 4. Multi-Provider AI Execution
-    let reply = "";
-    let provider = "cloud-ai";
-
-    try {
-      console.log(`[Chat] Calling Cloud AI for: ${userText.slice(0, 30)}...`);
-      reply = await callCloudAI(promptMessages, { temperature: 0.7 });
-    } catch (e) {
-      console.error("[Chat] Cloud AI failed, falling back to local:", e.message);
-      provider = "local-ai";
-      try {
-        reply = await callLocalLLM(promptMessages, { temperature: 0.6 });
-      } catch (e2) {
-        console.error("[Chat] Local AI also failed:", e2.message);
-        provider = "fallback-expert";
-        reply = "Sama7ni, famech mouchkla techinque sghira. Ama lel budget mte3ek, nenshek tatleb **Devis** mel les experts mte3na fi Dashboard -> Quotes.";
-      }
+    if (!process.env.GEMINI_API_KEY) {
+      const last = messages[messages.length - 1]?.parts?.[0]?.text || '';
+      return res.json({ reply: buildGuaranteedFallback(last), provider: 'fallback_no_key' });
     }
 
-    if (!reply) reply = "Nnajem n3awnek fi ay 7aja tkhoss el chantiers walla el matériaux. Chnowa t7eb ta3ref?";
-
-    // 5. Save and Return
-    session.turns.push({ role: 'user', content: userText });
-    session.turns.push({ role: 'assistant', content: reply });
-
-    // Keep turns history bounded
-    if (session.turns.length > 20) session.turns = session.turns.slice(-20);
-
-    await session.save();
-
-    return res.json({
-      reply,
-      provider,
-      recommendations: recommendations.map(p => ({
-        id: p._id,
-        name: p.name,
-        price: p.price,
-        unit: p.unit,
-        category: p.category
-      }))
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction: SYSTEM_PROMPT,
     });
 
+    // Build chat history from UI messages
+    const history = messages.slice(0, -1).map(msg => ({
+      role: msg.role,
+      parts: Array.isArray(msg.parts) ? msg.parts : [],
+    }));
+
+    const chatSession = model.startChat({ history });
+
+    const lastMessage = messages[messages.length - 1];
+    const userText = lastMessage?.parts?.[0]?.text || '';
+    if (!userText.trim()) {
+      return res.json({ reply: buildGuaranteedFallback(userText), provider: 'fallback_empty' });
+    }
+
+    const result = await chatSession.sendMessage(userText);
+    const responseText = String(result?.response?.text?.() || '').trim();
+
+    if (!responseText) {
+      return res.json({ reply: buildGuaranteedFallback(userText), provider: 'fallback_empty_ai' });
+    }
+
+    return res.json({ reply: responseText, provider: 'gemini' });
   } catch (err) {
-    console.error('[Chat Error]:', err);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error('Chat error:', err.message);
+    const messages = Array.isArray(req.body?.messages) ? req.body.messages : [];
+    const last = messages[messages.length - 1]?.parts?.[0]?.text || '';
+    return res.json({ reply: buildGuaranteedFallback(last), provider: 'fallback_error' });
   }
 };

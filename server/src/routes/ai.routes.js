@@ -63,6 +63,7 @@ router.post('/recommend', recommendProducts);
 router.post('/recommend-products', recommendProducts); // Alias from HEAD
 
 router.post('/project-plan', createProjectPlan);
+
 router.post('/plan-2d', aiFeatureProtect, createTextTo2dPlan);
 router.post('/plan-2d/render', aiFeatureProtect, createPlan2dRender);
 
@@ -118,4 +119,7 @@ router.post('/analyze-plan', upload.single('plan'), async (req, res) => {
 
 router.post('/plan-2d/estimate', aiFeatureProtect, estimatePlan2dTnd);
 router.post('/plan-2d/style-suggest', aiFeatureProtect, suggestPlan2dStyles);
+
+// Temporarily disabled advanced AI routes to keep chatbot/catalog APIs operational.
+
 export default router;
