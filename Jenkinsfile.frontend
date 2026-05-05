@@ -61,14 +61,25 @@ pipeline {
                 }
             }
         }
+
+        stage('🚀 Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo "Deploying Frontend to Kubernetes Cluster..."
+                    withCredentials([file(credentialsId: 'k8s-config', variable: 'KUBECONFIG')]) {
+                        sh "docker run --rm -v ${KUBECONFIG}:/tmp/config -e KUBECONFIG=/tmp/config --network host bitnami/kubectl apply -f k8s/frontend-k8s.yaml"
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo "✨ Frontend Pipeline & K8s Deployment completed!"
+            echo "✅ Frontend CI/CD Pipeline finished successfully!"
         }
         failure {
-            echo "🚒 Build or Deployment failed."
+            echo "❌ Pipeline failed. Check logs for details."
         }
     }
 }
