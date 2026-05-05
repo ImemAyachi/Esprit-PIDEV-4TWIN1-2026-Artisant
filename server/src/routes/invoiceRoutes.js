@@ -1,18 +1,28 @@
-const express = require('express');
-const {
-    convertToInvoice,
+import express from 'express';
+import { createInvoice,
     getMyInvoices,
-    getInvoiceSummary
-} = require('../controllers/invoiceController');
-const { protect, authorize } = require('../middleware/auth');
+    updateInvoice,
+    deleteInvoice,
+    getFinancialSummary,
+    recordPayment,
+    voidInvoice
+ } from '../controllers/invoiceController.js';
+
+import { protect, authorize  } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.use(protect);
-router.use(authorize('artisan', 'admin'));
+router.use(authorize('artisan', 'admin', 'manufacturer'));
 
-router.post('/convert/:quoteId', convertToInvoice);
+router.post('/', createInvoice);
 router.get('/my', getMyInvoices);
-router.get('/summary', getInvoiceSummary);
+router.get('/summary', getFinancialSummary);
+router.patch('/:id/payment', recordPayment);
+router.patch('/:id/void', voidInvoice);
+router.put('/:id', updateInvoice);
+router.delete('/:id', deleteInvoice);
 
-module.exports = router;
+
+export default router;
+

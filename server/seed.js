@@ -8,25 +8,44 @@ dotenv.config();
 
 const users = [
     {
-        name: 'System Admin',
         email: 'admin@artisant.com',
         password: 'password123',
-        role: 'Admin',
-        permissions: ['manage:users', 'manage:documents', 'read:products', 'write:products']
+        role: 'admin',
+        companyName: 'Artisant HQ',
+        phone: '+213 555 000 001',
+        isActive: true,
     },
     {
-        name: 'John Expert',
         email: 'expert@artisant.com',
         password: 'password123',
-        role: 'Expert',
-        permissions: ['manage:documents']
+        role: 'expert',
+        companyName: 'Expert Solutions',
+        phone: '+213 555 000 002',
+        isActive: true,
     },
     {
-        name: 'Jane Artisan',
         email: 'artisan@artisant.com',
         password: 'password123',
-        role: 'Artisan',
-        permissions: ['read:products']
+        role: 'artisan',
+        companyName: 'Artisan Craft Co.',
+        phone: '+213 555 000 003',
+        isActive: true,
+    },
+    {
+        email: 'manufacturer@artisant.com',
+        password: 'password123',
+        role: 'manufacturer',
+        companyName: 'Fab Industries',
+        phone: '+213 555 000 004',
+        isActive: true,
+    },
+    {
+        email: 'inactive@artisant.com',
+        password: 'password123',
+        role: 'artisan',
+        companyName: 'Old Craft',
+        phone: '+213 555 000 005',
+        isActive: false,
     }
 ];
 
@@ -45,11 +64,11 @@ const seedDatabase = async () => {
             await Profile.create({
                 user: createdUser._id,
                 bio: `I am a ${user.role} on the Artisant platform.`,
-                specialty: user.role === 'Expert' ? 'Industrial Safety' : undefined
+                specialty: user.role === 'expert' ? 'Industrial Safety' : undefined
             });
-            console.log(`Created user: ${user.email}`);
+            console.log(`Created user: ${user.email} (isActive: ${user.isActive})`);
 
-            if (user.role === 'Expert') {
+            if (user.role === 'expert') {
                 await Document.create({
                     title: 'Industrial Safety Guidelines 2026',
                     description: 'Comprehensive guide for workshop safety.',

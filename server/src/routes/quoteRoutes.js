@@ -1,13 +1,16 @@
-const express = require('express');
-const {
-    createQuote,
+import express from 'express';
+import { createQuote,
     getMyQuotes,
     updateQuote,
-    deleteQuote
-} = require('../controllers/quoteController');
-const { protect, authorize } = require('../middleware/auth');
+    deleteQuote,
+    acceptQuote
+ } from '../controllers/quoteController.js';
+import { protect, authorize  } from '../middleware/auth.js';
 
 const router = express.Router();
+
+// Acceptance route
+router.patch('/:id/accept', acceptQuote);
 
 router.use(protect);
 router.use(authorize('artisan', 'admin'));
@@ -17,4 +20,5 @@ router.get('/my', getMyQuotes);
 router.put('/:id', updateQuote);
 router.delete('/:id', deleteQuote);
 
-module.exports = router;
+export default router;
+

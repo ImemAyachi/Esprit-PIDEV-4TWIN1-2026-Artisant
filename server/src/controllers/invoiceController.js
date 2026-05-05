@@ -1,108 +1,113 @@
-const Invoice = require('../models/Invoice');
-const Quote = require('../models/Quote');
+import Invoice from '../models/Invoice.js';
 
-// @desc    Convert quote to invoice
-// @route   POST /api/invoices/convert/:quoteId
-// @access  Private (Artisan)
-exports.convertToInvoice = async (req, res) => {
+// @desc    Create new invoice
+// @route   POST /api/invoices
+export const createInvoice = async (req, res) => {
     try {
-        const quote = await Quote.findById(req.params.quoteId);
-
-        if (!quote) {
-            return res.status(404).json({ success: false, message: 'Quote not found' });
-        }
-
-        if (quote.artisan.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Not authorized' });
-        }
-
-        // Check if already converted
-        if (quote.status === 'Converted to Invoice') {
-            return res.status(400).json({ success: false, message: 'Quote already converted to invoice' });
-        }
-
-        // Generate invoice number
-        const invoiceNumber = `INV-${Date.now()}`;
-
-        // Create invoice from quote data
         const invoice = await Invoice.create({
-            invoiceNumber,
-            quote: quote._id,
-            project: quote.project,
-            artisan: quote.artisan,
-            clientName: quote.clientName,
-            items: quote.items,
-            totalAmount: quote.totalAmount,
-            status: 'Unpaid',
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Default 30 days
+            ...req.body,
+            artisan: req.user.id
         });
-
-        // Update quote status
-        quote.status = 'Converted to Invoice';
-        await quote.save();
-
-        res.status(201).json({
-            success: true,
-            data: invoice
-        });
+        res.status(201).json({ success: true, data: invoice });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Get all invoices for logged in artisan
+// @desc    Get all invoices for the logged-in artisan
 // @route   GET /api/invoices/my
-// @access  Private (Artisan)
-exports.getMyInvoices = async (req, res) => {
+export const getMyInvoices = async (req, res) => {
     try {
         const invoices = await Invoice.find({ artisan: req.user.id })
-            .populate('project', 'title')
-            .populate('quote', 'quoteNumber')
+            .populate('quote', 'clientName totalAmount')
             .sort('-createdAt');
 
-        res.status(200).json({
-            success: true,
-            count: invoices.length,
-            data: invoices
-        });
+        const mappedInvoices = invoices.map(inv => ({
+            ...inv.toObject(),
+            client: { name: inv.quote?.clientName || 'N/A' },
+            financials: { grandTotal: inv.quote?.totalAmount || 0 },
+            payment: { dueDate: inv.dueDate },
+            status: inv.status === 'payé' ? 'paid' : inv.status === 'en_retard' ? 'overdue' : 'pending'
+        }));
+
+        res.status(200).json({ success: true, count: invoices.length, data: mappedInvoices });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Get dashboard invoice summary (Zahra's task - IA summary)
-// @route   GET /api/invoices/summary
-// @access  Private (Artisan)
-exports.getInvoiceSummary = async (req, res) => {
+// @desc    Update an invoice
+// @route   PUT /api/invoices/:id
+export const updateInvoice = async (req, res) => {
     try {
-        const invoices = await Invoice.find({ artisan: req.user.id });
-
-        const totalRevenue = invoices.reduce((acc, inv) => acc + inv.totalAmount, 0);
-        const paidAmount = invoices
-            .filter(inv => inv.status === 'Paid')
-            .reduce((acc, inv) => acc + inv.totalAmount, 0);
-        const pendingAmount = totalRevenue - paidAmount;
-
-        res.status(200).json({
-            success: true,
-            data: {
-                count: invoices.length,
-                totalRevenue,
-                paidAmount,
-                pendingAmount,
-                recentInvoices: invoices.slice(0, 5)
-            }
+        const invoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true
         });
+        if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found.' });
+        res.status(200).json({ success: true, data: invoice });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Delete invoice
+// @route   DELETE /api/invoices/:id
+export const deleteInvoice = async (req, res) => {
+    try {
+        const invoice = await Invoice.findByIdAndDelete(req.params.id);
+        if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found.' });
+        res.status(200).json({ success: true, message: 'Invoice deleted.' });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+// @desc    Get financial summary
+// @route   GET /api/invoices/summary
+export const getFinancialSummary = async (req, res) => {
+    try {
+        const invoices = await Invoice.find({ artisan: req.user.id }).populate('quote', 'totalAmount');
+        const summary = {
+            totalInvoiced: invoices.reduce((acc, i) => acc + (i.quote?.totalAmount || 0), 0),
+            totalPaid: invoices.reduce((acc, i) => i.status === 'payé' ? acc + (i.quote?.totalAmount || 0) : acc, 0),
+            totalOutstanding: invoices.reduce((acc, i) => (i.status === 'en_attente' || i.status === 'en_retard') ? acc + (i.quote?.totalAmount || 0) : acc, 0),
+            totalQuotes: invoices.length,
+            aging: {
+                current: invoices.filter(i => i.status === 'en_attente').reduce((acc, i) => acc + (i.quote?.totalAmount || 0), 0),
+                '30-60': 0,
+                '60-90': 0,
+                '90+': invoices.filter(i => i.status === 'en_retard').reduce((acc, i) => acc + (i.quote?.totalAmount || 0), 0)
+            }
+        };
+        res.status(200).json({ success: true, data: summary });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Record payment
+// @route   PATCH /api/invoices/:id/payment
+export const recordPayment = async (req, res) => {
+    try {
+        const invoice = await Invoice.findByIdAndUpdate(req.params.id, { 
+            status: 'payé',
+            amountPaid: req.body.amount || 0 
+        }, { new: true });
+        if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found.' });
+        res.status(200).json({ success: true, data: invoice });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Void invoice
+// @route   PATCH /api/invoices/:id/void
+export const voidInvoice = async (req, res) => {
+    try {
+        const invoice = await Invoice.findByIdAndUpdate(req.params.id, { status: 'en_retard' }, { new: true });
+        if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found.' });
+        res.status(200).json({ success: true, data: invoice });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
     }
 };

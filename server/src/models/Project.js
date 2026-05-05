@@ -1,6 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const projectSchema = new mongoose.Schema({
+    artisan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
     title: {
         type: String,
         required: [true, 'Project title is required'],
@@ -9,24 +14,31 @@ const projectSchema = new mongoose.Schema({
     description: {
         type: String,
     },
-    artisan: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
+    address: {
+        type: String,
+    },
+    startDate: {
+        type: Date,
+    },
+    endDate: {
+        type: Date,
+    },
+    vocalResumeUrl: {
+        type: String,
+    },
+    totalAmount: {
+        type: Number,
+        default: 0,
     },
     status: {
         type: String,
-        enum: ['planned', 'in_progress', 'completed', 'archived'],
-        default: 'planned',
-    },
-    startDate: Date,
-    endDate: Date,
-    address: {
-        type: String,
+        enum: ['planifié', 'en_cours', 'terminé', 'archivé'],
+        default: 'planifié',
     },
 }, {
     timestamps: true,
 });
 
-const Project = mongoose.model('Project', projectSchema);
-module.exports = Project;
+const Project = mongoose.model('ProjectYahya', projectSchema);
+export default Project;
+

@@ -1,50 +1,47 @@
-const mongoose = require('mongoose');
-
-const invoiceItemSchema = new mongoose.Schema({
-    description: String,
-    quantity: Number,
-    unitPrice: Number,
-    total: Number,
-});
+import mongoose from 'mongoose';
 
 const invoiceSchema = new mongoose.Schema({
-    invoiceNumber: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     quote: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Quote',
-    },
-    project: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Project',
+        required: true,
     },
     artisan: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
     },
-    clientName: {
+    invoiceNumber: {
         type: String,
         required: true,
+        unique: true,
     },
-    items: [invoiceItemSchema],
-    totalAmount: Number,
-    paidAmount: {
+    amountPaid: {
         type: Number,
         default: 0,
     },
+    issueDate: {
+        type: Date,
+        default: Date.now,
+    },
+    dueDate: {
+        type: Date,
+    },
+    paymentMode: {
+        type: String,
+    },
+    vocalResumeUrl: {
+        type: String,
+    },
     status: {
         type: String,
-        enum: ['Unpaid', 'Partially Paid', 'Paid', 'Overdue', 'Canceled'],
-        default: 'Unpaid',
+        enum: ['en_attente', 'payé', 'en_retard'],
+        default: 'en_attente',
     },
-    dueDate: Date,
 }, {
     timestamps: true,
 });
 
-const Invoice = mongoose.model('Invoice', invoiceSchema);
-module.exports = Invoice;
+const Invoice = mongoose.model('InvoiceYahya', invoiceSchema);
+export default Invoice;
+

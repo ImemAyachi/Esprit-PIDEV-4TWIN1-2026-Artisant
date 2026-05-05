@@ -1,18 +1,6 @@
-const mongoose = require('mongoose');
-
-const quoteItemSchema = new mongoose.Schema({
-    description: String,
-    quantity: Number,
-    unitPrice: Number,
-    total: Number,
-});
+import mongoose from 'mongoose';
 
 const quoteSchema = new mongoose.Schema({
-    quoteNumber: {
-        type: String,
-        required: true,
-        unique: true,
-    },
     project: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Project',
@@ -27,23 +15,29 @@ const quoteSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    clientEmail: String,
-    items: [quoteItemSchema],
-    subtotal: Number,
-    tax: Number,
     totalAmount: {
         type: Number,
         required: true,
     },
     status: {
         type: String,
-        enum: ['Draft', 'Sent', 'Accepted', 'Rejected', 'Converted to Invoice'],
-        default: 'Draft',
+        enum: ['brouillon', 'envoyé', 'accepté', 'refusé'],
+        default: 'brouillon',
     },
-    validUntil: Date,
+    pdfUrl: {
+        type: String,
+    },
+    accessiblePdfUrl: {
+        type: String,
+    },
+    isAiGenerated: {
+        type: Boolean,
+        default: false,
+    },
 }, {
     timestamps: true,
 });
 
-const Quote = mongoose.model('Quote', quoteSchema);
-module.exports = Quote;
+const Quote = mongoose.model('QuoteYahya', quoteSchema);
+export default Quote;
+

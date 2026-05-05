@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        // Not required at schema level — face-only accounts won't have a password
+        required: true,
         minlength: 8,
         select: false,
     },
@@ -22,45 +22,43 @@ const userSchema = new mongoose.Schema({
     },
     companyName: {
         type: String,
-        required: [true, 'Please provide company name'],
         trim: true,
     },
     phone: {
         type: String,
-        required: [true, 'Please provide phone number'],
     },
     avatarUrl: {
         type: String,
     },
-    // Facial embedding: flat array of Numbers (e.g. 1024 pixel values from 32x32 face crop)
+    // Facial recognition biometric (stored as number array/embedding)
     faceEmbedding: {
         type: [Number],
         select: false,
-    },
-    hasFaceAuth: {
-        type: Boolean,
-        default: false,
     },
     isActive: {
         type: Boolean,
         default: true,
     },
+    // Management Features
+    lastLogin: Date,
+    lastIP: String,
 }, {
     timestamps: true,
 });
 
 // Hash password before saving
 userSchema.pre('save', async function () {
-    if (!this.isModified('password') || !this.password) return;
+    if (!this.isModified('password')) return;
     this.password = await bcrypt.hash(this.password, 12);
 });
+
 
 // Method to check password
 userSchema.methods.comparePassword = async function (candidatePassword, userPassword) {
     return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-// Cosine similarity between two number arrays
+// Cosine similarity for face authentication
 userSchema.methods.compareFaceEmbedding = function (candidateEmbedding) {
     const stored = this.faceEmbedding;
     if (!stored || stored.length === 0) return 0;
@@ -75,5 +73,6 @@ userSchema.methods.compareFaceEmbedding = function (candidateEmbedding) {
     return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+const User = mongoose.model('UserYahya', userSchema);
+export default User;
+

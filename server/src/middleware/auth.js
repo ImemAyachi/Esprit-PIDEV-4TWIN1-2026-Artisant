@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
-exports.protect = async (req, res, next) => {
+export const protect = async (req, res, next) => {
     let token;
 
     if (
@@ -36,7 +36,11 @@ exports.protect = async (req, res, next) => {
             });
         }
 
-        req.user = user;
+        // Block explicitly deactivated accounts (isActive === false)
+        // Note: use strict comparison to avoid blocking users without the field set
+        if (req.user.isActive === false) {
+            return res.status(403).json({ message: 'Your account has been deactivated. Please contact an administrator.' });
+        }
 
         next();
     } catch (err) {
@@ -46,7 +50,7 @@ exports.protect = async (req, res, next) => {
     }
 };
 
-exports.authorize = (...roles) => {
+export const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user || !roles.includes(req.user.role)) {
             return res.status(403).json({

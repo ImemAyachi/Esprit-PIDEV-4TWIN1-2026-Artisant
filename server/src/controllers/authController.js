@@ -1,5 +1,6 @@
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+import User from '../models/User.js';
+import Session from '../models/Session.js';
+import jwt from 'jsonwebtoken';
 
 const signToken = (user) => {
     return jwt.sign(
@@ -9,24 +10,32 @@ const signToken = (user) => {
     );
 };
 
-const sendTokenResponse = (user, statusCode, res) => {
+const sendTokenResponse = async (user, statusCode, req, res) => {
     const token = signToken(user);
-    user.password = undefined;
-    user.faceEmbedding = undefined;
+    
+    user.lastLogin = new Date();
+    user.lastIP = req.ip;
+    
+    await user.save({ validateBeforeSave: false });
+
+    const userObj = user.toObject();
+    delete userObj.password;
+    delete userObj.faceEmbedding;
+
     res.status(statusCode).json({
         status: 'success',
         token,
-        data: { user },
+        data: { user: userObj },
     });
 };
 
 // ─── Password Register ──────────────────────────────────────────────────────
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
     try {
         const { companyName, email, password, phone, role, faceEmbedding } = req.body;
 
-        if (!companyName || !email || !password || !phone) {
-            return res.status(400).json({ message: 'Please provide all required fields' });
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Please provide email and password' });
         }
 
         const existingUser = await User.findOne({ email });
@@ -34,12 +43,13 @@ exports.register = async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const userData = {
+        const user = await User.create({
             companyName,
             email,
             password,
             role: (role || 'artisan').toLowerCase(),
             phone,
+<<<<<<< HEAD
         };
 
         // Optionally enroll face during registration
@@ -50,13 +60,20 @@ exports.register = async (req, res) => {
 
         const user = await User.create(userData);
         sendTokenResponse(user, 201, res);
+=======
+            faceEmbedding: faceEmbedding || [],
+            isActive: true
+        });
+
+        await sendTokenResponse(user, 201, req, res);
+>>>>>>> imem
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
 // ─── Password Login ─────────────────────────────────────────────────────────
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -67,19 +84,18 @@ exports.login = async (req, res) => {
         const user = await User.findOne({ email }).select('+password');
         if (!user) return res.status(401).json({ message: 'Invalid credentials' });
         if (!user.isActive) return res.status(403).json({ message: 'Account is deactivated' });
-        if (!user.password) return res.status(400).json({ message: 'This account uses Face ID login only' });
 
         const isMatch = await user.comparePassword(password, user.password);
         if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
 
-        sendTokenResponse(user, 200, res);
+        await sendTokenResponse(user, 200, req, res);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
 // ─── Face Login ─────────────────────────────────────────────────────────────
-exports.loginWithFace = async (req, res) => {
+export const loginWithFace = async (req, res) => {
     try {
         const { email, faceEmbedding } = req.body;
 
@@ -90,28 +106,31 @@ exports.loginWithFace = async (req, res) => {
         const user = await User.findOne({ email }).select('+faceEmbedding');
         if (!user) return res.status(401).json({ message: 'No account found with this email' });
         if (!user.isActive) return res.status(403).json({ message: 'Account is deactivated' });
-        if (!user.hasFaceAuth || !user.faceEmbedding || user.faceEmbedding.length === 0) {
-            return res.status(400).json({ message: 'Face ID is not set up for this account' });
-        }
 
         const similarity = user.compareFaceEmbedding(faceEmbedding);
 
         // Threshold: 0.85 cosine similarity
         if (similarity < 0.85) {
             return res.status(401).json({
-                message: 'Face not recognized. Please try again or use your password.',
+                message: 'Face not recognized.',
                 similarity,
             });
         }
 
-        sendTokenResponse(user, 200, res);
+        // Block explicitly deactivated accounts (strict check)
+        if (user.isActive === false) {
+            return res.status(403).json({ message: 'Your account has been deactivated. Please contact an administrator.' });
+        }
+
+        await sendTokenResponse(user, 200, req, res);
+
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
 // ─── Enroll Face (authenticated) ────────────────────────────────────────────
-exports.enrollFace = async (req, res) => {
+export const enrollFace = async (req, res) => {
     try {
         const { faceEmbedding } = req.body;
         if (!faceEmbedding || !Array.isArray(faceEmbedding) || faceEmbedding.length === 0) {
@@ -120,7 +139,7 @@ exports.enrollFace = async (req, res) => {
 
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { faceEmbedding, hasFaceAuth: true },
+            { faceEmbedding },
             { new: true }
         ).select('-password -faceEmbedding');
 
@@ -134,27 +153,8 @@ exports.enrollFace = async (req, res) => {
     }
 };
 
-// ─── Remove Face (authenticated) ────────────────────────────────────────────
-exports.removeFace = async (req, res) => {
-    try {
-        const user = await User.findByIdAndUpdate(
-            req.user._id,
-            { faceEmbedding: [], hasFaceAuth: false },
-            { new: true }
-        ).select('-password -faceEmbedding');
-
-        res.status(200).json({
-            status: 'success',
-            message: 'Face ID removed',
-            data: { user },
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
 // ─── Get Me ─────────────────────────────────────────────────────────────────
-exports.getMe = async (req, res) => {
+export const getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user._id).select('-password -faceEmbedding');
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -165,9 +165,9 @@ exports.getMe = async (req, res) => {
 };
 
 // ─── Update Profile ──────────────────────────────────────────────────────────
-exports.updateProfile = async (req, res) => {
+export const updateProfile = async (req, res) => {
     try {
-        const allowedFields = ['companyName', 'phone'];
+        const allowedFields = ['companyName', 'phone', 'avatarUrl'];
         const updates = {};
         allowedFields.forEach((field) => {
             if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -181,6 +181,49 @@ exports.updateProfile = async (req, res) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
         res.status(200).json({ status: 'success', data: { user } });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ─── Account Deletion ───────────────────────────────────────────────────────
+export const deleteAccount = async (req, res) => {
+    try {
+        await User.findByIdAndDelete(req.user._id);
+        res.status(200).json({ status: 'success', message: 'Account deleted' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ─── Session Management ───────────────────────────────────────────────────────
+export const getSessions = async (req, res) => {
+    try {
+        let sessions = await Session.find({ user: req.user._id }).sort({ lastActive: -1 });
+        
+        // Mock a session if none exists to avoid 404/Empty but keep it realistic
+        if (sessions.length === 0) {
+            await Session.create({
+                user: req.user._id,
+                ip: req.ip || '127.0.0.1',
+                userAgent: req.headers['user-agent'] || 'Unknown',
+                device: 'Current Terminal',
+                location: 'Tunis, TN',
+                isCurrent: true
+            });
+            sessions = await Session.find({ user: req.user._id });
+        }
+
+        res.status(200).json({ status: 'success', data: { sessions } });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const deleteSession = async (req, res) => {
+    try {
+        await Session.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+        res.status(200).json({ status: 'success', message: 'Session terminated' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

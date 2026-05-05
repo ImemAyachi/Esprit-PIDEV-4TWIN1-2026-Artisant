@@ -1,0 +1,20 @@
+groups:
+- name: buildmarket_alerts
+  rules:
+  - alert: InstanceDown
+    expr: up == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} down"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+
+  - alert: HighRequestLatency
+    expr: http_request_duration_seconds_sum / http_request_duration_seconds_count > 0.5
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: "High request latency on {{ $labels.instance }}"
+      description: "Average request latency is above 0.5s for more than 2 minutes."

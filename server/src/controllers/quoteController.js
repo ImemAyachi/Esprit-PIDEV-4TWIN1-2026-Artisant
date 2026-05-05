@@ -1,146 +1,88 @@
-const Quote = require('../models/Quote');
-const Project = require('../models/Project');
+import Quote from '../models/Quote.js';
 
 // @desc    Create new quote
 // @route   POST /api/quotes
-// @access  Private (Artisan)
-exports.createQuote = async (req, res) => {
+export const createQuote = async (req, res) => {
     try {
-        const { project, clientName, clientEmail, items, tax, validUntil } = req.body;
-
-        // Calculate totals
-        let subtotal = 0;
-        const processedItems = items.map(item => {
-            const itemTotal = item.quantity * item.unitPrice;
-            subtotal += itemTotal;
-            return {
-                ...item,
-                total: itemTotal
-            };
-        });
-
-        const totalAmount = subtotal + (tax || 0);
-
-        // Simple quote number generation: Q-TIMESTAMP
-        const quoteNumber = `Q-${Date.now()}`;
-
         const quote = await Quote.create({
-            quoteNumber,
-            project,
-            artisan: req.user.id,
-            clientName,
-            clientEmail,
-            items: processedItems,
-            subtotal,
-            tax,
-            totalAmount,
-            validUntil
+            ...req.body,
+            artisan: req.user.id
         });
-
-        res.status(201).json({
-            success: true,
-            data: quote
-        });
+        res.status(201).json({ success: true, data: quote });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Get all quotes for logged in artisan
+// @desc    Get all quotes for the logged-in artisan
 // @route   GET /api/quotes/my
-// @access  Private (Artisan)
-exports.getMyQuotes = async (req, res) => {
+export const getMyQuotes = async (req, res) => {
     try {
-        const quotes = await Quote.find({ artisan: req.user.id })
-            .populate('project', 'title')
-            .sort('-createdAt');
+        const quotes = await Quote.find({ artisan: req.user.id }).populate('project').sort('-createdAt');
+        
+        const mappedQuotes = quotes.map(q => ({
+            ...q.toObject(),
+            title: q.project?.title || 'Sans titre',
+            quoteNumber: `QT-${q._id.toString().slice(-6).toUpperCase()}`,
+            client: { name: q.clientName },
+            financials: { grandTotal: q.totalAmount },
+            validUntil: new Date(q.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000),
+            status: q.status === 'accepté' ? 'accepted' : 
+                    q.status === 'envoyé' ? 'sent' : 
+                    q.status === 'refusé' ? 'expired' : 'draft'
+        }));
 
-        res.status(200).json({
-            success: true,
-            count: quotes.length,
-            data: quotes
-        });
+        res.status(200).json({ success: true, count: quotes.length, data: mappedQuotes });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
 // @desc    Update a quote
 // @route   PUT /api/quotes/:id
-// @access  Private (Artisan)
-exports.updateQuote = async (req, res) => {
+export const updateQuote = async (req, res) => {
     try {
-        let quote = await Quote.findById(req.params.id);
-
-        if (!quote) {
-            return res.status(404).json({ success: false, message: 'Quote not found' });
-        }
-
-        if (quote.artisan.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Not authorized' });
-        }
-
-        const { items, tax } = req.body;
-
-        if (items) {
-            let subtotal = 0;
-            req.body.items = items.map(item => {
-                const itemTotal = item.quantity * item.unitPrice;
-                subtotal += itemTotal;
-                return { ...item, total: itemTotal };
-            });
-            req.body.subtotal = subtotal;
-            req.body.totalAmount = subtotal + (tax || quote.tax || 0);
-        }
-
-        quote = await Quote.findByIdAndUpdate(req.params.id, req.body, {
+        const quote = await Quote.findByIdAndUpdate(req.params.id, req.body, {
             new: true,
             runValidators: true
         });
+        if (!quote) return res.status(404).json({ success: false, message: 'Quote not found.' });
 
-        res.status(200).json({
-            success: true,
-            data: quote
-        });
+        const mappedQuote = {
+            ...quote.toObject(),
+            status: quote.status === 'accepté' ? 'accepted' : 
+                    quote.status === 'envoyé' ? 'sent' : 
+                    quote.status === 'refusé' ? 'expired' : 'draft'
+        };
+
+        res.status(200).json({ success: true, data: mappedQuote });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
 
-// @desc    Delete a quote
+
+// @desc    Delete quote
 // @route   DELETE /api/quotes/:id
-// @access  Private (Artisan)
-exports.deleteQuote = async (req, res) => {
+export const deleteQuote = async (req, res) => {
     try {
-        const quote = await Quote.findById(req.params.id);
-
-        if (!quote) {
-            return res.status(404).json({ success: false, message: 'Quote not found' });
-        }
-
-        if (quote.artisan.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(403).json({ success: false, message: 'Not authorized' });
-        }
-
-        await quote.deleteOne();
-
-        res.status(200).json({
-            success: true,
-            data: {}
-        });
+        const quote = await Quote.findByIdAndDelete(req.params.id);
+        if (!quote) return res.status(404).json({ success: false, message: 'Quote not found.' });
+        res.status(200).json({ success: true, message: 'Quote deleted.' });
     } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: err.message
-        });
+        res.status(400).json({ success: false, message: err.message });
     }
 };
+
+// @desc    Accept quote
+// @route   PATCH /api/quotes/:id/accept
+export const acceptQuote = async (req, res) => {
+    try {
+        const quote = await Quote.findByIdAndUpdate(req.params.id, { status: 'accepté' }, { new: true });
+        if (!quote) return res.status(404).json({ success: false, message: 'Quote not found.' });
+        res.status(200).json({ success: true, data: quote, message: 'Quote accepted.' });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+};
+

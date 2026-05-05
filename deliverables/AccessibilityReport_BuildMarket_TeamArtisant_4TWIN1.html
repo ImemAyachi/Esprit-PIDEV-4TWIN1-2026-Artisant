@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Accessibility Audit — BuildMarket</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 900px; margin: 40px auto; padding: 0 40px; background: #fff; }
+        .header { border-bottom: 3px solid #e53935; padding-bottom: 20px; margin-bottom: 40px; }
+        h1 { color: #e53935; margin-bottom: 5px; font-size: 32px; letter-spacing: -0.5px; }
+        .metadata { color: #666; font-size: 14px; font-weight: 500; }
+        h2 { color: #e53935; border-left: 5px solid #e53935; padding-left: 15px; margin-top: 40px; font-size: 24px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        h3 { color: #333; margin-top: 25px; font-size: 18px; font-weight: 600; border-bottom: 1px dashed #ddd; padding-bottom: 5px; }
+        p { margin-bottom: 15px; text-align: justify; }
+        table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 14px; }
+        th, td { border: 1px solid #e0e0e0; padding: 14px; text-align: left; }
+        th { background: #fff5f5; color: #b71c1c; font-weight: 700; }
+        .status-pass { color: #2e7d32; font-weight: bold; }
+        .status-fail { color: #c62828; font-weight: bold; }
+        .footer { margin-top: 60px; font-size: 12px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 20px; }
+        ul { margin-bottom: 20px; padding-left: 20px; }
+        li { margin-bottom: 8px; }
+        .guideline-box { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 15px 0; border: 1px solid #eee; font-size: 14px; }
+        .guideline-title { font-weight: 700; color: #b71c1c; margin-bottom: 5px; display: block; }
+        .page-break { page-break-before: always; }
+        @media print {
+            body { margin: 0; padding: 30px; font-size: 12pt; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Detailed Accessibility Compliance Audit (WCAG 2.1)</h1>
+        <div class="metadata">
+            <strong>Compliance Level:</strong> WCAG 2.1 Level AA | 
+            <strong>Team:</strong> Team Artisant | 
+            <strong>Class:</strong> 4TWIN1 | 
+            <strong>Date:</strong> May 4, 2026
+        </div>
+    </div>
+
+    <h2>1. Executive Summary</h2>
+    <p>This document presents a comprehensive accessibility audit of the BuildMarket platform. Our goal was to achieve and maintain **WCAG 2.1 Level AA** compliance, ensuring that the BTP ecosystem is inclusive for all professional users, including those with permanent or temporary disabilities.</p>
+    <p>The audit covered four primary domains: visual, motor, auditory, and cognitive. As of the current release, the platform successfully meets all Level A and AA criteria across its core user journeys (Sign-up, Marketplace Browsing, Quote Management, and 3D Visualization).</p>
+
+    <h2>2. Audit Methodology</h2>
+    <p>We employed a rigorous "Hybrid Audit" approach, combining automated scanning with qualitative human testing:</p>
+    <ul>
+        <li><strong>Automated Scanning:</strong> Axe-core engine and Lighthouse Accessibility audits were run on every production build.</li>
+        <li><strong>Screen Reader Testing:</strong> Tested using <strong>NVDA</strong> (Firefox) and <strong>VoiceOver</strong> (Safari/Chrome) to ensure meaningful navigation for visually impaired users.</li>
+        <li><strong>Keyboard-Only Navigation:</strong> Verified that every interactive element is reachable and actionable without a mouse.</li>
+        <li><strong>Color Contrast Verification:</strong> Manual checks using the Contrast Ratio tool for all branding and UI elements.</li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h2>3. Principle-by-Principle Analysis</h2>
+
+    <h3>3.1 Principle 1: Perceivable</h3>
+    <p>Information and user interface components must be presentable to users in ways they can perceive.</p>
+    <div class="guideline-box">
+        <span class="guideline-title">1.1.1 Non-text Content (Level A)</span>
+        All functional images and icons (e.g., Delete, Edit, Cart) have been verified to contain descriptive <code>aria-label</code> or <code>alt</code> text. Decorative images use empty <code>alt=""</code> to be ignored by screen readers.
+    </div>
+    <div class="guideline-box">
+        <span class="guideline-title">1.4.3 Contrast (Minimum) (Level AA)</span>
+        All text elements meet the 4.5:1 ratio. Large text (H1, H2) meets the 3:1 ratio. We adjusted our primary "Slate" and "Teal" colors to satisfy these requirements.
+    </div>
+
+    <h3>3.2 Principle 2: Operable</h3>
+    <p>User interface components and navigation must be operable.</p>
+    <div class="guideline-box">
+        <span class="guideline-title">2.1.1 Keyboard (Level A)</span>
+        The entire Marketplace and Artisan Dashboard are fully keyboard-navigable. This includes the complex 3D viewer, which can be controlled via standard keyboard shortcuts.
+    </div>
+    <div class="guideline-box">
+        <span class="guideline-title">2.4.3 Focus Order (Level A)</span>
+        Focus follows a logical sequence (Left-to-Right, Top-to-Bottom). We implemented a <code>Skip to Main Content</code> link for screen reader and keyboard users.
+    </div>
+
+    <h3>3.3 Principle 3: Understandable</h3>
+    <p>Information and the operation of the user interface must be understandable.</p>
+    <div class="guideline-box">
+        <span class="guideline-title">3.3.1 Error Identification (Level A)</span>
+        Form validation errors (e.g., in the Quote Request form) are clearly identified with text descriptions, not just color changes, ensuring users with color blindness can correct errors.
+    </div>
+
+    <div class="page-break"></div>
+
+    <h2>4. Technical Remediation Log</h2>
+    <table>
+        <thead>
+            <tr><th>Component</th><th>Detected Issue</th><th>WCAG SC</th><th>Remediation Action</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Navigation Bar</td><td>Missing landmark</td><td>1.3.1</td><td>Wrapped menu in &lt;nav&gt; tag</td><td class="status-pass">Fixed</td></tr>
+            <tr><td>Supplier Form</td><td>Input missing label</td><td>3.3.2</td><td>Linked &lt;label&gt; with 'for' attribute</td><td class="status-pass">Fixed</td></tr>
+            <tr><td>Auth Modals</td><td>Focus trap missing</td><td>2.1.2</td><td>Implemented focus-trap library</td><td class="status-pass">Fixed</td></tr>
+            <tr><td>Chatbot</td><td>No live region</td><td>4.1.3</td><td>Added aria-live="polite" to messages</td><td class="status-pass">Fixed</td></tr>
+        </tbody>
+    </table>
+
+    <h2>5. Screen Reader Navigation Map</h2>
+    <p>The following table illustrates the logical structure exposed to Assistive Technologies (AT):</p>
+    <table>
+        <thead>
+            <tr><th>Element Type</th><th>ARIA Role</th><th>Expected AT Feedback</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Global Header</td><td>header</td><td>"Banner landmark"</td></tr>
+            <tr><td>Sidebar Filter</td><td>complementary</td><td>"Filters section, landmark"</td></tr>
+            <tr><td>Product Card</td><td>article</td><td>"Product title, Price, Add to Cart button"</td></tr>
+            <tr><td>Notifications</td><td>status</td><td>"New notification: Quote accepted"</td></tr>
+        </tbody>
+    </table>
+
+    <h2>6. Continuous Improvement Roadmap</h2>
+    <p>While we have achieved Level AA compliance, we are committed to further enhancements:</p>
+    <ul>
+        <li><strong>Level AAA Contrast:</strong> Moving towards a 7:1 ratio for critical information.</li>
+        <li><strong>Dynamic Motion Reduction:</strong> Respecting the <code>prefers-reduced-motion</code> media query across all Framer Motion animations.</li>
+        <li><strong>Cognitive Load Reduction:</strong> Simplifying complex technical jargon in the Artisan Dashboard.</li>
+    </ul>
+
+    <div class="footer">
+        BuildMarket Accessibility Documentation | WCAG 2.1 Audit | Page 2 / 2
+    </div>
+</body>
+</html>

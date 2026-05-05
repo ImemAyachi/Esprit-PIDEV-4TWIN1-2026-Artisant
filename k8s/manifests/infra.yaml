@@ -1,0 +1,41 @@
+# ============================================================
+# BuildMarket — K8s Secrets & Storage
+# ============================================================
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: buildmarket-secrets
+type: Opaque
+stringData:
+  MONGO_URI: "mongodb://mongodb-service:27017/buildmarket"
+  JWT_SECRET: "change_me_in_production_123456"
+
+---
+
+# Persistent Volume for MongoDB
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongo-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/mongo" # Directory on the Worker Node
+
+---
+
+# Persistent Volume Claim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
