@@ -17,4 +17,15 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/main.jsx', 'src/utils/sanity.test.js'],
+      reporter: ['text', 'json', 'html', 'lcov'],
+      all: true
+    }
+  }
 })

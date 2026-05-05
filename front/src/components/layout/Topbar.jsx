@@ -46,6 +46,7 @@ const Topbar = () => {
         <div style={{ position: 'relative' }} ref={notifRef}>
           <button
             className="btn-ghost"
+            aria-label="Notifications"
             style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem', borderRadius: '50%', width: 40, height: 40 }}
             onClick={() => setShowNotifs((v) => !v)}
           >
