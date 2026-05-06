@@ -80,7 +80,12 @@ Backend `server/.env` (optionnel) :
 | `VITE_API_URL` | URL de l'API | `http://localhost:5000/api` |
 | `VITE_SOCKET_URL` | URL Socket.io | `http://localhost:5000` |
 
-## 🌐 URLs par défaut
+## 🌐 URLs de Production (Live)
+
+- Frontend (Vercel) : https://artisanet.vercel.app/
+- Backend API (Render) : https://artisanet.onrender.com/api
+
+## 🌐 URLs par défaut (Développement)
 
 - Frontend : http://localhost:5173
 - Backend API : http://localhost:5000/api
