@@ -26,11 +26,21 @@ pipeline {
             }
         }
 
+        stage('🧪 Unit Tests') {
+            steps {
+                dir('front') {
+                    echo "Installing dependencies and running tests..."
+                    sh "npm install"
+                    sh "npm run test:coverage"
+                }
+            }
+        }
+
         stage('🔍 SonarQube Analysis') {
             steps {
                 script {
                     echo "Running SonarQube Scan for Frontend..."
-                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" -w \"/var/jenkins_home/workspace/${env.JOB_NAME}\" --network buildmarket-net sonarsource/sonar-scanner-cli -Dsonar.projectKey=buildmarket-frontend -Dsonar.projectName=\"BuildMarket Frontend\" -Dsonar.host.url=http://buildmarket-sonar:9000 -Dsonar.token=\$SONAR_AUTH -Dsonar.sources=front/src"
+                    sh "docker run --rm -v \"jenkins_home:/var/jenkins_home\" -w \"/var/jenkins_home/workspace/${env.JOB_NAME}\" --network buildmarket-net sonarsource/sonar-scanner-cli -Dsonar.projectKey=buildmarket-frontend -Dsonar.projectName=\"BuildMarket Frontend\" -Dsonar.host.url=http://buildmarket-sonar:9000 -Dsonar.token=\$SONAR_AUTH -Dsonar.sources=front/src -Dsonar.javascript.lcov.reportPaths=front/coverage/lcov.info"
                 }
             }
         }
