@@ -120,24 +120,6 @@ app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-<<<<<<< HEAD
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/documents', require('./routes/documentRoutes'));
-app.use('/api/projects', require('./routes/projectRoutes'));
-app.use('/api/quotes', require('./routes/quoteRoutes'));
-app.use('/api/invoices', require('./routes/invoiceRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
-
-// Global Error Handler
-app.use((err, req, res, next) => {
-    console.error('SERVER ERROR:', err);
-    res.status(err.status || 500).json({
-        success: false,
-        message: err.message || 'Internal Server Error'
-    });
-=======
 // ─── Metrics Middleware ──────────────────────────────────────────────────────
 app.use((req, res, next) => {
   const start = Date.now();
@@ -148,7 +130,6 @@ app.use((req, res, next) => {
       .observe(duration);
   });
   next();
->>>>>>> imem
 });
 
 // Static folder for uploads (from Yahya branch)
