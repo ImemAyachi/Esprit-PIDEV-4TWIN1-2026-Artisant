@@ -29,7 +29,8 @@ pipeline {
         stage('🧪 Unit Tests') {
             steps {
                 dir('front') {
-                    echo "Installing dependencies and running tests..."
+                    echo "Cleaning and Installing dependencies..."
+                    sh "rm -rf node_modules package-lock.json"
                     sh "npm install"
                     sh "npm run test:coverage"
                 }
